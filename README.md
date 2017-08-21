@@ -1,1 +1,1 @@
-# keck-observatory-archive
+# data-evaluation-and-processing (DEP)
