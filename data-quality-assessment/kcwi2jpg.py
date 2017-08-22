@@ -1,27 +1,25 @@
 import argparse
 from astropy.io import fits
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
 from PIL import Image
 import os
+import matplotlib.pyplot as plt
+
 
 def make_jpg(filePath):
     '''
     Converts a FITS file to JPG image
-    
+
     Parameters
     ----------
     filePath : string
-	Full path directory of FITS file
+	   Full path directory of FITS file
     '''
 
     path = os.path.dirname(filePath)
-    filename = filePath.split(path)[1][1:-5]
+    filename = os.path.basename(filePath)[:-5]
 
-    hdu = fits.open(filePath)
-    image = hdu[0].data
-   
+    image = fits.getdata(filePath)
+
     plt.imshow(image, cmap='gray')
     plt.axis('off')
     plt.savefig(path + '/' + filename + '.png')
@@ -32,5 +30,5 @@ parser = argparse.ArgumentParser()
 parser.add_argument('filePath', type=str, help='/net/vm-koaserver5/koadataXX/KCWI/YYYYMMDD/kcwi.fits')
 args = parser.parse_args()
 
-make_jpg(args.filePath)
-
+if __name__ == '__main__':
+    make_jpg(args.filePath)
