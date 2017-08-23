@@ -4,6 +4,7 @@ def verify_instrument(instr=''):
 	assert instr != '', 'instrument value is blank'
 	allowed_instruments = ['DEIMOS', 'ESI', 'HIRES', 'KCWI', 'LRIS', 'MOSFIRE', 'NIRC2', 'NIRES', 'NIRSPEC', 'OSIRIS'];
 	assert instr in allowed_instruments, 'unknown instrument value'
+
 def verify_date(date=''):
 	"""
 	Verify that date value has format yyyy-mm-dd
@@ -35,6 +36,7 @@ def verify_date(date=''):
 	# Day value must be between 1 and 31
 	
 	assert int(day) >= 1 and int(day) <= 31, 'day value must be between 1 and 31'
+
 def verify_utc(utc=''):
 	"""
 	Verify that utc value has the format hh:mm:ss[.ss]
