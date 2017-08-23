@@ -1,3 +1,5 @@
+from verification import *
+
 def semester(utDate):
 	"""
 	Returns the Keck observing semester for the supplied UT date

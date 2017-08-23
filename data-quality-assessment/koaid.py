@@ -1,3 +1,5 @@
+from verification import *
+
 def koaid(instr, utDate, utc, instrume, outdir='', camera=''):
 	"""
 	Returns the KOAID for the input data
