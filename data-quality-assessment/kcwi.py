@@ -47,7 +47,6 @@ def config(camera, gratname, slicer, binning):
     camera = camera.lower()
     gratname = gratname.lower()
     slicer = slicer.lower()
-    binning = binning
 
     configurations = {'bl': {'waves': (3500, 4550, 5600), 'large': 900, 'medium': 1800, 'small': 3600},
 					'bm': {'waves': (3500, 4500, 5500), 'large': 2000, 'medium': 4000, 'small': 8000},
