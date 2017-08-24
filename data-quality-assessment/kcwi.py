@@ -27,35 +27,36 @@ def make_jpg(filePath):
     Image.open(path + '/' + filename + '.png').save(path + '/' + filename + '.jpg')
     os.remove(path + '/' + filename + '.png')
 
+
 def config(camera, gratname, slicer, binning):
-	'''
+    '''
     Determines KOA keywords based on KCWI configurations
 
     Parameters
     ----------
     camera : string
-	   Detector name. Blue or FPC
-	gratName : string
-		Name of grating
-	slicer : string
-		Position of slicer
-	binning : string
-		binning ratio
-	'''
+        Detector name. Blue or FPC
+    gratName : string
+        Name of grating
+    slicer : string
+        Position of slicer
+    binning : string
+        binning ratio
+    '''
 
-	camera = camera.lower()
-	gratname = gratname.lower()
-	slicer = slicer.lower()
-	binning = binning
+    camera = camera.lower()
+    gratname = gratname.lower()
+    slicer = slicer.lower()
+    binning = binning
 
-	configurations = {'bl' : {'waves':(3500, 4550, 5600), 'large':900, 'medium':1800, 'small':3600},
-			  'bm' : {'waves':(3500, 4500, 5500), 'large':2000, 'medium':4000, 'small':8000},
-			  'bh3' : {'waves':(4700, 5150, 5600), 'large':4500, 'medium':9000, 'small':18000},
-			  'bh2' : {'waves':(4000, 4400, 4800), 'large':4500, 'medium':9000, 'small':18000},
-			  'bh1' : {'waves':(3500, 3800, 4100), 'large':4500, 'medium':9000, 'small':18000},
-			  'plate scale' : {'fpc':0.0075, 'blue':0.147},
-			  'slits' : {'large':'1.35', 'medium':'0.69', 'small':'0.35'}
-			 }
+    configurations = {'bl': {'waves': (3500, 4550, 5600), 'large': 900, 'medium': 1800, 'small': 3600},
+					'bm': {'waves': (3500, 4500, 5500), 'large': 2000, 'medium': 4000, 'small': 8000},
+					'bh3': {'waves': (4700, 5150, 5600), 'large': 4500, 'medium': 9000, 'small': 18000},
+					'bh2': {'waves': (4000, 4400, 4800), 'large': 4500, 'medium': 9000, 'small': 18000},
+					'bh1': {'waves': (3500, 3800, 4100), 'large': 4500, 'medium': 9000, 'small': 18000},
+					'plate scale': {'fpc': 0.0075, 'blue': 0.147},
+					'slits': {'large': '1.35', 'medium': '0.69', 'small': '0.35'}
+					}
 
 	if camera in configurations['plate scale']:
 		binRatio = binning.split(',')
