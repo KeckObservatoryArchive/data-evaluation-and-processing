@@ -9,7 +9,7 @@ class HDU():
 
 	# instrument specific kewywords
 	def kcwi(self):
-		self.naxis1 = self.header['NAXIS1']
+		self.camera = self.header['CAMERA']
 
 	def nirspec(self):
 		pass
