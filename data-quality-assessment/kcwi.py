@@ -4,6 +4,10 @@ from astropy.io import fits
 from PIL import Image
 import os
 import matplotlib.pyplot as plt
+from math import pi
+from math import cos
+from math import sin
+import numpy as np
 
 
 def make_jpg(filePath):
@@ -84,3 +88,71 @@ def config(camera, gratname, slicer, binning):
 		specres  = 'null'
 
 	return waveblue, wavecntr, wavered, specres, spatscal, dispscal, slitwidt, slitlen
+
+def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox):
+	'''
+	Computes WCS keywords
+
+	Parameters
+    ----------
+	All parameters are keyword strings from the header object
+	'''
+
+	if not parantel:
+		parantel = parang
+
+	modes = {'posi': pa,
+			 'vert': pa + parantel
+			 'stat': pa + parantel - el
+			 }
+
+	pa1 = modes.get(rotmode[:4])
+	paZero = 0.7
+	pa = -(pa1 - paZero) * (pi/180)
+
+	raKey = [float(i) for i in ra.split(':')]
+	crval1 = (rakey[0] + rakey[1]/60 + rakey[2]/3600) * 15
+
+	decKey = [float(i) for i in dec.split(':')]
+	if decKey[0] >= 0:
+		crval2 = decKey.split[0] + decKey[1]/60 + decKey[2]/3600
+	else:
+		crval2 = -(decKey.split[0] + decKey[1]/60 + decKey[2]/3600)
+
+	pixScale = 0.0075 * binning.split(',')[0]
+	cd1_1 = -(pixScale*cos(pa)/3600)
+	cd2_2 = (pixScale *cos(pa)/3600)
+	cd2_1 = -(pixScale*sin(pa)/3600)
+	cd2_2 = -(pixScale*sin(pa)/3600)
+
+	crpix1 = (naxis1+1)/2.
+	crpix2 = (naxis2+1)/2.
+
+	if equinox == 2000.0:
+		radecsys = 'FK5'
+	else:
+		radecsys = 'FK4'
+
+	return, cd1_1, cd2_2, cd2_1, cd2_2, crpix1, crpix2, crval1, crval2, pixScale, radecsys
+
+def image_stats(data, naxis1, naxis2):
+		'''
+	Calculates basic image statistics
+
+	Parameters
+    ----------
+	data : numpy array
+		Raw image data from data object
+
+	naxis1 and naxis are keyword strings from header object
+	'''
+
+	x = naxis1/2
+	y = naxis2/2
+
+	image = data[x-15,x+15,y-15,y+15]
+	imageMean = np.mean(image)
+	imageStdV = np.std(image)
+	imageMedian =  np.median(image)
+
+	return imageMean, imageStdV, imageMedian
