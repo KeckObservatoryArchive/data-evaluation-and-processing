@@ -94,7 +94,7 @@ def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox
 	Computes WCS keywords
 
 	Parameters
-    ----------
+    	----------
 	All parameters are keyword strings from the header object
 	'''
 
@@ -102,9 +102,9 @@ def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox
 		parantel = parang
 
 	modes = {'posi': pa,
-			 'vert': pa + parantel
-			 'stat': pa + parantel - el
-			 }
+		'vert': pa + parantel
+		'stat': pa + parantel - el
+		}
 
 	pa1 = modes.get(rotmode[:4])
 	paZero = 0.7
@@ -136,11 +136,11 @@ def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox
 	return, cd1_1, cd2_2, cd2_1, cd2_2, crpix1, crpix2, crval1, crval2, pixScale, radecsys
 
 def image_stats(data, naxis1, naxis2):
-		'''
+	'''
 	Calculates basic image statistics
 
 	Parameters
-    ----------
+   	----------
 	data : numpy array
 		Raw image data from data object
 
