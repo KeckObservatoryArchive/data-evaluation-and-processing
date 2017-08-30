@@ -133,7 +133,7 @@ def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox
 	else:
 		radecsys = 'FK4'
 
-	return, cd1_1, cd2_2, cd2_1, cd2_2, crpix1, crpix2, crval1, crval2, pixScale, radecsys
+	return cd1_1, cd2_2, cd2_1, cd2_2, crpix1, crpix2, crval1, crval2, pixScale, radecsys
 
 def image_stats(data, naxis1, naxis2):
 	'''
