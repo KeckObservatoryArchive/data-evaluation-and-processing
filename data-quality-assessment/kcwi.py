@@ -102,8 +102,8 @@ def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox
 		parantel = parang
 
 	modes = {'posi': pa,
-		'vert': pa + parantel
-		'stat': pa + parantel - el
+		'vert': pa + parantel,
+		'stat': pa + parantel - el,
 		}
 
 	pa1 = modes.get(rotmode[:4])
@@ -150,7 +150,7 @@ def image_stats(data, naxis1, naxis2):
 	x = naxis1/2
 	y = naxis2/2
 
-	image = data[x-15,x+15,y-15,y+15]
+	image = data[x-15:x+15,y-15:y+15]
 	imageMean = np.mean(image)
 	imageStdV = np.std(image)
 	imageMedian =  np.median(image)
