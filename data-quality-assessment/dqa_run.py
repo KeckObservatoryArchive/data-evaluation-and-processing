@@ -1,6 +1,6 @@
 import get_header
 from glob import glob
-impot kcwi
+import kcwi
 
 files = glob('*.fits*')
 for file in files:
