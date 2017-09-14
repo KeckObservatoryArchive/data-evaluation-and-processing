@@ -21,15 +21,15 @@ def make_jpg(filePath):
     '''
 
     path = os.path.dirname(filePath)
-    filename = os.path.basename(filePath)[:-5]
+    fitsname = os.path.basename(filePath)[:-5]
 
     image = fits.getdata(filePath)
 
     plt.imshow(image, cmap='gray')
     plt.axis('off')
-    plt.savefig(path + '/' + filename + '.png')
-    Image.open(path + '/' + filename + '.png').save(path + '/' + filename + '.jpg')
-    os.remove(path + '/' + filename + '.png')
+    plt.savefig(path + '/' + fitsname + '.png')
+    Image.open(path + '/' + fitsname + '.png').save(path + '/' + fitsname + '.jpg')
+    os.remove(path + '/' + fitsname + '.png')
 
 
 def config(header):
@@ -182,4 +182,4 @@ def go(header):
 	image_stats(header)
 	wcs(header)
 	config(header)
-	make_jpg(file)
+	make_jpg(filename)

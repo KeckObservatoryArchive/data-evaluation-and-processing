@@ -5,13 +5,13 @@ from glob import glob
 modules = ['nirspec', 'kcwi']
 
 files = glob('*.fits*')
-for file in files:
-    header = get_header.HDU(file)
+for filename in files:
+    header = get_header.HDU(filename)
     instr = header.keywords['instrume'].lower()
     
     if instr in modules:
         module = importlib.import_module(instr)
-        module.go(header, file)
+        module.go(header, filename)
         # Write file to lev1 directory
         # header.hdu.writeto('')   
     else:
