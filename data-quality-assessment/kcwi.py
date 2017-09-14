@@ -38,14 +38,10 @@ def config(header):
 
     Parameters
     ----------
-    camera : string
-        Detector name. Blue or FPC
-    gratName : string
-        Name of grating
-    slicer : string
-        Position of slicer
-    binning : string
-        binning ratio
+	header : object
+		header.keywords
+		header.hdu
+		header.data
     '''
 
     camera = header.keywords['camera'].lower()
@@ -100,10 +96,13 @@ def wcs(header):
 	'''
 	Computes WCS keywords
 
-	Parameters
-    	----------
-	All parameters are keyword strings from the header object
-	'''
+    Parameters
+    ----------
+	header : object
+		header.keywords
+		header.hdu
+		header.data
+    '''
 
 	if 'parantel' not in keywords:
 		parantel = header.keywords['parang']
@@ -157,13 +156,13 @@ def image_stats(header):
 	'''
 	Calculates basic image statistics
 
-	Parameters
-   	----------
-	data : numpy array
-		Raw image data from data object
-
-	naxis1 and naxis are keyword strings from header object
-	'''
+    Parameters
+    ----------
+	header : object
+		header.keywords
+		header.hdu
+		header.data
+    '''
 
 	x = header.keywords['naxis1']/2
 	y = header.keywords['naxis2']/2
@@ -178,7 +177,7 @@ def image_stats(header):
 	header.keywords['IMAGESD'] = imageStdV
 
 def go(header):
-	# All function in sequential order
+	# All functions are executed in sequential order
 	image_stats(header)
 	wcs(header)
 	config(header)
