@@ -1,21 +1,19 @@
 import get_header
+import importlib
 from glob import glob
-import kcwi
+
+modules = ['nirspec', 'kcwi']
 
 files = glob('*.fits*')
 for file in files:
     header = get_header.HDU(file)
-    instr = header.instr
+    instr = header.keywords['instrume'].lower()
     
-    # Instrument specific functions
-    if instr == 'NIRSPEC':
-        header.nirspec()
-    elif instr == 'KCWI':
-        header.kcwi()
-        kcwi.make_jpg(file)
-        stats = kcwi.image_stats(header.data, header.naxis1, header.naxis2)
-        # kcwi.wcs(...)
-        # kcwi.config(...)        
+    if instr in modules:
+        module = importlib.import_module(instr)
+        module.go(header, file)
+        # Write file to lev1 directory
+        # header.hdu.writeto('')   
     else:
         # Do something
         pass

@@ -32,7 +32,7 @@ def make_jpg(filePath):
     os.remove(path + '/' + filename + '.png')
 
 
-def config(camera, gratname, slicer, binning):
+def config(header):
     '''
     Determines KOA keywords based on KCWI configurations
 
@@ -48,9 +48,9 @@ def config(camera, gratname, slicer, binning):
         binning ratio
     '''
 
-    camera = camera.lower()
-    gratname = gratname.lower()
-    slicer = slicer.lower()
+    camera = header.keywords['camera'].lower()
+    gratname = header.keywords['bgratname'].lower()
+    slicer = header.keywords['slit'].lower()
 
     configurations = {'bl': {'waves': (3500, 4550, 5600), 'large': 900, 'medium': 1800, 'small': 3600},
 					'bm': {'waves': (3500, 4500, 5500), 'large': 2000, 'medium': 4000, 'small': 8000},
@@ -87,9 +87,16 @@ def config(camera, gratname, slicer, binning):
 		wavered  = 'null'
 		specres  = 'null'
 
-	return waveblue, wavecntr, wavered, specres, spatscal, dispscal, slitwidt, slitlen
+	header.keywords['WAVEBLUE'] = waveblue
+	header.keywords['WAVECNTR'] = wavecntr
+	header.keywords['WAVERED'] = wavered
+	header.keywords['SPECRES'] = specres
+	header.keywords['SPATSCAL'] = spatscal
+	header.keywords['DISPSCAL'] = dispscal
+	header.keywords['SLITWIDT'] = slitwidt
+	header.keywords['SLITLEN'] = slitlen
 
-def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox):
+def wcs(header):
 	'''
 	Computes WCS keywords
 
@@ -98,44 +105,55 @@ def wcs(ra, dec, naxis1, naxis2, rotmode, parantel, parang, el, binning, equinox
 	All parameters are keyword strings from the header object
 	'''
 
-	if not parantel:
-		parantel = parang
+	if 'parantel' not in keywords:
+		parantel = header.keywords['parang']
+	else:
+		parantel = header.keywords['parantel']
 
-	modes = {'posi': pa,
-		'vert': pa + parantel,
-		'stat': pa + parantel - el,
-		}
+	modes = {'posi': header.keywords['pa'],
+			'vert': header.keywords['pa'] + parantel,
+			'stat': header.keywords['pa'] + parantel - header.keywords['el'],
+			}
 
-	pa1 = modes.get(rotmode[:4])
+	pa1 = modes.get(header.keywords['rotmode'][:4])
 	paZero = 0.7
 	pa = -(pa1 - paZero) * (pi/180)
 
-	raKey = [float(i) for i in ra.split(':')]
+	raKey = [float(i) for i in header.keywords['ra'].split(':')]
 	crval1 = (rakey[0] + rakey[1]/60 + rakey[2]/3600) * 15
 
-	decKey = [float(i) for i in dec.split(':')]
+	decKey = [float(i) for i in header.keywords['dec'].split(':')]
 	if decKey[0] >= 0:
 		crval2 = decKey.split[0] + decKey[1]/60 + decKey[2]/3600
 	else:
 		crval2 = -(decKey.split[0] + decKey[1]/60 + decKey[2]/3600)
 
-	pixScale = 0.0075 * binning.split(',')[0]
-	cd1_1 = -(pixScale*cos(pa)/3600)
-	cd2_2 = (pixScale *cos(pa)/3600)
-	cd2_1 = -(pixScale*sin(pa)/3600)
-	cd2_2 = -(pixScale*sin(pa)/3600)
+	pixelScale = 0.0075 * header.keywords['binning'].split(',')[0]
+	cd1_1 = -(pixelScale*cos(pa)/3600)
+	cd1_2 = (pixelScale *cos(pa)/3600)
+	cd2_1 = -(pixelScale*sin(pa)/3600)
+	cd2_2 = -(pixelScale*sin(pa)/3600)
 
-	crpix1 = (naxis1+1)/2.
-	crpix2 = (naxis2+1)/2.
+	crpix1 = (header.keywords['naxis1']+1)/2.
+	crpix2 = (header.keywords['naxis2']+1)/2.
 
-	if equinox == 2000.0:
+	if header.keywords['equinox'] == 2000.0:
 		radecsys = 'FK5'
 	else:
 		radecsys = 'FK4'
 
-	return cd1_1, cd2_2, cd2_1, cd2_2, crpix1, crpix2, crval1, crval2, pixScale, radecsys
+	header.keywords['CD1_1'] = cd1_1
+	header.keywords['CD1_2'] = cd1_2
+	header.keywords['CD2_1'] = cd2_1
+	header.keywords['CD2_2'] = cd2_2
+	header.keywords['CRPIX1'] = crpix1
+	header.keywords['CRPIX2'] = crpix2
+	header.keywords['CRVAL1'] = crval1
+	header.keywords['CRVAL2'] = crval2
+	header.keywords['CD1_1'] = pixelScale
+	header.keywords['RADECSYS'] = radecsys
 
-def image_stats(data, naxis1, naxis2):
+def image_stats(header):
 	'''
 	Calculates basic image statistics
 
@@ -147,12 +165,21 @@ def image_stats(data, naxis1, naxis2):
 	naxis1 and naxis are keyword strings from header object
 	'''
 
-	x = naxis1/2
-	y = naxis2/2
+	x = header.keywords['naxis1']/2
+	y = header.keywords['naxis2']/2
 
-	image = data[x-15:x+15,y-15:y+15]
+	image = header.data[x-15:x+15,y-15:y+15]
 	imageMean = np.mean(image)
 	imageStdV = np.std(image)
 	imageMedian =  np.median(image)
 
-	return imageMean, imageStdV, imageMedian
+	header.keywords['IMAGEMD'] = imageMean
+	header.keywords['IMAGEMN'] = imageMedian
+	header.keywords['IMAGESD'] = imageStdV
+
+def go(header):
+	# All function in sequential order
+	image_stats(header)
+	wcs(header)
+	config(header)
+	make_jpg(file)
