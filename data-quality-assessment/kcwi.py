@@ -32,21 +32,19 @@ def make_jpg(filePath):
     os.remove(path + '/' + fitsname + '.png')
 
 
-def config(header):
+def config(keywords):
     '''
     Determines KOA keywords based on KCWI configurations
 
     Parameters
     ----------
-	header : object
-		header.keywords
-		header.hdu
-		header.data
+	keywords : dict
+		FITS header keywords
     '''
 
-    camera = header.keywords['camera'].lower()
-    gratname = header.keywords['bgratname'].lower()
-    slicer = header.keywords['slit'].lower()
+    camera = keywords['CAMERA'].lower()
+    gratname = keywords['BGRATNAME'].lower()
+    slicer = keywords['SLIT'].lower()
 
     configurations = {'bl': {'waves': (3500, 4550, 5600), 'large': 900, 'medium': 1800, 'small': 3600},
 					'bm': {'waves': (3500, 4500, 5500), 'large': 2000, 'medium': 4000, 'small': 8000},
@@ -58,7 +56,7 @@ def config(header):
 					}
 
 	if camera in configurations['plate scale']:
-		binRatio = binning.split(',')
+		binRatio = keywords['BINNING'].split(',')
 		dispscal = configurations['plate scale'].get(camera) * int(binRatio[0])
 		spatscal = dispscal
 	else:
@@ -83,102 +81,102 @@ def config(header):
 		wavered  = 'null'
 		specres  = 'null'
 
-	header.keywords['WAVEBLUE'] = waveblue
-	header.keywords['WAVECNTR'] = wavecntr
-	header.keywords['WAVERED'] = wavered
-	header.keywords['SPECRES'] = specres
-	header.keywords['SPATSCAL'] = spatscal
-	header.keywords['DISPSCAL'] = dispscal
-	header.keywords['SLITWIDT'] = slitwidt
-	header.keywords['SLITLEN'] = slitlen
+	keywords['WAVEBLUE'] = waveblue
+	keywords['WAVECNTR'] = wavecntr
+	keywords['WAVERED'] = wavered
+	keywords['SPECRES'] = specres
+	keywords['SPATSCAL'] = spatscal
+	keywords['DISPSCAL'] = dispscal
+	keywords['SLITWIDT'] = slitwidt
+	keywords['SLITLEN'] = slitlen
 
-def wcs(header):
+def wcs(keywords):
 	'''
 	Computes WCS keywords
 
     Parameters
     ----------
-	header : object
-		header.keywords
-		header.hdu
-		header.data
+	keywords : dict
+		FITS header keywords
     '''
 
-	if 'parantel' not in keywords:
-		parantel = header.keywords['parang']
+	if 'PARANTEL' not in keywords:
+		parantel = keywords['PARANG']
 	else:
-		parantel = header.keywords['parantel']
+		parantel = keywords['PARANTEL']
 
-	modes = {'posi': header.keywords['pa'],
-			'vert': header.keywords['pa'] + parantel,
-			'stat': header.keywords['pa'] + parantel - header.keywords['el'],
+	pa = keywords['PA']
+
+	modes = {'posi': pa,
+			'vert': pa + parantel,
+			'stat': pa + parantel - keywords['EL'],
 			}
 
-	pa1 = modes.get(header.keywords['rotmode'][:4])
+	pa1 = modes.get(keywords['ROTMODE'][:4])
 	paZero = 0.7
 	pa = -(pa1 - paZero) * (pi/180)
 
-	raKey = [float(i) for i in header.keywords['ra'].split(':')]
+	raKey = [float(i) for i in keywords['RA'].split(':')]
 	crval1 = (rakey[0] + rakey[1]/60 + rakey[2]/3600) * 15
 
-	decKey = [float(i) for i in header.keywords['dec'].split(':')]
+	decKey = [float(i) for i in keywords['DEC'].split(':')]
 	if decKey[0] >= 0:
 		crval2 = decKey.split[0] + decKey[1]/60 + decKey[2]/3600
 	else:
 		crval2 = -(decKey.split[0] + decKey[1]/60 + decKey[2]/3600)
 
-	pixelScale = 0.0075 * header.keywords['binning'].split(',')[0]
+	pixelScale = 0.0075 * keywords['BINNING'].split(',')[0]
 	cd1_1 = -(pixelScale*cos(pa)/3600)
 	cd1_2 = (pixelScale *cos(pa)/3600)
 	cd2_1 = -(pixelScale*sin(pa)/3600)
 	cd2_2 = -(pixelScale*sin(pa)/3600)
 
-	crpix1 = (header.keywords['naxis1']+1)/2.
-	crpix2 = (header.keywords['naxis2']+1)/2.
+	crpix1 = (keywords['NAXIS1']+1)/2.
+	crpix2 = (keywords['NAXIS2']+1)/2.
 
-	if header.keywords['equinox'] == 2000.0:
+	if keywords['EQUINOX'] == 2000.0:
 		radecsys = 'FK5'
 	else:
 		radecsys = 'FK4'
 
-	header.keywords['CD1_1'] = cd1_1
-	header.keywords['CD1_2'] = cd1_2
-	header.keywords['CD2_1'] = cd2_1
-	header.keywords['CD2_2'] = cd2_2
-	header.keywords['CRPIX1'] = crpix1
-	header.keywords['CRPIX2'] = crpix2
-	header.keywords['CRVAL1'] = crval1
-	header.keywords['CRVAL2'] = crval2
-	header.keywords['CD1_1'] = pixelScale
-	header.keywords['RADECSYS'] = radecsys
+	keywords['CD1_1'] = cd1_1
+	keywords['CD1_2'] = cd1_2
+	keywords['CD2_1'] = cd2_1
+	keywords['CD2_2'] = cd2_2
+	keywords['CRPIX1'] = crpix1
+	keywords['CRPIX2'] = crpix2
+	keywords['CRVAL1'] = crval1
+	keywords['CRVAL2'] = crval2
+	keywords['CD1_1'] = pixelScale
+	keywords['RADECSYS'] = radecsys
 
-def image_stats(header):
+def image_stats(keywords, data):
 	'''
 	Calculates basic image statistics
 
     Parameters
     ----------
-	header : object
-		header.keywords
-		header.hdu
-		header.data
+	keywords : dict
+		FITS header keywords
+	data : nummpy array
+		FITS image data
     '''
 
-	x = header.keywords['naxis1']/2
-	y = header.keywords['naxis2']/2
+	x = keywords['NAXIS1']/2
+	y = keywords['NAXIS2']/2
 
-	image = header.data[x-15:x+15,y-15:y+15]
+	image = data[x-15:x+15,y-15:y+15]
 	imageMean = np.mean(image)
 	imageStdV = np.std(image)
 	imageMedian =  np.median(image)
 
-	header.keywords['IMAGEMD'] = imageMean
-	header.keywords['IMAGEMN'] = imageMedian
-	header.keywords['IMAGESD'] = imageStdV
+	keywords['IMAGEMD'] = imageMean
+	keywords['IMAGEMN'] = imageMedian
+	keywords['IMAGESD'] = imageStdV
 
-def go(header):
+def go(keywords, data, filename):
 	# All functions are executed in sequential order
-	image_stats(header)
-	wcs(header)
-	config(header)
+	image_stats(keywords, data)
+	wcs(keywords)
+	config(keywords)
 	make_jpg(filename)

@@ -1,8 +1,8 @@
 from datetime import datetime
 
-def semester(utDate):
+def semester(keywords, utDate):
 	"""
-	Returns the Keck observing semester for the supplied UT date
+	Determines the Keck observing semester for the supplied UT date
 
 	semester('2017-08-01') --> 2017A
 	semester('2017-08-02') --> 2017B
@@ -33,4 +33,63 @@ def semester(utDate):
 	else:
 		semester = 'A'
 
-	return str(year) + semester
+	keywords['SEMESTER'] = semester
+
+def koaid(keywords, utDate):
+	'''
+	Determines the KOAID
+
+	KOAID = II.YYYYMMDD.######.fits
+	   - II = instrument prefix
+	   - YYYYMMDD = UT date of observation
+	   - ###### = number of seconds into UT date
+	 '''
+
+	utc = keywords['UTC']
+	try:
+		utc = datetime.strptime(utc, '%H:%M:%S')
+	except ValueError:
+		raise ValueError
+
+	hour = utc.hour
+	minute = utc.minute
+	second = utc.second
+
+	totalSeconds = str((hour * 3600) + (minute * 60) + second)
+
+	instr_prefix = {'esi':'EI', 'hires':'HI', 'lris':'LR', 'lrisblue':'LB', 'mosfire':'MF', 'nirc2':'N2'}
+
+	instr = keywords['INSTRUME'].lower()
+	outdir = keywords['OUTDIR']
+	camera = keywords['CAMERA'].lower()
+
+	if instr in instr_prefix:
+		prefix = instr_prefix[instr]
+	elif instr == 'deimos':
+		if '/fcs' in outdir:
+			prefix = 'DF'
+		else:
+			prefix = 'DE'
+	elif instr == 'kcwi':
+		if camera == 'blue':
+			prefix = 'KB'
+		elif camera == 'red':
+			prefix = 'KR'
+		elif camera == 'fpc':
+			prefix = 'KF'
+	elif instr == 'nirspec':
+		if '/scam' in outdir:
+			prefix = 'NC'
+		elif '/spec' in outdir:
+			prefix = 'NC'
+	elif instr == 'osiris':
+		if '/SCAM' in outdir:
+			prefix = 'OI'
+		elif '/SPEC' in 'osiris':
+			prefix = 'OS'
+	else:
+		raise Exception('Cannot determine prefix')
+
+	# Will utDate be a string, int, or datetime object?
+	koaid = prefix + '.' + utDate + '.' + totalSeconds.zfill(5) + '.fits'
+	keywords['KOAID'] = koaid
