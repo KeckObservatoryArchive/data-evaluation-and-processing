@@ -1,20 +1,10 @@
 from astropy.io import fits
 
 class HDU():
-	def __init__(self, file):
-		self.data = fits.getdata(file)
-		self.header = fits.getheader(file)
-		
-		# all common keywords
+	def __init__(self, filename):
+		self.hdu = fits.open(filename)
+		self.keywords = self.hdu[0].header
+		self.data = self.hdu[0].data
 
-	# instrument specific kewywords
-	def kcwi(self):
-		self.camera = self.header['CAMERA']
-
-	def nirspec(self):
-		pass
-
-	def hires(self):
-		pass
 
 
