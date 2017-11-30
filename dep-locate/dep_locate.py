@@ -13,7 +13,7 @@
 
 import logging
 import subprocess as sub
-import shlex
+from astropy.io import fits
 
 ''' 
  This function will search the data directories for data
@@ -74,10 +74,31 @@ def dep_locfiles(instr, utDate, endHour, stageDir, logFile):
     continue
 
 '''
-  This function will
+  This function will look for non-raw images, duplicate KOAIDs, 
+  or bad dates for each fits file. 
 '''
-def dep_rawfiles(instr, utDate, endHour, logFile):
-    continue
+def dep_rawfiles(instr, utDate, endHour,dataFile, stageDir, ancDir, logFile):
+    # Change yyyy/mm/dd to yyyymmdd
+    date = utDate.replace('/','')
+
+    # read input file data into an array
+    data = []
+
+    for line in dataFile:
+        data.append(line)
+
+    raw = []
+    koa = []
+    rootfile = []
+    bad = []
+    for i in range(len(data)):
+        raw.append(0)
+        header0 = fits.getheader(dataFile)
+        root.append(data[i].split('/'))
+        rootfile.append(root[len(root)-1])
+
+    # Get filename from header
+    #outfile = fits.(header0, 'OUTFILE')
 
 '''
   This function will
