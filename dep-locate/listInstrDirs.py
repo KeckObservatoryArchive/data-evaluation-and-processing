@@ -99,5 +99,10 @@ def getDirList(instr):
                 path2 = path + str(i+1)
                 dirs.append(path2)
             dirs.append(path + 'dev')
+        default:
+            logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+            logging.warning('dep_locate %s: Could not find instrument %s', instr, instr)
+            print('dep_locate %s: Could not find instrument %s', instr, instr)
+            break
 
     return dirs
