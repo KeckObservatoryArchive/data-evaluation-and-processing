@@ -27,6 +27,9 @@ def dep_locate(instr, utDate, stageDir):
     assert stageDir != '', 'stageDir value is blank'
 
     # Which sdata disk?
+    # how does the new staging system affect subdir?
+    # - less (one?) "disks" per instrument?
+    # Can we do an array of paths instead?
     switch(instr):
         case 'DEIMOS':
             subdir = '/s/sdata10*/d*mos*'
