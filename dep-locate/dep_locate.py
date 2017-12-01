@@ -28,7 +28,7 @@ def dep_locate(instr, utDate, stageDir):
     assert stageDir != '', 'stageDir value is blank'
 
     # Which sdata disk?
-    locate.getInstrDirs(instr)
+    locate.getDirList(instr)
 
     # Locate FITS files written in the last 24 hours
 	
