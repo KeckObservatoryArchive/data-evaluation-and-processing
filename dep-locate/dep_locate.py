@@ -13,6 +13,7 @@
 
 import logging
 import subprocess as sub
+import listInstrDirs as locate
 from astropy.io import fits
 
 ''' 
@@ -27,44 +28,7 @@ def dep_locate(instr, utDate, stageDir):
     assert stageDir != '', 'stageDir value is blank'
 
     # Which sdata disk?
-    # how does the new staging system affect subdir?
-    # - less (one?) "disks" per instrument?
-    # Can we do an array of paths instead?
-    switch(instr):
-        case 'DEIMOS':
-            subdir = '/s/sdata10*/d*mos*'
-            break
-        case 'ESI':
-            subdir = '/s/sdata7*/esi*'
-            break
-        case 'HIRES':
-            subdir = '/s/sdata12*/hires*'
-            break
-        case 'LRIS':
-            subdir = '/s/sdata2*/lris*'
-            break
-        case 'MOSFIRE':
-            subdir = '/s/sdata130*/m*'
-            break
-        case 'NIRC2':
-            subdir = '/s/sdata9*/nirc*'
-            break
-        case 'NIRSPEC':
-            subdir = '/s/sdata6*/n*'
-            break
-        case 'OSIRIS':
-            subdir = '/s/sdata110*/os*'
-            break
-        case 'KCWI':
-            subdir = '/s/sdata1400/kcwi*'
-            break
-        default:
-            logging.basicConfig(filename='debug.log', level=logging.DEBUG)
-            logging.warning('dep_locate %s: Could not find instrument %s', instr, instr)
-            print('dep_locate %s: Could not find instrument %s', instr, instr)
-            break
-
-        
+    locate.getInstrDirs(instr)
 
     # Locate FITS files written in the last 24 hours
 	
@@ -85,10 +49,11 @@ def dep_rawfiles(instr, utDate, endHour,dataFile, stageDir, ancDir, logFile):
     date = utDate.replace('/','')
 
     # read input file data into an array
-    data = []
+    inputList = []
 
+    # Loop through the data file and read in
     for line in dataFile:
-        data.append(line)
+        inputList.append(line)
 
     raw = []
     koa = []
@@ -97,7 +62,7 @@ def dep_rawfiles(instr, utDate, endHour,dataFile, stageDir, ancDir, logFile):
     for i in range(len(data)):
         raw.append(0)
         header0 = fits.getheader(dataFile)
-        root.append(data[i].split('/'))
+        root.append(inputList[i].split('/'))
         rootfile.append(root[len(root)-1])
 
     # Get filename from header
