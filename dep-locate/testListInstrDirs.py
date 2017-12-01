@@ -10,13 +10,15 @@
 import listInstrDirs as locate
 import subprocess as sp
 
-instruments = ['DEIMOS', 'ESI', 'HIRES', 'LRIS', 'MOSFIRE', 'NIRC2', 'NIRSPEC', 'OSIRIS', 'KCWI']
+instruments = ['DEIMOS', 'ESI', 'HIRES', 'LRIS', 'MOSFIRE', 'NIRC2', 'NIRSPEC', 'OSIRIS', 'KCWI', 'NIRES']
 
 print("Enter an instrument keyword to search")
 instr = input()
 
+instr = instr.upper()
+
 if instr in instruments:
-    dirs = locate.getDirList('HIRES')
+    dirs = locate.getDirList(instr)
 
     for item in dirs:
         print(item)

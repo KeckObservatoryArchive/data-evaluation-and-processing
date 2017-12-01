@@ -22,7 +22,7 @@ def getDirList(instr):
             path2 = path + str(i+1)
             # add the account number
             for i in range(20):
-                path3 = '/deimos' + path2 + str(i+1)
+                path3 =  path2 + '/deimos' + str(i+1)
                 dirs.append(path3)
             dirs.append(path2 + '/dmoseng')
     elif instr == 'ESI':
@@ -30,7 +30,7 @@ def getDirList(instr):
         for i in range(7):
             if i != 4:
                 path2 = path + str(i+1) + '/esi'
-                for i in range():
+                for i in range(20):
                     path3 = path2 + str(i+1)
                     dirs.append(path3)
                 dirs.append(path2 + 'eng')  
@@ -90,6 +90,11 @@ def getDirList(instr):
             path2 = path + str(i+1)
             dirs.append(path2)
         dirs.append(path + 'dev')
+    elif instr == 'NIRES':
+        path += '150'
+        for i in range(3):
+            path2 = path + str(i) + '/nireseng'
+            dirs.append(path2)
     else:
         logging.basicConfig(filename='debug.log', level=logging.DEBUG)
         logging.warning('dep_locate %s: Could not find instrument %s', instr, instr)
