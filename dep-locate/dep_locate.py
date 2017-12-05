@@ -15,6 +15,7 @@ import logging
 import subprocess as sub
 import listInstrDirs as locate
 from astropy.io import fits
+from common import koaid
 
 ''' 
  This function will search the data directories for data
@@ -38,38 +39,84 @@ def dep_locate(instr, utDate, stageDir):
   This function will 
 '''
 def dep_locfiles(instr, utDate, endHour, stageDir, logFile):
-    continue
+    pass
 
 '''
   This function will look for non-raw images, duplicate KOAIDs, 
   or bad dates for each fits file. 
+  
+  Written by Jeff Mader
+
+  Ported to Python3 by Matthew Brown
 '''
-def dep_rawfiles(instr, utDate, endHour,dataFile, stageDir, ancDir, logFile):
+def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
     # Change yyyy/mm/dd to yyyymmdd
     date = utDate.replace('/','')
 
-    # read input file data into an array
-    inputList = []
+    # read input file list into an array
+    fitsList = []
 
-    # Loop through the data file and read in
-    for line in dataFile:
-        inputList.append(line)
+    # Loop through the file list and read in
+    # the fits files found from within 24 hours
+    # of the given date
+    for line in fileList:
+        fitsList.append(line)
 
-    raw = []
-    koa = []
-    rootfile = []
-    bad = []
-    for i in range(len(data)):
-        raw.append(0)
-        header0 = fits.getheader(dataFile)
-        root.append(inputList[i].split('/'))
+    # get the size of the inputList 
+    isize = len(fitsList)
+
+    # Initialize lists with the number of fits files found
+    raw = [0]*isize
+    koa = ['0']*isize
+    rootfile = ['0']*isize
+    bad = [0]*isize
+
+    # Each line in the file list is a fits file
+    # We want to check the validity of each file
+    for i in range(len(fitsList)):
+        raw[i] = 0
+        header0 = fits.getheader(fitsList[i])
+        root = fitsList[i].split('/')
         rootfile.append(root[len(root)-1])
 
-    # Get filename from header
-    #outfile = fits.(header0, 'OUTFILE')
+        # Get filename from header
+        # STOPPING HERE WORK ON ERROR STATE
+        outfile = header0['OUTFILE']
+        if outfile == "":
+            outfile = header0['ROOTNAME']
+            if instr == 'MOSFIRE':
+                frameno = header0['DATAFILE']
+            if ERROR:
+                bad[i]=1
+                break
+        frameno = header0['FRAMENO']
+        if outfile[:2] == 'kf':
+            frameno = header0['IMGNUM']
+        if instr == 'MOSFIRE':
+            frameno = header0['FRAMENUM']
+        if ERROR:
+            frameno = header0['FILENUM']
+            if ERROR:
+                bad[i] = 1
+                break
+        if float(frameno) < 10:
+            zero = '000'
+        if float(frameno) >= 10 and (double)frameno < 100:
+            zero = '00'
+        if float(frameno) >= 100 and (double)frameno < 1000:
+            zero = '0'
+        filename = outfile.strip() + zero + frameno.strip() + '.fits'
+
+        # Get KOAID
+        if not koaid.koaid(header0, utDate):
+            logging.warning('rawfiles %s: Bad KOAID', instr)
+            logging.warning('rawfiles %s: Copying ' + fitsList[i] + ' to ' + ancDir + '/udf', instr)
+
+    endtime = float(endHour) * 3600.0
 
 '''
   This function will
 '''
 def deimos_find_fcs(logFile, stageDir):
-    continue
+    pass
+
