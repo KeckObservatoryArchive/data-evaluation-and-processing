@@ -12,21 +12,27 @@
 '''
 
 def getDirList(instr):
+    # Create an empty directory list
     dirs = [] 
+
+    # Initialize path variable to /s/sdata because all 
+    # paths begin with that 
     path = '/s/sdata'
 
+    # Look for the Keyword Supplied by the user
     if instr == 'DEIMOS':
+        # add the disk numbers for the instrument
         path += '100'
-        # add the instrument 
+        # DEIMOS has 3 disks associated with it
         for i in range(3):
             path2 = path + str(i+1)
-            # add the account number
+            # add the account numbers
             for i in range(20):
                 path3 =  path2 + '/deimos' + str(i+1)
+                # Append the path to the directory list
                 dirs.append(path3)
+            # Add the engineering folder
             dirs.append(path2 + '/dmoseng')
-    elif instr == 'ESI':
-        path += '70'
         for i in range(7):
             if i != 4:
                 path2 = path + str(i+1) + '/esi'
@@ -95,9 +101,9 @@ def getDirList(instr):
         for i in range(3):
             path2 = path + str(i) + '/nireseng'
             dirs.append(path2)
-    else:
+    else: # If you get here, you put in a wrong instrument keyword
         logging.basicConfig(filename='debug.log', level=logging.DEBUG)
         logging.warning('dep_locate %s: Could not find instrument %s', instr, instr)
-        print('dep_locate %s: Could not find instrument %s', instr, instr)
+        print('dep_locate %s: Could not find instrument %s'.format(instr, instr))
 
     return dirs
