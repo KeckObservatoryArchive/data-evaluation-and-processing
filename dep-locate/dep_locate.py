@@ -101,23 +101,23 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
                 try:
                     outfile = header0['ROOTNAME']
                 except KeyError:
-                    logging.warning('rawfiles {}: Bad Header found for {}'.format(instr, fitsList[i]))
-                    logging.warning('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsList[i], ancDir))
-                    udf = ancDir + '/udf'
-                    sp.run(['cp', '-p', fitsList[i], udf])
+                    move_bad_file(instr, fitsFile[i], ancDir, 'outfile')
                     continue
 
         # Get the frame number of the file
-        frameno = header0['FRAMENO'] 
         if outfile[:2] == 'kf':
             frameno = header0['IMGNUM']
-        if instr == 'MOSFIRE':
+        elif instr == 'MOSFIRE':
             frameno = header0['FRAMENUM']
-        if frameno=="":
-            frameno = header0['FILENUM']
-            if ERROR:
-                bad[i] = 1
-                continue
+        else:
+            try:
+                frameno = header0['FRAMENO']
+            except KeyError:
+                try:
+                    frameno = header0['FILENUM']
+                except KeyError:
+                    move_bad_file(instr, fitsFile[i], ancDir, 'frameno')
+                    continue
         if float(frameno) < 10:
             zero = '000'
         if float(frameno) >= 10 and (double)frameno < 100:
@@ -128,10 +128,19 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
 
         # Get KOAID
         if not koaid(header0, utDate):
-            logging.warning('rawfiles %s: Bad KOAID', instr)
-            logging.warning('rawfiles %s: Copying ' + fitsList[i] + ' to ' + ancDir + '/udf', instr)
+            move_bad_file(instr, fitsFile[i], ancDir, 'KOAID')
+            continue
+        try:
+            koa[i] = header0['KOAID']
+        except KeyError:
+            koa[i] = ''
+
+        # If filename is rootfile then file is a raw image
+        if filename == rootfile[i]:
+            raw[i] = 1
 
     endtime = float(endHour) * 3600.0
+    
 
 '''
   This function will
@@ -139,3 +148,11 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
 def deimos_find_fcs(logFile, stageDir):
     pass
 
+'''
+  This function logs the type of error encountered and moves the bad fits file to anc_dir/udf
+'''
+def move_bad_file(instr, fitsFile, ancDir, errorCode):
+    logging.warning('rawfiles {}: Bad {} found for {}'.format(instr, errorCode, fitsFile))
+    logging.warning('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
+    udfDir = ancDir + '/udf'
+    sp.run(['cp', '-p', fitsFile, udfDir])
