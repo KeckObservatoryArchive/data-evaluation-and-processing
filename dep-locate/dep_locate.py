@@ -15,6 +15,7 @@ import logging
 import subprocess as sub
 import listInstrDirs as locate
 from astropy.io import fits
+from common import koaid
 
 ''' 
  This function will search the data directories for data
@@ -38,38 +39,103 @@ def dep_locate(instr, utDate, stageDir):
   This function will 
 '''
 def dep_locfiles(instr, utDate, endHour, stageDir, logFile):
-    continue
+    pass
 
 '''
   This function will look for non-raw images, duplicate KOAIDs, 
   or bad dates for each fits file. 
+  
+  Written by Jeff Mader
+
+  Ported to Python3 by Matthew Brown
 '''
-def dep_rawfiles(instr, utDate, endHour,dataFile, stageDir, ancDir, logFile):
+def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
     # Change yyyy/mm/dd to yyyymmdd
-    date = utDate.replace('/','')
+    year, month, day = utDate.split('/')
+    date = year + month + day
 
-    # read input file data into an array
-    inputList = []
+    # date = utDate.replace('/','') # This will also work
 
-    # Loop through the data file and read in
-    for line in dataFile:
-        inputList.append(line)
+    # read input file list into an array
+    fitsList = []
 
-    raw = []
-    koa = []
-    rootfile = []
-    bad = []
-    for i in range(len(data)):
-        raw.append(0)
-        header0 = fits.getheader(dataFile)
-        root.append(inputList[i].split('/'))
-        rootfile.append(root[len(root)-1])
+    # Loop through the file list and read in
+    # the fits files found from within 24 hours
+    # of the given date
+    files = open(fileList, 'r')
+    for line in files:
+        fitsList.append(line)
 
-    # Get filename from header
-    #outfile = fits.(header0, 'OUTFILE')
+    # lsize = list size: get the size of the file list 
+    lsize = len(fitsList)
+
+    # Initialize lists with the number of fits files found
+    raw = [0]*lsize
+    koa = ['0']*lsize
+    rootfile = ['0']*lsize
+    bad = [0]*lsize
+
+    # Each line in the file list is a fits file
+    # We want to check the validity of each file
+    for i in range(lsize):
+        raw[i] = 0
+
+        # Get the header of the current fits file
+        header0 = fits.getheader(fitsList[i])
+
+        # Break the file path into a list
+        root = fitsList[i].split('/')
+
+        # Grab the last element in the filepath list
+        # This should be the filename *.fits
+        rootfile.append(root[-1])  
+
+        # Construct the filename from the header
+        # STOPPING HERE WORK ON ERROR STAT
+        if instr == 'MOSFIRE':
+            outfile = header0['DATAFILE']
+        else:
+            try:
+                outfile = header0['OUTFILE']
+            except KeyError:
+                try:
+                    outfile = header0['ROOTNAME']
+                except KeyError:
+                    logging.warning('rawfiles {}: Bad Header found for {}'.format(instr, fitsList[i]))
+                    logging.warning('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsList[i], ancDir))
+                    udf = ancDir + '/udf'
+                    sp.run(['cp', '-p', fitsList[i], udf])
+                    continue
+
+        # Get the frame number of the file
+        frameno = header0['FRAMENO'] 
+        if outfile[:2] == 'kf':
+            frameno = header0['IMGNUM']
+        if instr == 'MOSFIRE':
+            frameno = header0['FRAMENUM']
+        if frameno=="":
+            frameno = header0['FILENUM']
+            if ERROR:
+                bad[i] = 1
+                continue
+        if float(frameno) < 10:
+            zero = '000'
+        if float(frameno) >= 10 and (double)frameno < 100:
+            zero = '00'
+        if float(frameno) >= 100 and (double)frameno < 1000:
+            zero = '0'
+        filename = outfile.strip() + zero + frameno.strip() + '.fits'
+
+        # Get KOAID
+        if not koaid(header0, utDate):
+            logging.warning('rawfiles %s: Bad KOAID', instr)
+            logging.warning('rawfiles %s: Copying ' + fitsList[i] + ' to ' + ancDir + '/udf', instr)
+
+    endtime = float(endHour) * 3600.0
 
 '''
   This function will
 '''
 def deimos_find_fcs(logFile, stageDir):
-    continue
+    pass
+
