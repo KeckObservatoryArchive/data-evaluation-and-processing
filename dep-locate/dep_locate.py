@@ -51,7 +51,10 @@ def dep_locfiles(instr, utDate, endHour, stageDir, logFile):
 '''
 def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
     # Change yyyy/mm/dd to yyyymmdd
-    date = utDate.replace('/','')
+    year, month, day = utDate.split('/')
+    date = year + month + day
+
+    # date = utDate.replace('/','') # This will also work
 
     # read input file list into an array
     fitsList = []
@@ -59,46 +62,62 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
     # Loop through the file list and read in
     # the fits files found from within 24 hours
     # of the given date
-    for line in fileList:
+    files = open(fileList, 'r')
+    for line in files:
         fitsList.append(line)
 
-    # get the size of the inputList 
-    isize = len(fitsList)
+    # lsize = list size: get the size of the file list 
+    lsize = len(fitsList)
 
     # Initialize lists with the number of fits files found
-    raw = [0]*isize
-    koa = ['0']*isize
-    rootfile = ['0']*isize
-    bad = [0]*isize
+    raw = [0]*lsize
+    koa = ['0']*lsize
+    rootfile = ['0']*lsize
+    bad = [0]*lsize
 
     # Each line in the file list is a fits file
     # We want to check the validity of each file
-    for i in range(len(fitsList)):
+    for i in range(lsize):
         raw[i] = 0
-        header0 = fits.getheader(fitsList[i])
-        root = fitsList[i].split('/')
-        rootfile.append(root[len(root)-1])
 
-        # Get filename from header
-        # STOPPING HERE WORK ON ERROR STATE
-        outfile = header0['OUTFILE']
-        if outfile == "":
-            outfile = header0['ROOTNAME']
-            if instr == 'MOSFIRE':
-                frameno = header0['DATAFILE']
-            if ERROR:
-                bad[i]=1
-                break
-        frameno = header0['FRAMENO']
+        # Get the header of the current fits file
+        header0 = fits.getheader(fitsList[i])
+
+        # Break the file path into a list
+        root = fitsList[i].split('/')
+
+        # Grab the last element in the filepath list
+        # This should be the filename *.fits
+        rootfile.append(root[-1])  
+
+        # Construct the filename from the header
+        # STOPPING HERE WORK ON ERROR STAT
+        if instr == 'MOSFIRE':
+            outfile = header0['DATAFILE']
+        else:
+            try:
+                outfile = header0['OUTFILE']
+            except KeyError:
+                try:
+                    outfile = header0['ROOTNAME']
+                except KeyError:
+                    logging.warning('rawfiles {}: Bad Header found for {}'.format(instr, fitsList[i]))
+                    logging.warning('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsList[i], ancDir))
+                    udf = ancDir + '/udf'
+                    sp.run(['cp', '-p', fitsList[i], udf])
+                    continue
+
+        # Get the frame number of the file
+        frameno = header0['FRAMENO'] 
         if outfile[:2] == 'kf':
             frameno = header0['IMGNUM']
         if instr == 'MOSFIRE':
             frameno = header0['FRAMENUM']
-        if ERROR:
+        if frameno=="":
             frameno = header0['FILENUM']
             if ERROR:
                 bad[i] = 1
-                break
+                continue
         if float(frameno) < 10:
             zero = '000'
         if float(frameno) >= 10 and (double)frameno < 100:
@@ -108,7 +127,7 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
         filename = outfile.strip() + zero + frameno.strip() + '.fits'
 
         # Get KOAID
-        if not koaid.koaid(header0, utDate):
+        if not koaid(header0, utDate):
             logging.warning('rawfiles %s: Bad KOAID', instr)
             logging.warning('rawfiles %s: Copying ' + fitsList[i] + ' to ' + ancDir + '/udf', instr)
 
