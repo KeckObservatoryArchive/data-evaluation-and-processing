@@ -61,7 +61,10 @@ def koaid(keywords, utDate):
 
         instr = keywords['INSTRUME'].lower()
         outdir = keywords['OUTDIR']
-       # camera = keywords['CAMERA'].lower()
+        try:
+                camera = keywords['CAMERA'].lower()
+        except KeyError:
+                logging.warning('No keyword CAMERA exists for {}'.format(instr))
 
         if instr in instr_prefix:
                 prefix = instr_prefix[instr]
@@ -85,7 +88,7 @@ def koaid(keywords, utDate):
         elif instr == 'osiris':
                 if '/SCAM' in outdir:
                         prefix = 'OI'
-                elif '/SPEC' in 'osiris':
+                elif '/SPEC' in outdir:
                         prefix = 'OS'
         else:
                 print('Cannot determine prefix')
@@ -95,5 +98,3 @@ def koaid(keywords, utDate):
         koaid = prefix + '.' + utDate + '.' + totalSeconds.zfill(5) + '.fits'
         keywords['KOAID'] = koaid
         return True
-
-# testing pull requests - Matt
