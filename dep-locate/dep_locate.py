@@ -34,11 +34,39 @@ def dep_locate(instr, utDate, stageDir):
     verify_date(utDate)
     assert stageDir != '', 'stageDir value is blank'
 
+# Init of dep_locate. will come back to this later
+'''
+    if not sub.run(['mkdir','-p', ancDir+'/udf']):
+        logging.warning("Unable to create udf directory!")
+
+    oFileName = stageDir + '/dep_locate' + instr + '.txt'
+    ofile = open(oFileName, 'w')
+
+'''
+
     # Which sdata disk?
-    locate.getDirList(instr)
+    subdir = locate.getDirList(instr)
+    # locate did not return any dirs, so we exit
+    if len(subdir) == 0:
+        return
 
     # Locate FITS files written in the last 24 hours
-	
+    usedir = subdir
+    for i in range(1,2):
+        if i==1:
+            log_file = stageDir + "/dep_locate1" + instr + ".txt"
+        elif i==2:
+            log_file = stageDir + "/dep_locate2" + instr + ".txt"
+        file1 = stageDir + "/dep_locate" + instr + "1.txt"
+        file2 = stageDir + "/dep_locate" + instr + "2.txt"
+        file3 = stageDir + "/dep_locate" + instr + "3.txt"
+
+        # Day 1, if not last night
+        howold -= 1
+        if howold < 0:
+            sub.run(['find', usedir, '-mtime', howold, '-name', '\*.fits', '!', '-name', 'fcs\*.fits', '-fprintf', file1,'"%p %CT %CZ %CY/%Cm/%Cd\n"])
+        
+
     # Verify FITS files and create stageDir/dep_locateINSTR.txt
 
 
