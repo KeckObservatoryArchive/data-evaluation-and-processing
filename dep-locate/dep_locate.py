@@ -17,13 +17,19 @@ import listInstrDirs as locate
 from astropy.io import fits
 from common import koaid
 
-''' 
- This function will search the data directories for data
- written in the last howold*24 hours.
- Pre-condition: Requires an instrument, a date to check in UTC time, and a staging directory
- Post-condition: Returns all the fits files within 24 hours of the date given
-'''
 def dep_locate(instr, utDate, stageDir):
+    ''' 
+    This function will search the data directories for data  written in the last howold*24 hours.
+    Pre-condition: Requires an instrument, a date to check in UTC time, and a staging directory
+    Post-condition: Returns all the fits files within 24 hours of the date given
+    
+    @type instr: string
+    @param instr: The instrument used to make the fits files being looked at
+    @type utDate: datetime
+    @param utDate: The date in UT of the night that the fits tiles were taken
+    @type stageDir: string
+    @param stageDir: The staging area to store the files for transport to KOA
+    '''
     verify_instrument()
     verify_date(utDate)
     assert stageDir != '', 'stageDir value is blank'
@@ -38,10 +44,21 @@ def dep_locate(instr, utDate, stageDir):
 
 #-----------------------END DEP LOCATE----------------------------------
 
-'''
-  This function will 
-'''
 def dep_locfiles(instr, utDate, endHour, stageDir, logFile):
+    '''
+    This function will locate all the files within 24 hours of the given utDate
+
+    @type instr: string
+    @param instr: The instrument used to make the fits files being looked at
+    @type utDate: datetime
+    @param utDate: The date in UT of the night that the fits tiles were taken
+    @type endHour: datetime
+    @param endHour: The hour that the observations ended
+    @type stageDir: string
+    @param stageDir: The staging area to store the files for transport to KOA
+    @type logFile: string
+    @param logFile: The file to send all the warnings and debug statements
+    '''
     pass
 
 #-------------------------END DEP LOCFILES------------------------------
@@ -55,6 +72,21 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
     Written by Jeff Mader
     
     Ported to Python3 by Matthew Brown
+
+    @type instr: string
+    @param instr: The instrument used to make the fits files being looked at
+    @type utDate: datetime
+    @param utDate: The date in UT of the night that the fits tiles were taken
+    @type endHour: datetime
+    @param endHour: The hour that the observations ended
+    @type fileList: string
+    @param fileList: Text file that contains the fits filenames that occured within 24 hours of the given date
+    @type stageDir: string
+    @param stageDir: The staging area to store the files for transport to KOA
+    @type ancDir: string
+    @param ancDir: The anc directory to store the bad and corrupted fits files
+    @type logFile: string
+    @param logFile: The file to send all the warnings and debug statements
     '''
     # Change yyyy/mm/dd to yyyymmdd
     year, month, day = utDate.split('/')
