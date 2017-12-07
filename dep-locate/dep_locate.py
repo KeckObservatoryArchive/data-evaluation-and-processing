@@ -35,21 +35,27 @@ def dep_locate(instr, utDate, stageDir):
 	
     # Verify FITS files and create stageDir/dep_locateINSTR.txt
 
+
+#-----------------------END DEP LOCATE----------------------------------
+
 '''
   This function will 
 '''
 def dep_locfiles(instr, utDate, endHour, stageDir, logFile):
     pass
 
-'''
-  This function will look for non-raw images, duplicate KOAIDs, 
-  or bad dates for each fits file. 
-  
-  Written by Jeff Mader
+#-------------------------END DEP LOCFILES------------------------------
 
-  Ported to Python3 by Matthew Brown
-'''
 def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
+
+    '''
+    This function will look for non-raw images, duplicate KOAIDs, 
+    or bad dates for each fits file. 
+      
+    Written by Jeff Mader
+    
+    Ported to Python3 by Matthew Brown
+    '''
     # Change yyyy/mm/dd to yyyymmdd
     year, month, day = utDate.split('/')
     date = year + month + day
@@ -73,7 +79,6 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
     raw = [0]*lsize
     koa = ['0']*lsize
     rootfile = ['0']*lsize
-    bad = [0]*lsize
 
     # Each line in the file list is a fits file
     # We want to check the validity of each file
@@ -90,45 +95,16 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
         # This should be the filename *.fits
         rootfile.append(root[-1])  
 
-        # Construct the filename from the header
-        # STOPPING HERE WORK ON ERROR STAT
-        if instr == 'MOSFIRE':
-            outfile = header0['DATAFILE']
-        else:
-            try:
-                outfile = header0['OUTFILE']
-            except KeyError:
-                try:
-                    outfile = header0['ROOTNAME']
-                except KeyError:
-                    move_bad_file(instr, fitsFile[i], ancDir, 'outfile')
-                    continue
-
-        # Get the frame number of the file
-        if outfile[:2] == 'kf':
-            frameno = header0['IMGNUM']
-        elif instr == 'MOSFIRE':
-            frameno = header0['FRAMENUM']
-        else:
-            try:
-                frameno = header0['FRAMENO']
-            except KeyError:
-                try:
-                    frameno = header0['FILENUM']
-                except KeyError:
-                    move_bad_file(instr, fitsFile[i], ancDir, 'frameno')
-                    continue
-        if float(frameno) < 10:
-            zero = '000'
-        if float(frameno) >= 10 and (double)frameno < 100:
-            zero = '00'
-        if float(frameno) >= 100 and (double)frameno < 1000:
-            zero = '0'
-        filename = outfile.strip() + zero + frameno.strip() + '.fits'
+        # Construct the original file name
+        filename, successful = construct_filename(instr,fitsFile[i], ancDir, header0)
+        if not successful:
+            raw[i] = 2
+            continue
 
         # Get KOAID
         if not koaid(header0, utDate):
-            move_bad_file(instr, fitsFile[i], ancDir, 'KOAID')
+            move_bad_file(instr, fitsFile[i], ancDir, 'Bad KOAID')
+            raw[i] = 2
             continue
         try:
             koa[i] = header0['KOAID']
@@ -140,19 +116,121 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, logFile):
             raw[i] = 1
 
     endtime = float(endHour) * 3600.0
-    
 
-'''
-  This function will
-'''
+    for i in range(len(fitsList)):
+        # Is this a duplicate KOAID?
+        if raw[i] == 2:
+            continue
+        elif raw[i] == 0:
+            for j in range(i+1,len(fitsList)):
+                if koa[j]==koa[i]: # j will always be greater than i
+                    move_bad_file(instr, fitsFile[i], ancDir, 'Duplicate KOAID')
+                    break
+
+        # Check the date
+        prefix, fdate, ftime, postfix = koa[i].split('.')
+        if fdate != date and float(ftime) < endtime:
+            move_bad_file(instr, fitsFile[i], ancDir, 'KOADATE')
+            break
+        print(fitsFile[i])
+
+    
+#------------------END RAWFILES-----------------------------
+
 def deimos_find_fcs(logFile, stageDir):
+    '''
+    This function will
+    '''
     pass
 
-'''
-  This function logs the type of error encountered and moves the bad fits file to anc_dir/udf
-'''
+#------------------END DEIMOS FIND FCS---------------------
+
 def move_bad_file(instr, fitsFile, ancDir, errorCode):
-    logging.warning('rawfiles {}: Bad {} found for {}'.format(instr, errorCode, fitsFile))
+    """ 
+    Log the error where the fits file failed and copy the fits file to the anc directory
+
+    This function logs the type of error encountered and moves the bad fits file to anc_dir/udf
+    
+    @type instr: string
+    @param instr: The keyword for the instrument being searched
+    @type fitsFile: string
+    @param fitsFile: The filename of the fits file being observed
+    @type ancDir: string
+    @param ancDir: The path to the anc directory
+    @type errorCode: string
+    @param errorCode: How the fits file failed. Used in the logging
+    """
+    if errorCode == 'KOADATE':
+        logging.warning('rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
+    else:
+        logging.warning('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
     logging.warning('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
     udfDir = ancDir + '/udf'
-    sp.run(['cp', '-p', fitsFile, udfDir])
+    if not sub.run(['cp', '-p', fitsFile, udfDir]):
+        logging.warning('File was not copied')
+        print('File was not copied')
+
+#-------------End move-bad-file()---------------------------
+
+def construct_filename(instr, fitsFile, ancDir, keywords):
+    """
+    Constructs the original filename from the fits header keywords
+
+    @type instr: string
+    @param instr: The keyword for the instrument
+    @type fitsFile: string
+    @param fitsFile: The current fits file being observed
+    @type ancDir: str
+    @param ancDir: The anc directory to move bad files
+    @type keywords: dictionary
+    @param keywords: The pairing of all the fits keywords with their values
+    """
+   if instr == 'OSIRIS': # Osiris already has the raw filename under DATAFILE
+       filename = keywords['DATAFILE']
+       # but the i file needs .fits added to it
+       if filename[0] == 'i':
+           filename = filename + '.fits'
+   elif instr == 'MOSFIRE':
+       outfile = keywords['DATAFILE']
+   else:
+       try:
+           outfile = keywords['OUTFILE']
+       except KeyError:
+           try:
+               outfile = keywords['ROOTNAME']
+           except KeyError:
+               move_bad_file(instr, fitsFile, ancDir, 'Bad Outfile')
+               return '', False
+
+   # Get the frame number of the file
+   if outfile[:2] == 'kf':
+       frameno = keywords['IMGNUM']
+   elif instr == 'MOSFIRE':
+       frameno = keywords['FRAMENUM']
+   else:
+       try:
+           frameno = keywords['FRAMENO']
+       except KeyError:
+           try:
+               frameno = keywords['FILENUM']
+           except KeyError:
+               try:
+                   frameno = keywords['FILENUM2']
+               except KeyError:
+                   move_bad_file(instr, fitsFile, ancDir, 'Bad Frameno')
+                   return '', False
+
+   # Determine the amount of 0 padding that must be done
+   zero = ''
+   if float(frameno) < 10:
+       zero = '000'
+   elif float(frameno) >= 10 and float(frameno) < 100:
+       zero = '00'
+   elif float(frameno) >= 100 and float(frameno) < 1000:
+       zero = '0'
+   
+   # Construct the original file name from the previous parts
+   filename = outfile.strip() + zero + frameno.strip() + '.fits'
+   return filename, True
+
+#---------------------End construct_filename-------------------------
