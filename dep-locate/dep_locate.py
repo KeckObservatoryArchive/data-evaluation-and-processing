@@ -58,13 +58,23 @@ def dep_locate(instr, utDate, stageDir):
         file2 = stageDir + "/dep_locate" + instr + "2.txt"
         file3 = stageDir + "/dep_locate" + instr + "3.txt"
 
+        # Create the FileHandlers for the fitsList files
+        writer = logging.getLogger('fitsLocs')
+        writer.setLevel(logging.INFO)
+
+        file1 = logging.FileHandler(file1)
+        file2 = logging.FileHandler(file2)
+        file3 = logging.FileHandler(file3)
+
+        listFormatter = logging.Formatter(
+
         # Day 1, if not last night
         howold -= 1
         if howold >= 0:
             pyfind(usedir, howold, file1)
 
             # Write it to the log
-            logger.info('dep_locate {}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, file1))
+            writer.info('dep_locate {}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, file1))
         else:
             sub.run(['touch', file1])
 
@@ -340,14 +350,13 @@ def pyfind(usedir, howold, outfile):
 
 #-----------------------End PyFind-----------------------------------
 
-
 ### Set up logging ###
 # We need 1 file handler per log and 1 logger per thing we want to track
 logger = logging.getLogger(__main__)
 logger.setLevel(logging.WARNING)
 
 # create a file handler
-debugger = logging.FileHandler('debug.log')
+debugger = logging.FileHandler('tebug.log')
 debugger.setLevel(logging.WARNING)
 
 # Create a logging format
@@ -356,3 +365,4 @@ handler.setFormatter(formatter)
 
 # add handlers to the logger
 logger.addHandler(handler)
+
