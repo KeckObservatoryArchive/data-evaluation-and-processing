@@ -38,10 +38,6 @@ def dep_locate(instr, utDate, stageDir):
 '''
     if not sub.run(['mkdir','-p', ancDir+'/udf']):
         logging.warning("Unable to create udf directory!")
-
-    oFileName = stageDir + '/dep_locate' + instr + '.txt'
-    ofile = open(oFileName, 'w')
-
 '''
 
     # Which sdata disk?
@@ -63,8 +59,44 @@ def dep_locate(instr, utDate, stageDir):
 
         # Day 1, if not last night
         howold -= 1
-        if howold < 0:
-            sub.run(['find', usedir, '-mtime', howold, '-name', '\*.fits', '!', '-name', 'fcs\*.fits', '-fprintf', file1,'"%p %CT %CZ %CY/%Cm/%Cd\n"])
+        if howold >= 0:
+            pyfind(usedir, howold, file1)
+
+            # Write it to the log
+            logger.info('dep_locate {}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, file1))
+        else:
+            sub.run(['touch', file1])
+
+        # Day 2
+        howold += 1
+        pyfind(usedir, howold, file2)
+
+        # Day 3
+        howold += 1
+        pyfind(usedir, howold, file3)
+        howold -= 1
+
+        # We only wants the .fits files
+        logger.info('dep_locate {}: cat {} {} {} > {}'.format(instr, file1, file2, file3, log_file))
+        sub.run(['grep', '-h', '.fits', file1, file2, file3, '|', 'grep', '-v', 'mira', '|', 'grep', '-v', 'savier-protected', '>>', log_file])
+        sub.run(['grep', '-h', '.fits', file1, file2, file3, '|', 'grep', '-v', 'mira', '|', 'grep', '-v', 'savier-protected'])
+        sub.run(['rm', '-r', file1, file2, file3])
+
+        # Look for files within the requested 24 hour period
+        logger.info('dep_locate {}: dep_locfiles {} dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
+        dep_locate(instr, utDate, endHour, stageDir, log_file)
+        logger.info('dep_locate {}: finished dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
+
+        if i==2:
+            linecount2 = 0
+            f = open(log_file)
+            for line in f:
+                linecount2 += 1
+            if linecount2 > linecount1:
+                dep_rawfiles(instr, utDate, endHour, logFile, stageDir, ancDir)
+        logger.info('dep_locate {}: here1 {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, ancDir))
+
+        # Number of files for each case
         
 
     # Verify FITS files and create stageDir/dep_locateINSTR.txt
@@ -221,13 +253,13 @@ def move_bad_file(instr, fitsFile, ancDir, errorCode):
     @param errorCode: How the fits file failed. Used in the logging
     """
     if errorCode == 'KOADATE':
-        logging.warning('rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
+        logger.warning('rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
     else:
-        logging.warning('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
-    logging.warning('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
+        logger.warning('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
+    logger.warning('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
     udfDir = ancDir + '/udf'
     if not sub.run(['cp', '-p', fitsFile, udfDir]):
-        logging.warning('File was not copied')
+        logger.warning('File was not copied')
         print('File was not copied')
 
 #-------------End move-bad-file()---------------------------
@@ -294,3 +326,42 @@ def construct_filename(instr, fitsFile, ancDir, keywords):
    return filename, True
 
 #---------------------End construct_filename-------------------------
+
+def pyfind(usedir, howold, outfile):
+    """
+    Uses the subprocess run function to call the find command which searches the given directories for files ending in .fits
+
+    @type usedir: string
+    @param usedir: The directory that we want to search in
+    @type howold: string
+    @param howold: How old the file can be
+    @type outfile: string
+    @param outfile: Where we want to store the output
+    """
+    # The format which we want to output text into the log as
+    oformat = "%p %CT %CZ %CY/%Cm/%Cd\n"
+
+    # Run the command
+    sub.run(['find', usedir, '-mtime', howold, '-name', '*.fits', '!', '-name', 'fcs*.fits', '-fprintf', outfile, oformat])
+    
+    # Append the action to the log
+    logger.warning('dep_locate {}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, file1))
+
+#-----------------------End PyFind-----------------------------------
+
+
+### Set up logging ###
+# We need 1 file handler per log and 1 logger per thing we want to track
+logger = logging.getLogger(__main__)
+logger.setLevel(logging.WARNING)
+
+# create a file handler
+debugger = logging.FileHandler('debug.log')
+debugger.setLevel(logging.WARNING)
+
+# Create a logging format
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# add handlers to the logger
+logger.addHandler(handler)
