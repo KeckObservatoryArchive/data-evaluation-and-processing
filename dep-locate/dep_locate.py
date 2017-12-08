@@ -48,6 +48,7 @@ def dep_locate(instr, utDate, stageDir):
 
     # Locate FITS files written in the last 24 hours
     usedir = subdir
+    # for loop was to detect alt_dir for files. remove
     for i in range(1,2):
         if i==1:
             log_file = stageDir + "/dep_locate1" + instr + ".txt"
@@ -84,23 +85,13 @@ def dep_locate(instr, utDate, stageDir):
 
         # Look for files within the requested 24 hour period
         logger.info('dep_locate {}: dep_locfiles {} dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
-        dep_locate(instr, utDate, endHour, stageDir, log_file)
+        dep_locfiles(instr, utDate, endHour, stageDir, log_file)
         logger.info('dep_locate {}: finished dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
 
-        if i==2:
-            linecount2 = 0
-            f = open(log_file)
-            for line in f:
-                linecount2 += 1
-            if linecount2 > linecount1:
-                dep_rawfiles(instr, utDate, endHour, logFile, stageDir, ancDir)
-        logger.info('dep_locate {}: here1 {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, ancDir))
+        dep_rawfiles(instr, utDate, endHour, logFile, stageDir, ancDir)
+        logger.info('dep_locate {}: finished rawfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, ancDir))
 
-        # Number of files for each case
-        
-
-    # Verify FITS files and create stageDir/dep_locateINSTR.txt
-
+        # 
 
 #-----------------------END DEP LOCATE----------------------------------
 
