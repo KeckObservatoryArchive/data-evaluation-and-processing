@@ -11,11 +11,14 @@
   Ported to Python3 by Matthew Brown
 '''
 
-import logging
+import logging as lg
 import subprocess as sub
 import listInstrDirs as locate
 from astropy.io import fits
 from common import koaid
+from os import makedirs as os.makedirs
+from os import mkdir as os.mkdir
+from os import getlogin as os.getlogin
 
 def dep_locate(instr, utDate, stageDir):
     ''' 
@@ -30,78 +33,96 @@ def dep_locate(instr, utDate, stageDir):
     @type stageDir: string
     @param stageDir: The staging area to store the files for transport to KOA
     '''
+
+    ### Set up logging ###
+    user = os.getlogin()
+    log_writer = lg.getLogger('dep_locate <' + user +'>')
+    log_writer.setLevel(lg.INFO)
+    
+    # create a file handler
+    log_handler = lg.FileHandler('debug.log')
+    log_handler.setLevel(lg.INFO)
+    
+    # Create a logging format
+    formatter = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+    log_handler.setFormatter(formatter)
+    
+    # add handlers to the logger
+    log_writer.addHandler(log_handler)
+
+    # Verify instrument and date are in the correct format
     verify_instrument()
     verify_date(utDate)
+
+    # Make sure the staging directory is not blank
     assert stageDir != '', 'stageDir value is blank'
 
-# Init of dep_locate. will come back to this later
-'''
-    if not sub.run(['mkdir','-p', ancDir+'/udf']):
-        logging.warning("Unable to create udf directory!")
-'''
+    # Create the udf directory in the anc_dir
+    try:
+        os.mkdir(ancDir + '/udf')
+    except FileExistsError:
+        log_writer.warning('udf directory already exists!')
+    except:
+        log_writer.warning('Unable to create udf directory!')
 
     # Which sdata disk?
     subdir = locate.getDirList(instr)
-    # locate did not return any dirs, so we exit
+
+    # if locate did not return any dirs, we exit
     if len(subdir) == 0:
+        log_writer.warn('did not find any directories')
         return
 
     # Locate FITS files written in the last 24 hours
     usedir = subdir
-    # for loop was to detect alt_dir for files. remove
-    for i in range(1,2):
-        if i==1:
-            log_file = stageDir + "/dep_locate1" + instr + ".txt"
-        elif i==2:
-            log_file = stageDir + "/dep_locate2" + instr + ".txt"
-        file1 = stageDir + "/dep_locate" + instr + "1.txt"
-        file2 = stageDir + "/dep_locate" + instr + "2.txt"
-        file3 = stageDir + "/dep_locate" + instr + "3.txt"
 
-        # Create the FileHandlers for the fitsList files
-        writer = logging.getLogger('fitsLocs')
-        writer.setLevel(logging.INFO)
+    # Create files to store the valid FITS files
+    log_file = stageDir + "/dep_locate" + instr + ".txt"
+    files = []
+    for i in range(1,4):
+        filename = stageDir + "/dep_locate" + instr + i + ".txt"
+        files.append(filename)
 
-        file1 = logging.FileHandler(file1)
-        file2 = logging.FileHandler(file2)
-        file3 = logging.FileHandler(file3)
+    # Day 1, if not last night
+    howold -= 1
+    if howold >= 0:
+        pyfind(usedir, howold, files[0], log_writer)
 
-        listFormatter = logging.Formatter(
+        # Write it to the log
+        log_writer.info('{}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, files[0]))
 
-        # Day 1, if not last night
-        howold -= 1
-        if howold >= 0:
-            pyfind(usedir, howold, file1)
+    # Day 2
+    howold += 1
+    pyfind(usedir, howold, files[1], log_writer)
 
-            # Write it to the log
-            writer.info('dep_locate {}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, file1))
-        else:
-            sub.run(['touch', file1])
+    # Day 3
+    howold += 1
+    pyfind(usedir, howold, files[2], log_writer)
+    howold -= 1
 
-        # Day 2
-        howold += 1
-        pyfind(usedir, howold, file2)
+    # We only wants the .fits files
+    logwriter.info('{}: cat {} {} {} > {}'.format(instr, files[0], files[1], files[2], log_file))
+    with open(log_file, 'w') as log:
+        for i in range(3):
+            with open(files[i], 'r') as f:
+                for line in f:
+                    if '.fits' in line and 'mira' not in line and 'savier-protected' not in line:
+                        log.write(line)
+    
+    # Remove the temporary files
+    os.remove(files[0])
+    os.remove(files[1])
+    os.remove(files[2])
 
-        # Day 3
-        howold += 1
-        pyfind(usedir, howold, file3)
-        howold -= 1
+    # Look for files within the requested 24 hour period
+    log_writer.info('{}: dep_locfiles {} dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
+    dep_locfiles(instr, utDate, endHour, stageDir, log_file)
+    log_writer.info('{}: finished dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
 
-        # We only wants the .fits files
-        logger.info('dep_locate {}: cat {} {} {} > {}'.format(instr, file1, file2, file3, log_file))
-        sub.run(['grep', '-h', '.fits', file1, file2, file3, '|', 'grep', '-v', 'mira', '|', 'grep', '-v', 'savier-protected', '>>', log_file])
-        sub.run(['grep', '-h', '.fits', file1, file2, file3, '|', 'grep', '-v', 'mira', '|', 'grep', '-v', 'savier-protected'])
-        sub.run(['rm', '-r', file1, file2, file3])
+    dep_rawfiles(instr, utDate, endHour, logFile, stageDir, ancDir)
+    log_writer.info('{}: finished rawfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, ancDir))
 
-        # Look for files within the requested 24 hour period
-        logger.info('dep_locate {}: dep_locfiles {} dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
-        dep_locfiles(instr, utDate, endHour, stageDir, log_file)
-        logger.info('dep_locate {}: finished dep_locfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, log_file))
-
-        dep_rawfiles(instr, utDate, endHour, logFile, stageDir, ancDir)
-        logger.info('dep_locate {}: finished rawfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, ancDir))
-
-        # 
+    # 
 
 #-----------------------END DEP LOCATE----------------------------------
 
@@ -328,7 +349,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords):
 
 #---------------------End construct_filename-------------------------
 
-def pyfind(usedir, howold, outfile):
+def pyfind(usedir, howold, outfile, logfile):
     """
     Uses the subprocess run function to call the find command which searches the given directories for files ending in .fits
 
@@ -346,23 +367,8 @@ def pyfind(usedir, howold, outfile):
     sub.run(['find', usedir, '-mtime', howold, '-name', '*.fits', '!', '-name', 'fcs*.fits', '-fprintf', outfile, oformat])
     
     # Append the action to the log
-    logger.warning('dep_locate {}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, file1))
+    logfile.info('{}: /usr/bin/find {} -mtime {} -fprintf {}'.format(instr, usedir, howold, outfile))
 
 #-----------------------End PyFind-----------------------------------
 
-### Set up logging ###
-# We need 1 file handler per log and 1 logger per thing we want to track
-logger = logging.getLogger(__main__)
-logger.setLevel(logging.WARNING)
-
-# create a file handler
-debugger = logging.FileHandler('tebug.log')
-debugger.setLevel(logging.WARNING)
-
-# Create a logging format
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-
-# add handlers to the logger
-logger.addHandler(handler)
 
