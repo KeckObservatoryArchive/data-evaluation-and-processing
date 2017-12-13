@@ -69,6 +69,7 @@ def dep_locate(instr, utDate, stageDir):
         log_writer.warning('udf directory already exists!')
     except:
         log_writer.warning('Unable to create udf directory!')
+        return
 
     # Which sdata disk?
     usedir = locate.getDirList(instr)
@@ -98,7 +99,7 @@ def dep_locate(instr, utDate, stageDir):
     
     # Verify the files are valid - no corrupt headers, valid KOAID
     dep_rawfiles(instr, utDate, endHour, files, stageDir, ancDir, log_writer)
-    log_writer.info('{}: finished rawfiles {} {} {} {} {}'.format(instr, instr, utDate, endHour, stageDir, ancDir))
+    log_writer.info('{0}: finished rawfiles {0} {1} {2} {3} {4}'.format(instr, utDate, endHour, stageDir, ancDir))
 
     log_writer.info('{}: Using files found in {}'.format(instr, usedir))
     log_writer.info('{}: dep_locate successful'.format(instr))
@@ -127,7 +128,7 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
     @param stageDir: The staging area to store the files for transport to KOA
     @type ancDir: string
     @param ancDir: The anc directory to store the bad and corrupted fits files
-    @type log_writer: Logger
+    @type log_writer: Logger Object
     @param log_writer: The log handler for the script. Writes to the logfile
     '''
     # Change yyyy/mm/dd to yyyymmdd
@@ -136,8 +137,6 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
     elif '-' in utDate:
         year, month, day = utDate.split('')
     date = year + month + day
-
-    # date = utDate.replace('/','') # This will also work
 
     # read input file list into an array
     fitsList = []
@@ -173,14 +172,14 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
         rootfile.append(root[-1])  
 
         # Construct the original file name
-        filename, successful = construct_filename(instr,fitsFile[i], ancDir, header0)
+        filename, successful = construct_filename(instr,fitsFile[i], ancDir, header0, log_writer)
         if not successful:
             raw[i] = 2
             continue
 
         # Get KOAID
         if not koaid(header0, utDate):
-            move_bad_file(instr, fitsFile[i], ancDir, 'Bad KOAID')
+            move_bad_file(instr, fitsFile[i], ancDir, 'Bad KOAID', log_writer)
             raw[i] = 2
             continue
         try:
@@ -194,36 +193,25 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
 
     endtime = float(endHour) * 3600.0
 
-    for i in range(len(fitsList)):
+    for i in range(len(fitsList)-1):
         # Is this a duplicate KOAID?
         if raw[i] == 2:
             continue
         elif raw[i] == 0:
             for j in range(i+1,len(fitsList)):
                 if koa[j]==koa[i]: # j will always be greater than i
-                    move_bad_file(instr, fitsFile[i], ancDir, 'Duplicate KOAID')
+                    move_bad_file(instr, fitsFile[i], ancDir, 'Duplicate KOAID', log_writer)
                     break
 
         # Check the date
         prefix, fdate, ftime, postfix = koa[i].split('.')
         if fdate != date and float(ftime) < endtime:
-            move_bad_file(instr, fitsFile[i], ancDir, 'KOADATE')
+            move_bad_file(instr, fitsFile[i], ancDir, 'KOADATE', log_writer)
             break
         print(fitsFile[i])
 
     
 #------------------END RAWFILES-----------------------------
-
-def deimos_find_fcs(logFile, stageDir):
-    '''
-    This function will
-    
-    @type log_writer: Logger
-    @param log_writer: The log handler for the script. Writes to the logfile
-    '''
-    pass
-
-#------------------END DEIMOS FIND FCS---------------------
 
 def move_bad_file(instr, fitsFile, ancDir, errorCode, log_writer):
     """ 
@@ -239,7 +227,7 @@ def move_bad_file(instr, fitsFile, ancDir, errorCode, log_writer):
     @param ancDir: The path to the anc directory
     @type errorCode: string
     @param errorCode: How the fits file failed. Used in the logging
-    @type log_writer: Logger
+    @type log_writer: Logger Object
     @param log_writer: The log handler for the script. Writes to the logfile
     """
     if errorCode == 'KOADATE':
@@ -248,9 +236,11 @@ def move_bad_file(instr, fitsFile, ancDir, errorCode, log_writer):
         log_writer.warn('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
     log_writer.info('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
     udfDir = ancDir + '/udf/'
-    if not cp(fitsFile, udfDir):
-        log_writer.warn('File was not copied')
-        print('File was not copied')
+    try:
+        # Use copy2 from shutil to copy the file with its metadata
+        sh.cp(fitsFile, udfDir)
+    except:
+        log_writer.warn('{}: {} file was not copied!!'.format(instr, fitsFile))
 
 #-------------End move-bad-file()---------------------------
 
@@ -266,7 +256,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
     @param ancDir: The anc directory to move bad files
     @type keywords: dictionary
     @param keywords: The pairing of all the fits keywords with their values
-    @type log_writer: Logger
+    @type log_writer: Logger Object
     @param log_writer: The log handler for the script. Writes to the logfile
     """
    if instr == 'OSIRIS': # Osiris already has the raw filename under DATAFILE
@@ -274,6 +264,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
        # but the i file needs .fits added to it
        if filename[0] == 'i':
            filename = filename + '.fits'
+       return filename, True
    elif instr == 'MOSFIRE':
        outfile = keywords['DATAFILE']
    else:
@@ -329,7 +320,7 @@ def pyfind(usedir,utDate, outfile, log_writer):
     @param utDate: The date of observation of the files we want to search for
     @type outfile: string
     @param outfile: Where we want to store the output
-    @type log_writer: Logger
+    @type log_writer: Logger Object
     @param log_writer: The log handler for the script. Writes to the logfile
     """
     # Break utDate into its pieces
@@ -337,6 +328,7 @@ def pyfind(usedir,utDate, outfile, log_writer):
         year, month, day = utDate.split('/')
     elif '-' in utDate:
         year, month, day = utDate.split('-')
+    # Set up our +/-24 hour boundary
     dayMin = day - 1
     dayMax = day + 1
 
@@ -345,6 +337,9 @@ def pyfind(usedir,utDate, outfile, log_writer):
     utMinTime = str(year)+str(month)+str(dayMin) + ' 20:00:00' # default 20:00:00, change if necessary
     
     # st_mtime records the time in seconds of the last file modification since Jan 1 1970 00:00:00 UTC
+    # We need to create a time_construct object (using time.strptime())
+    # to convert to seconds (using calendar.timegm())
+    # All valid files should fall within these boundaries
     maxTimeSinceMod = cal.timegm(t.strptime(utMaxTime, '%Y%m%d %H:%M:%S'))
     minTimeSinceMod = cal.timegm(t.strptime(utMinTime, '%Y%m%d %H:%M:%S'))
 
@@ -356,10 +351,10 @@ def pyfind(usedir,utDate, outfile, log_writer):
             for root, dirs, files in os.walk(fitsDir):
                 # Iterate through the leaf files in the directory
                 for item in files:
-                    # Create the path to the file we want to check
+                    # Create the path to the current file we want to check
                     full_path = root + '/' + item
                     # Check to see if the file is a fits file created/modified in the last day
-                    # st_mtime needs to be greater than the maxTimeSinceMod to be within the past 24 hours
+                    # st_mtime needs to be greater than the minTimeSinceMod to be within the past 24 hours
                     modTime = os.stat(full_path).st_mtime
                     if '.fits' in item[-5:] and modTime < maxTimeSinceMod and modTime > minTimeSinceMod:
                         ofile.write(item)

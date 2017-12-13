@@ -11,7 +11,16 @@
     11/30/2017
 '''
 
-def getDirList(instr):
+def getDirList(instr, log_writer):
+    '''
+    This function takes an instrument and generates all the storage locations of that instrument
+
+    @type instr: string
+    @param instr: The keyword for the instrument being examined
+    @type log_writer: Logger Object
+    @param log_writer: Writes messages to the log file
+    '''
+
     # Create an empty directory list
     dirs = [] 
 
@@ -102,8 +111,7 @@ def getDirList(instr):
             path2 = path + str(i) + '/nireseng'
             dirs.append(path2)
     else: # If you get here, you put in a wrong instrument keyword
-        logging.basicConfig(filename='debug.log', level=logging.DEBUG)
-        logging.warning('dep_locate %s: Could not find instrument %s', instr, instr)
-        print('dep_locate %s: Could not find instrument %s'.format(instr, instr))
+        log_writer.warn('dep_locate %s: Could not find instrument %s', instr, instr)
+        return []
 
     return dirs
