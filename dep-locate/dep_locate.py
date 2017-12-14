@@ -68,7 +68,7 @@ def dep_locate(instr, utDate, stageDir):
     except FileExistsError:
         log_writer.warning('udf directory already exists!')
     except:
-        log_writer.warning('Unable to create udf directory!')
+        log_writer.error('Unable to create udf directory!')
         return
 
     # Which sdata disk?
@@ -76,7 +76,7 @@ def dep_locate(instr, utDate, stageDir):
 
     # if locate did not return any dirs, we exit
     if len(usedir) == 0:
-        log_writer.warn('did not find any directories')
+        log_writer.warning('did not find any directories')
         return
 
     # Create files to store the valid FITS files
@@ -231,16 +231,16 @@ def move_bad_file(instr, fitsFile, ancDir, errorCode, log_writer):
     @param log_writer: The log handler for the script. Writes to the logfile
     """
     if errorCode == 'KOADATE':
-        log_writer.warn('rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
+        log_writer.warning('rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
     else:
-        log_writer.warn('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
+        log_writer.warning('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
     log_writer.info('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
     udfDir = ancDir + '/udf/'
     try:
         # Use copy2 from shutil to copy the file with its metadata
         sh.cp(fitsFile, udfDir)
     except:
-        log_writer.warn('{}: {} file was not copied!!'.format(instr, fitsFile))
+        log_writer.error('{}: {} file was not copied!!'.format(instr, fitsFile))
 
 #-------------End move-bad-file()---------------------------
 
