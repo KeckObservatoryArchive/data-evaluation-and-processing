@@ -5,13 +5,15 @@ DEIMOS specific DR techniques can be added to it in the future
 12/14/2017 M. Brown - Created initial file
 '''
 
+import instrument
+
 class Deimos(instrument.Instrument):
     def __init__(self):
         # Call the parent init to get all the shared variables
-        super(Deimos, self).__init__(self)
+        super().__init__()
 
         # DEIMOS uses DATAFILE instead of OUTFILE
-        self.root = 'DATAFILE'
+        self.root = 'OUTFILE'
         # DEIMOS uses FRAMENUM instead of FRAMENO
         self.frameno = 'FRAMENUM'
         # Set the deimos specific paths to anc and stage
