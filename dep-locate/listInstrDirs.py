@@ -33,59 +33,59 @@ def getDirList(instr, log_writer):
         # add the disk numbers for the instrument
         path += '100'
         # DEIMOS has 3 disks associated with it
-        for i in range(3):
-            path2 = path + str(i+1)
+        for i in range(1,4):
+            path2 = path + str(i)
             # add the account numbers
-            for i in range(20):
-                path3 =  path2 + '/deimos' + str(i+1)
+            for j in range(1,21):
+                path3 =  path2 + '/deimos' + str(j)
                 # Append the path to the directory list
                 dirs.append(path3)
             # Add the engineering folder
             dirs.append(path2 + '/dmoseng')
-        for i in range(7):
-            if i != 4:
-                path2 = path + str(i+1) + '/esi'
-                for i in range(20):
-                    path3 = path2 + str(i+1)
+        for i in range(1,8):
+            if i != 5:
+                path2 = path + str(i) + '/esi'
+                for j in range(1,21):
+                    path3 = path2 + str(j)
                     dirs.append(path3)
                 dirs.append(path2 + 'eng')  
     elif instr == 'HIRES':
         path += '12'
-        for i in range(3):
-            path2 = path + str(i+5) + '/hires'
-            for i in range(20):
-                path3 = path2 + str(i+1)
+        for i in range(1,4):
+            path2 = path + str(i+4) + '/hires'
+            for j in range(1,21):
+                path3 = path2 + str(j)
                 dirs.append(path3)
             dirs. append(path2 + 'eng')   
     elif instr == 'LRIS':
         path += '24'
-        for i in range(3):
-            path2 = path + str(i+1) + '/lris'
-            for i in range(20):
-                path3 = path2 + str(i+1)   
+        for i in range(1,4):
+            path2 = path + str(i) + '/lris'
+            for j in range(1,21):
+                path3 = path2 + str(j)   
                 dirs.append(path3)
             dirs.append(path2 + 'eng')    
     elif instr == 'MOSFIRE':
         path += '1300'    
-        for i in range(9):
-            path2 = path + '/mosfire' + str(i+1)   
+        for i in range(1,10):
+            path2 = path + '/mosfire' + str(i)   
             dirs.append(path2)
         dirs.append(path + '/moseng')    
         dirs.append(path + '/mosfire')
     elif instr == 'NIRC2':
         path += '90'
-        for i in range(5):
+        for i in range(1,6):
             path2 = path + str(i) + '/nirc'
-            for i in range(20):
-                path3 = path2 + str(i+1)    
+            for j in range(1,21):
+                path3 = path2 + str(j)    
                 dirs.append(path3)
         dirs.append(path2 + '2eng')
     elif instr == 'NIRSPEC':
         path += '60'
         for i in range(4):
             path2 = path + str(i) 
-            for i in range(20):
-                path3 = path2 + '/nspec' + str(i+1) 
+            for j in range(1,21):
+                path3 = path2 + '/nspec' + str(j) 
                 dirs.append(path3)
             dirs.append(path2 + '/nirspec')
             dirs.append(path2 + '/nspeceng')
@@ -93,16 +93,16 @@ def getDirList(instr, log_writer):
         path += '110'    
         for i in range(2):
             path2 = path + str(i)
-            for i in range(20):
-                path3 = path2 + '/osiris'  + str(i+1)
+            for j in range(1,21):
+                path3 = path2 + '/osiris'  + str(j)
                 dirs.append(path3)
             dirs.append(path2 + '/osiriseng')
             dirs.append(path2 + 'osrseng')
             dirs.append(path2)
     elif instr == 'KCWI':
         path += '1400/kcwi'
-        for i in range(9):
-            path2 = path + str(i+1)
+        for i in range(1,10):
+            path2 = path + str(i)
             dirs.append(path2)
         dirs.append(path + 'dev')
     elif instr == 'NIRES':
