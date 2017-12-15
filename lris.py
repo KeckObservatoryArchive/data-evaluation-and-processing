@@ -5,10 +5,12 @@ LRIS specific DR techniques can be added to it in the future
 12/14/2017 M. Brown - Created initial file
 '''
 
+import instrument
+
 class Lris(instrument.Instrument):
     def __init__(self):
         # Call the parent init to get all the shared variables
-        super(Lris, self).__init__(self)
+        super().__init__()
 
         # Set the lris specific paths to anc and stage
         self.ancDir = '/koadata27/LRIS/' + self.reducedDate + '/anc'
@@ -25,7 +27,7 @@ class Lris(instrument.Instrument):
         dirs = []
         path = '/s/sdata24'
         for i in range(1,4):
-            path2 = path + str(i) = '/lris'
+            path2 = path + str(i) + '/lris'
             for i in range(1,21):
                 path3 = path2 + str(i)
                 dirs.append(path3)

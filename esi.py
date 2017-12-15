@@ -5,10 +5,12 @@ ESI specific DR techniques can be added to it in the future
 12/14/2017 M. Brown - Created initial file
 '''
 
+import instrument
+
 class Esi(instrument.Instrument):
     def __init__(self):
         # Call the parent init to get all the shared variables
-        super(Esi, self).__init__(self)
+        super().__init__()
 
         # Set the esi specific paths to anc and stage
         self.ancDir = '/koadata29/ESI/' + self.reducedDate + '/anc'
@@ -26,7 +28,7 @@ class Esi(instrument.Instrument):
         path = '/s/sdata70'
         for i in range(8):
             if i != 5:
-                path2 = path + str(i) = '/esi'
+                path2 = path + str(i) + '/esi'
                 for j in range(1,21):
                     path3 = path2 + str(j)
                     dirs.append(path3)

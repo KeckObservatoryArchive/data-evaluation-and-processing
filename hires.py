@@ -5,10 +5,12 @@ HIRES specific DR techniques can be added to it in the future
 12/14/2017 M. Brown - Created initial file
 '''
 
+import instrument
+
 class Hires(instrument.Instrument):
     def __init__(self):
         # Call the parent init to get all the shared variables
-        super(Hires, self).__init__(self)
+        super().__init__()
 
         # Set the hires specific paths to anc and stage
         self.ancDir = '/net/koaserver2/koadata13/HIRES/' + self.reducedDate + '/anc'
@@ -25,7 +27,7 @@ class Hires(instrument.Instrument):
         dirs = []
         path = '/s/sdata12'
         for i in range(5,8):
-            path2 = path + str(i) = '/hires'
+            path2 = path + str(i) + '/hires'
             for i in range(1,21):
                 path3 = path2 + str(i)
                 dirs.append(path3)

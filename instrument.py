@@ -15,12 +15,13 @@ class Instrument:
         self.utc = 'UTC'
         self.semester = 'SEMESTER'
         self.fileRoot = 'OUTFILE'        # Can be DATAFILE or ROOTNAME for specific instruments
+        self.origFile = ''
         self.frameno = 'FRAMENO'     # Can be IMGNUM, FRAMENUM, FILENUM1, FILENUM2
         self.koaid = 'KOAID'
         self.outdir = 'OUTDIR'
         self.prefix = ''
         self.stageDir = ''
         self.ancDir = ''
-        self.path = '/s/sdata'
-        self.date = datetime.datetime()
+        self.paths = []
+        self.date = dt.datetime.now()
         self.reducedDate = self.date.strftime('%Y%m%d')

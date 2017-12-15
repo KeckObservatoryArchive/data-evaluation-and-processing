@@ -5,10 +5,12 @@ MOSFIRE specific DR techniques can be added to it in the future
 12/14/2017 M. Brown - Created initial file
 '''
 
+import instrument
+
 class Mosfire(instrument.Instrument):
     def __init__(self):
         # Call the parent init to get all the shared variables
-        super(Mosfire, self).__init__(self)
+        super().__init__()
 
         # MOSFIRE has 'DATAFILE' instead of OUTFILE
         self.fileRoot = 'DATAFILE'
