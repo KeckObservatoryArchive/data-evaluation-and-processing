@@ -100,8 +100,15 @@ def dep_locate(instr, utDate, rootDir, endHour):
     # We only wants the .fits files
     with open(files, 'w') as f:
         with open(presort, 'r') as pre:
+            fcsConfigs = []
             for line in pre:
-                if '.fits' in line and '/fcs' not in line and 'mira' not in line and 'savier-protected' not in line:
+                if 'DEIMOS' in instr:
+                    if '.fits' in line and '/fcs' not in line:
+                        fcs = fits.getheader(line)['FCSIMGFI']
+                        if fcs != '' and fcs not in fcsConfigs:
+                            f.write(fcs)
+                            fcsConfigs.append(fcs)
+                if '.fits' in line and '/fcs' not in line and 'mira' not in line and 'savier-protected' not in line and 'idf' not in line:
                     # Copy the files to stageDir and update files to use local copy file list
                     rDir = os.path.dirname(line)
                     if not os.path.exists(rDir):
@@ -110,6 +117,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
                     if not os.path.exists(newFile):
                         shutil.copy2(line.strip(), newFile)
                     f.write(newFile+'\n')
+            del fcsConfigs
 
     # Remove temporary file
     os.remove(presort)
