@@ -7,12 +7,13 @@ Children will contain the instrument specific values
 '''
 
 import datetime as dt
-import calendar as cal
 
 class Instrument:
     def __init__(self):
         self.instr = 'INSTRUME'
         self.utc = 'UTC'
+        self.dateObs = 'DATE'
+        self.endHour = ''
         self.semester = 'SEMESTER'
         self.fileRoot = 'OUTFILE'        # Can be DATAFILE or ROOTNAME for specific instruments
         self.origFile = ''
@@ -23,5 +24,5 @@ class Instrument:
         self.stageDir = ''
         self.ancDir = ''
         self.paths = []
-        self.date = dt.datetime.now()
-        self.reducedDate = self.date.strftime('%Y%m%d')
+        self.currDate = dt.datetime.now()
+        self.reducedDate = self.currDate.strftime('%Y%m%d')

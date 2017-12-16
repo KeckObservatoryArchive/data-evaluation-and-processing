@@ -12,10 +12,16 @@ class Deimos(instrument.Instrument):
         # Call the parent init to get all the shared variables
         super().__init__()
 
+        # DEIMOS uses CURRINST to store its instrument Keyword
+        self.instr = 'DEIMOS'
+        # add the FCSIMGFI config file for deimos
+        self.fcsimgfi = 'FCSIMGFI'
         # DEIMOS uses DATAFILE instead of OUTFILE
-        self.root = 'OUTFILE'
+        self.fileRoot = 'OUTFILE'
         # DEIMOS uses FRAMENUM instead of FRAMENO
         self.frameno = 'FRAMENUM'
+        # Set Date-end
+        self.endHour = 'DATE-END'
         # Set the deimos specific paths to anc and stage
         self.ancDir = '/koadata29/DEIMOS/' + self.reducedDate + '/anc'
         self.stageDir = '/koadata29/stage'
