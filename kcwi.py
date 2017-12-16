@@ -14,6 +14,8 @@ class Kcwi(instrument.Instrument):
 
         # KCWI has the original file name
         self.origFile = 'OFNAME'
+        self.camera = 'CAMERA'
+        self.endHour = 'DATE-END'
         # Set the KCWI specific paths to anc and stage
         self.ancDir = '/koadata28/KCWI/' + self.reducedDate + '/anc'
         self.stageDir = '/koadata28/stage'
