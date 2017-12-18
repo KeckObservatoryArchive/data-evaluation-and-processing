@@ -45,7 +45,29 @@ def koaid(keywords, utDate):
            - ###### = number of seconds into UT date
          '''
 
-        utc = keywords['UTC']
+        # Get UTC or default to DATE
+        try:
+                utc = keywords['UTC']
+        except:
+                try:
+                        utc = keywords['UT']
+                except:
+                        utc = keywords['DATE'].split('T')
+                        if len(utc) == 2:
+                                utc = utc[1] + '.0'
+                        else:
+                                return False
+
+        # Get DATE-OBS or default to DATE
+        try:
+                dateobs = keywords['DATE-OBS']
+        except:
+                dateobs = keywords['DATE'].split('T')
+                if len(dateobs) == 2:
+                        dateobs = dateobs[0]
+                else:
+                        return False
+
         try:
                 utc = datetime.strptime(utc, '%H:%M:%S.%f')
         except ValueError:
@@ -63,6 +85,9 @@ def koaid(keywords, utDate):
         instr = instr.split(' ')
         instr = instr[0].replace(':', '')
         outdir = keywords['OUTDIR']
+
+        if '/fcs' in outdir:
+                instr = 'deimos'
 
         if instr in instr_prefix:
                 prefix = instr_prefix[instr]
@@ -97,8 +122,8 @@ def koaid(keywords, utDate):
                 return False
 
         # Will utDate be a string, int, or datetime object?
-        utDate = utDate.replace('-', '')
-        utDate = utDate.replace('/', '')
-        koaid = prefix + '.' + utDate + '.' + totalSeconds.zfill(5) + '.fits'
+        dateobs = dateobs.replace('-', '')
+        dateobs = dateobs.replace('/', '')
+        koaid = prefix + '.' + dateobs + '.' + totalSeconds.zfill(5) + '.fits'
         keywords['KOAID'] = koaid
         return True
