@@ -95,28 +95,30 @@ def dep_locate(instr, utDate, rootDir, endHour):
     files = stageDir + "/dep_locate" + instr + ".txt"
 
     # Find the files in the last 24 hours
-    pyfind(usedir, utDate, presort, log_writer)
+    pyfind(usedir, utDate, endHour, presort, log_writer)
 
     # We only wants the .fits files
     with open(files, 'w') as f:
         with open(presort, 'r') as pre:
             fcsConfigs = []
             for line in pre:
-                if 'DEIMOS' in instr:
-                    if '.fits' in line and '/fcs' not in line:
-                        fcs = fits.getheader(line)['FCSIMGFI']
-                        if fcs != '' and fcs not in fcsConfigs:
-                            f.write(fcs)
-                            fcsConfigs.append(fcs)
                 if '.fits' in line and '/fcs' not in line and 'mira' not in line and 'savier-protected' not in line and 'idf' not in line:
                     # Copy the files to stageDir and update files to use local copy file list
-                    rDir = os.path.dirname(line)
-                    if not os.path.exists(rDir):
-                        os.makedirs(rDir)
                     newFile = stageDir + line.strip()
-                    if not os.path.exists(newFile):
-                        shutil.copy2(line.strip(), newFile)
+                    copy_file(line.strip(), newFile)
                     f.write(newFile+'\n')
+                    if 'DEIMOS' in instr:
+                        try:
+                            fcs = fits.getheader(line.strip())['FCSIMGFI']
+                            if fcs != '' and fcs not in fcsConfigs:
+                                fcsConfigs.append(fcs)
+                                if '/s/' not in fcs:
+                                    fcs = '/s' + fcs
+                                newFile = stageDir + fcs
+                                copy_file(fcs, newFile)
+                                f.write(newFile+'\n')
+                        except:
+                            pass
             del fcsConfigs
 
     # Remove temporary file
@@ -132,7 +134,24 @@ def dep_locate(instr, utDate, rootDir, endHour):
 
 #-----------------------END DEP LOCATE----------------------------------
 
-def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
+def copy_file(source, destination):
+    '''
+    Copy source file to destination.  If destination directory does nott
+    exist, then create it.
+
+    @type source: string
+    @param source: The source file path
+    @type destination: string
+    @param destination: The destination file path
+    '''
+
+    rDir = os.path.dirname(destination)
+    if not os.path.exists(rDir):
+        os.makedirs(rDir)
+    if not os.path.exists(destination):
+        shutil.copy2(source, destination)
+
+def dep_rawfiles(instr, utDate, endHour, fileList, stageDir, ancDir, log_writer):
 
     """
     This function will look for non-raw images, duplicate KOAIDs, 
@@ -195,7 +214,7 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
 
         # Grab the last element in the filepath list
         # This should be the filename *.fits
-        rootfile.append(root[-1])  
+        rootfile[i] = root[-1]
 
         # Construct the original file name
         filename, successful = construct_filename(instr,fitsList[i], ancDir, header0, log_writer)
@@ -206,7 +225,6 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
 
         # Get KOAID
         if not koaid(header0, utDate):
-            print('yes')
             move_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log_writer)
             raw[i] = 2
             continue
@@ -236,11 +254,19 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
         if fdate != date and float(ftime) < endtime:
             move_bad_file(instr, fitsList[i], ancDir, 'KOADATE', log_writer)
             break
-#        print(fitsList[i])
 
-# Need to remove "bad" files from dep_locateINSTR.txt in stageDir
+    # Need to remove "bad" files from dep_locateINSTR.txt in stageDir
+    ffiles = open(fileList, 'r')
+    lines = ffiles.readlines()
+    ffiles.close()
+    # Recreate the file with only the good lines
+    with open(fileList, 'w') as ffiles:
+        for line in lines:
+            if line.strip() in fitsList:
+                num = fitsList.index(line.strip())
+                if raw[num] == 1:
+                    ffiles.write(line)
 
-    
 #------------------END RAWFILES-----------------------------
 
 def move_bad_file(instr, fitsFile, ancDir, errorCode, log_writer):
@@ -340,7 +366,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
 
 #---------------------End construct_filename-------------------------
 
-def pyfind(usedir,utDate, outfile, log_writer):
+def pyfind(usedir, utDate, endHour, outfile, log_writer):
     """
     Uses the subprocess run function to call the find command which searches the given directories for files ending in .fits
 
@@ -360,11 +386,11 @@ def pyfind(usedir,utDate, outfile, log_writer):
         year, month, day = utDate.split('-')
     # Set up our +/-24 hour boundary
     dayMin = int(day) - 1
-    dayMax = int(day) + 1
+    dayMax = int(day)# + 1
 
     # Create a string date and time to convert to seconds since epoch
-    utMaxTime = str(year)+str(month)+str(dayMax) + ' 20:00:00' # default 20:00:00, change if necessary
-    utMinTime = str(year)+str(month)+str(dayMin) + ' 20:00:00' # default 20:00:00, change if necessary
+    utMaxTime = str(year)+str(month)+str(dayMax) + ' ' + str(endHour) + ':00:00' # default 20:00:00, change if necessary
+    utMinTime = str(year)+str(month)+str(dayMin) + ' ' + str(endHour) + ':00:00' # default 20:00:00, change if necessary
     
     # st_mtime records the time in seconds of the last file modification since Jan 1 1970 00:00:00 UTC
     # We need to create a time_construct object (using time.strptime())
@@ -386,7 +412,7 @@ def pyfind(usedir,utDate, outfile, log_writer):
                     # Check to see if the file is a fits file created/modified in the last day
                     # st_mtime needs to be greater than the minTimeSinceMod to be within the past 24 hours
                     modTime = os.stat(full_path).st_mtime
-                    if '.fits' in item[-5:] and modTime < maxTimeSinceMod and modTime > minTimeSinceMod:
+                    if '.fits' in item[-5:] and modTime <= maxTimeSinceMod and modTime > minTimeSinceMod:
                         ofile.write(full_path+'\n')
 
     # Append the action to the log
