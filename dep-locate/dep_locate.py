@@ -1,4 +1,4 @@
-'''
+"""
   This script consolidates all the pieces of the KOA archival dep-locate
   function into one place. It mainly consists of dep_locate.csh,
   dep_locfiles.c, dep_rawfiles.csh, and deimos_find_fcs.csh.
@@ -9,7 +9,7 @@
 
   Original scripts written by Jeff Mader and Jennifer Holt
   Ported to Python3 by Matthew Brown
-'''
+"""
 
 import logging as lg                         ## Used for all the logging
 import listInstrDirs as locate               ## Used to create the directories of the instrument
@@ -22,7 +22,7 @@ import verification
 import shutil
 
 def dep_locate(instr, utDate, rootDir, endHour):
-    ''' 
+    """ 
     This function will search the data directories for data  written in the last howold*24 hours.
     Pre-condition: Requires an instrument, a date to check in UTC time, and a staging directory
     Post-condition: Returns all the fits files within 24 hours of the date given
@@ -33,7 +33,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
     @param utDate: The date in UT of the night that the fits tiles were taken
     @type stageDir: string
     @param stageDir: The staging area to store the files for transport to KOA
-    '''
+    """
 
     # Create stage and anc directory strings
     dateDir = utDate.replace('-', '')
@@ -134,7 +134,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
 
 def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
 
-    '''
+    """
     This function will look for non-raw images, duplicate KOAIDs, 
     or bad dates for each fits file. 
       
@@ -156,7 +156,7 @@ def dep_rawfiles(instr, utDate, endHour,fileList, stageDir, ancDir, log_writer):
     @param ancDir: The anc directory to store the bad and corrupted fits files
     @type log_writer: Logger Object
     @param log_writer: The log handler for the script. Writes to the logfile
-    '''
+    """
     # Change yyyy/mm/dd to yyyymmdd
     if '/' in utDate:
         year, month, day = utDate.split('/')

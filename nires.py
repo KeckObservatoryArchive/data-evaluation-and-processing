@@ -16,9 +16,12 @@ class Nires(instrument.Instrument):
         self.root = 'DATAFILE'
         # NIRES frame numbers are a part of their data file
         self.frameno = ''
+        # Date observed is stored as DATE-OBS for NIRES
+        self.dateObs = 'DATE-OBS'
         # Set the NIRES specific paths to anc and stage
         self.ancDir = '/koadataXX/NIRES/' + self.reducedDate + '/anc'
         self.stageDir = '/koadataXX/stage'
+
         # Generate the paths to the NIRES datadisk accounts
         self.paths = self.getDirList()
         self.dataType = 'INSTR'
@@ -35,3 +38,13 @@ class Nires(instrument.Instrument):
             path2 = path + str(i) + '/nireseng'
             dirs.append(path2)
         return dirs
+
+    def setPrefix(self):
+        '''
+        Sets the prefix based on the type of file (imag or spec)
+        '''
+        if self.ftype == 'imag':
+            self.prefix = 'NI'
+        else: # self.ftype == 'spec'
+            self.prefix = 'NR'
+
