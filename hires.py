@@ -12,12 +12,18 @@ class Hires(instrument.Instrument):
         # Call the parent init to get all the shared variables
         super().__init__()
 
-        
+        '''
+        Values to be overwritten from superclass
+        '''
         # Set the hires specific paths to anc and stage
         self.ancDir = '/net/koaserver2/koadata13/HIRES/' + self.reducedDate + '/anc'
         self.stageDir = '/net/koaserver2/koadata13/stage'
         # Generate the paths to the HIRES datadisk accounts
         self.paths = self.getDirList()
+
+        '''
+        Values not included in superclass
+        '''
 
 
     def getDirList(self):

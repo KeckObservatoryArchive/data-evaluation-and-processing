@@ -1,45 +1,53 @@
-'''
+"""
 This is the class to handle all the DEIMOS specific attributes
 DEIMOS specific DR techniques can be added to it in the future
 
 12/14/2017 M. Brown - Created initial file
-'''
+"""
 
 import instrument
 
 class Deimos(instrument.Instrument):
-    def __init__(self):
+    def __init__(self, endhr):
         # Call the parent init to get all the shared variables
-        super().__init__()
+        super().__init__(endhr)
 
-        # DEIMOS uses CURRINST to store its instrument Keyword
+        """
+        Values to be overwritten from Superclass
+        """
+        # We know what instrument this is
         self.instr = 'DEIMOS'
-        # add the FCSIMGFI config file for deimos
-        self.fcsimgfi = 'FCSIMGFI'
         # DEIMOS uses DATAFILE instead of OUTFILE
         self.fileRoot = 'OUTFILE'
         # DEIMOS uses FRAMENUM instead of FRAMENO
         self.frameno = 'FRAMENUM'
-        # Set Date-end
-        self.endHour = 'DATE-END'
         # Set the deimos specific paths to anc and stage
         self.ancDir = '/koadata29/DEIMOS/' + self.reducedDate + '/anc'
         self.stageDir = '/koadata29/stage'
         # Generate the paths to the DEIMOS datadisk accounts
-        self.paths = self.getDirList()
+        self.paths = self.get_dir_list()
+
+        """
+        Values not included in superclass
+        """
+        # add the FCSIMGFI config file for deimos
+        self.fcsimgfi = 'FCSIMGFI'
 
 
-    def getDirList(self):
-        '''
+    def get_dir_list(self):
+        """
         Function to generate the paths to all the DEIMOS accounts, including engineering
         Returns the list of paths
-        '''
+        """
         dirs = []
         path = '/s/sdata100'
         for i in range(1,4):
-            path2 = path + str(i)
-            for i in range(1,21):
-                path3 = path2 + '/deimos' + str(i)
+            seq = (path, str(i))
+            path2 = ''.join(seq)
+            for j in range(1,21):
+                seq = (path2, '/deimos', str(j))
+                path3 = ''.join(seq)
                 dirs.append(path3)
-            dirs.append(path2 + '/dmoseng')
+            seq = (path2, 'dmoseng')
+            dirs.append(''.join(seq))
         return dirs

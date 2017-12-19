@@ -1,4 +1,4 @@
-'''
+"""
   This script consolidates all the pieces of the KOA archival dep-locate
   function into one place. It mainly consists of dep_locate.csh,
   dep_locfiles.c, dep_rawfiles.csh, and deimos_find_fcs.csh.
@@ -9,23 +9,26 @@
 
   Original scripts written by Jeff Mader and Jennifer Holt
   Ported to Python3 by Matthew Brown
-'''
+"""
 
-import logging as lg                         ## Used for all the logging
-import listInstrDirs as locate               ## Used to create the directories of the instrument
-import calendar as cal                       ## Used to convert a time object into a number of seconds
-import time as t                             ## Used to convert a string date into a time object
-from astropy.io import fits                  ## Used for everything with fits
-from common import koaid                     ## Used to determine the KOAID of a file for transport
+import logging as lg                 ## Used for all the logging
+import list_instr_dirs as locate     ## Used to create the directories of the instrument
+import calendar as cal               ## Used to convert a time object into a number of seconds
+import time as t                     ## Used to convert a string date into a time object
+from astropy.io import fits          ## Used for everything with fits
+from common import koaid             ## Used to determine the KOAID of a file for transport
 import os
 import verification
 import shutil
 
 def dep_locate(instr, utDate, rootDir, endHour):
-    ''' 
-    This function will search the data directories for data  written in the last howold*24 hours.
-    Pre-condition: Requires an instrument, a date to check in UTC time, and a staging directory
-    Post-condition: Returns all the fits files within 24 hours of the date given
+    """ 
+    This function will search the data directories for 
+    data  written in the last howold*24 hours.
+    Pre-condition: Requires an instrument, a date to check in UTC time, 
+        and a staging directory
+    Post-condition: Returns all the fits files 
+        within 24 hours of the date given
     
     @type instr: string
     @param instr: The instrument used to make the fits files being looked at
@@ -33,17 +36,23 @@ def dep_locate(instr, utDate, rootDir, endHour):
     @param utDate: The date in UT of the night that the fits tiles were taken
     @type stageDir: string
     @param stageDir: The staging area to store the files for transport to KOA
-    '''
+    """
 
     # Create stage and anc directory strings
     dateDir = utDate.replace('-', '')
     dateDir = dateDir.replace('/', '')
-    stageDir = rootDir + '/stage/' + dateDir
-    ancDir = rootDir + '/' + dateDir + '/anc'
+
+    joinSeq = (rootDir, '/stage/', dateDir)
+    stageDir = ''.join(joinSeq)
+
+    joinSeq = (rootDir, '/', dateDir, '/anc')
+    ancDir = ''.join(joinSeq)
 
     ### Set up logging ###
     user = os.getlogin()
-    log_writer = lg.getLogger('dep_locate <' + user +'>')
+    joinSeq = ('dep_locate <', user, '>')
+    writerName = ''.join(joinSeq)
+    log_writer = lg.getLogger(writerName)
     log_writer.setLevel(lg.INFO)
     
     # create a file handler
@@ -66,7 +75,9 @@ def dep_locate(instr, utDate, rootDir, endHour):
 
     # Create the udf directory in the anc_dir
     try:
-        os.makedirs(ancDir + '/udf')
+        joinSeq(ancDir, '/udf')
+        udfDir = ''.join(joinSeq)
+        os.makedirs(udfDir)
     except FileExistsError:
         log_writer.warning('udf directory already exists!')
     except:
@@ -91,8 +102,11 @@ def dep_locate(instr, utDate, rootDir, endHour):
         return
 
     # Create files to store the valid FITS files
-    presort = stageDir + '/dep_locate' + instr + 'pre.txt'
-    files = stageDir + "/dep_locate" + instr + ".txt"
+    joinSeq = (stageDir, '/dep_locate', instr, 'pre.text')
+    presort = ''.join(joinSeq)
+
+    joinSeq = (stageDir, '/dep_locate', instr, '.txt')
+    files = ''.join(joinSeq)
 
     # Find the files in the last 24 hours
     pyfind(usedir, utDate, endHour, presort, log_writer)
@@ -102,11 +116,20 @@ def dep_locate(instr, utDate, rootDir, endHour):
         with open(presort, 'r') as pre:
             fcsConfigs = []
             for line in pre:
-                if '.fits' in line and '/fcs' not in line and 'mira' not in line and 'savier-protected' not in line and 'idf' not in line:
-                    # Copy the files to stageDir and update files to use local copy file list
-                    newFile = stageDir + line.strip()
+                if ('.fits' in line 
+                        and '/fcs' not in line 
+                        and 'mira' not in line 
+                        and 'savier-protected' not in line 
+                        and 'idf' not in line):
+                    # Copy the files to stageDir and update files 
+                    # to use local copy file list
+                    joinSeq = (stageDir, line.strip())
+                    newFile = ''.join(joinSeq)
                     copy_file(line.strip(), newFile)
-                    f.write(newFile+'\n')
+
+                    joinSeq = (newFile, '\n')
+                    toFile = ''.join(joinSeq)
+                    f.write(toFile)
                     if 'DEIMOS' in instr:
                         try:
                             fcs = fits.getheader(line.strip())['FCSIMGFI']
@@ -114,20 +137,26 @@ def dep_locate(instr, utDate, rootDir, endHour):
                                 fcsConfigs.append(fcs)
                                 if '/s/' not in fcs:
                                     fcs = '/s' + fcs
-                                newFile = stageDir + fcs
+                                joinSeq = (stageDir, fcs)
+                                newFile = ''.join(joinSeq)
                                 copy_file(fcs, newFile)
-                                f.write(newFile+'\n')
+
+                                joinSeq = (newFile, '\n')
+                                toFile = ''.join(joinSeq)
+                                f.write(toFile)
                         except:
                             pass
             del fcsConfigs
 
     # Remove temporary file
     os.remove(presort)
-    log_writer.info('{}: removed temporary presorted file {}'.format(instr, presort))
+    log_writer.info(
+            '{}: removed temporary presorted file {}'.format(instr, presort))
     
     # Verify the files are valid - no corrupt headers, valid KOAID
     dep_rawfiles(instr, utDate, endHour, files, stageDir, ancDir, log_writer)
-    log_writer.info('{0}: finished rawfiles {0} {1} {2} {3} {4}'.format(instr, utDate, endHour, stageDir, ancDir))
+    log_writer.info(
+            '{0}: finished rawfiles {0} {1} {2} {3} {4}'.format(instr, utDate, endHour, stageDir, ancDir))
 
     log_writer.info('{}: Using files found in {}'.format(instr, usedir))
     log_writer.info('{}: dep_locate successful'.format(instr))
@@ -151,9 +180,9 @@ def copy_file(source, destination):
     if not os.path.exists(destination):
         shutil.copy2(source, destination)
 
-def dep_rawfiles(instr, utDate, endHour, fileList, stageDir, ancDir, log_writer):
-
-    '''
+def dep_rawfiles(
+        instr, utDate, endHour, fileList, stageDir, ancDir, log_writer):
+    """
     This function will look for non-raw images, duplicate KOAIDs, 
     or bad dates for each fits file. 
       
@@ -168,14 +197,15 @@ def dep_rawfiles(instr, utDate, endHour, fileList, stageDir, ancDir, log_writer)
     @type endHour: datetime
     @param endHour: The hour that the observations ended
     @type fileList: string
-    @param fileList: Text file that contains the fits filenames that occured within 24 hours of the given date
+    @param fileList: Text file that contains the fits filenames 
+            that occured within 24 hours of the given date
     @type stageDir: string
     @param stageDir: The staging area to store the files for transport to KOA
     @type ancDir: string
     @param ancDir: The anc directory to store the bad and corrupted fits files
     @type log_writer: Logger Object
     @param log_writer: The log handler for the script. Writes to the logfile
-    '''
+    """
     # Change yyyy/mm/dd to yyyymmdd
     if '/' in utDate:
         year, month, day = utDate.split('/')
@@ -217,7 +247,8 @@ def dep_rawfiles(instr, utDate, endHour, fileList, stageDir, ancDir, log_writer)
         rootfile[i] = root[-1]
 
         # Construct the original file name
-        filename, successful = construct_filename(instr,fitsList[i], ancDir, header0, log_writer)
+        filename, successful = construct_filename(instr,fitsList[i], 
+                ancDir, header0, log_writer)
         if not successful:
             move_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log_writer)
             raw[i] = 2
@@ -246,7 +277,9 @@ def dep_rawfiles(instr, utDate, endHour, fileList, stageDir, ancDir, log_writer)
         elif raw[i] == 0:
             for j in range(i+1,len(fitsList)):
                 if koa[j]==koa[i]: # j will always be greater than i
-                    move_bad_file(instr, fitsList[i], ancDir, 'Duplicate KOAID', log_writer)
+                    move_bad_file(
+                            instr, fitsList[i], ancDir, 
+                            'Duplicate KOAID', log_writer)
                     break
 
         # Check the date
@@ -271,9 +304,11 @@ def dep_rawfiles(instr, utDate, endHour, fileList, stageDir, ancDir, log_writer)
 
 def move_bad_file(instr, fitsFile, ancDir, errorCode, log_writer):
     """ 
-    Log the error where the fits file failed and copy the fits file to the anc directory
+    Log the error where the fits file failed 
+    and copy the fits file to the anc directory
 
-    This function logs the type of error encountered and moves the bad fits file to anc_dir/udf
+    This function logs the type of error encountered 
+    and moves the bad fits file to anc_dir/udf
     
     @type instr: string
     @param instr: The keyword for the instrument being searched
@@ -287,16 +322,19 @@ def move_bad_file(instr, fitsFile, ancDir, errorCode, log_writer):
     @param log_writer: The log handler for the script. Writes to the logfile
     """
     if errorCode == 'KOADATE':
-        log_writer.warning('rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
+        log_writer.warning(
+                'rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
     else:
-        log_writer.warning('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
-    log_writer.info('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
+        log_writer.warning(
+                'rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
+    log_writer.info(
+            'rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
     udfDir = ancDir + '/udf/'
     try:
         # Use copy2 from shutil to copy the file with its metadata
         shutil.copy2(fitsFile, udfDir)
     except:
-        log_writer.error('{}: {} file was not copied!!'.format(instr, fitsFile))
+        log_writer.error('{}: {} file was not copied!'.format(instr, fitsFile))
 
 #-------------End move-bad-file()---------------------------
 
@@ -319,7 +357,8 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
        filename = keywords['DATAFILE']
        # but the i file needs .fits added to it
        if filename[0] == 'i':
-           filename = filename + '.fits'
+           joinSeq = (filename, '.fits')
+           filename = ''.join(joinSeq)
        return filename, True
    elif instr == 'MOSFIRE':
        outfile = keywords['DATAFILE']
@@ -330,7 +369,8 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
            try:
                outfile = keywords['ROOTNAME']
            except KeyError:
-               move_bad_file(instr, fitsFile, ancDir, 'Bad Outfile', log_writer)
+               move_bad_file(
+                       instr, fitsFile, ancDir, 'Bad Outfile', log_writer)
                return '', False
 
    # Get the frame number of the file
@@ -348,7 +388,8 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
                try:
                    frameno = keywords['FILENUM2']
                except KeyError:
-                   move_bad_file(instr, fitsFile, ancDir, 'Bad Frameno', log_writer)
+                   move_bad_file(
+                           instr, fitsFile, ancDir, 'Bad Frameno', log_writer)
                    return '', False
 
    # Determine the amount of 0 padding that must be done
@@ -361,14 +402,17 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
        zero = '0'
    
    # Construct the original file name from the previous parts
-   filename = outfile.strip() + zero + str(frameno).strip() + '.fits'
+   joinSeq = (outfile.strip(), zero, str(frameno).strip(), '.fits')
+   filename = ''.join(joinSeq)
    return filename, True
 
 #---------------------End construct_filename-------------------------
 
 def pyfind(usedir, utDate, endHour, outfile, log_writer):
     """
-    Uses the subprocess run function to call the find command which searches the given directories for files ending in .fits
+    Uses the os.walk function to recurse through a given directory
+    and return all the leaf files which are checked to be
+    fits files.
 
     @type usedir: string
     @param usedir: The directory that we want to search in
@@ -389,12 +433,15 @@ def pyfind(usedir, utDate, endHour, outfile, log_writer):
     dayMax = int(day)# + 1
 
     # Create a string date and time to convert to seconds since epoch
-    utMaxTime = str(year)+str(month)+str(dayMax) + ' ' + str(endHour) + ':00:00' # default 20:00:00, change if necessary
-    utMinTime = str(year)+str(month)+str(dayMin) + ' ' + str(endHour) + ':00:00' # default 20:00:00, change if necessary
+    joinSeq = (str(year), str(month), str(dayMax), ' ', str(endHour), ':00:00')
+    utMaxTime = ''.join(joinSeq)
+
+    joinSeq = (str(year), str(month), str(dayMin), ' ', str(endHour), ':00:00')
+    utMinTime = ''.join(joinSeq)
     
-    # st_mtime records the time in seconds of the last file modification since Jan 1 1970 00:00:00 UTC
-    # We need to create a time_construct object (using time.strptime())
-    # to convert to seconds (using calendar.timegm())
+    # st_mtime records the time in seconds of the last file modification since 
+    # Jan 1 1970 00:00:00 UTC We need to create a time_construct object 
+    # (using time.strptime()) to convert to seconds (using calendar.timegm())
     # All valid files should fall within these boundaries
     maxTimeSinceMod = cal.timegm(t.strptime(utMaxTime, '%Y%m%d %H:%M:%S'))
     minTimeSinceMod = cal.timegm(t.strptime(utMinTime, '%Y%m%d %H:%M:%S'))
@@ -408,15 +455,22 @@ def pyfind(usedir, utDate, endHour, outfile, log_writer):
                 # Iterate through the leaf files in the directory
                 for item in files:
                     # Create the path to the current file we want to check
-                    full_path = root + '/' + item
-                    # Check to see if the file is a fits file created/modified in the last day
-                    # st_mtime needs to be greater than the minTimeSinceMod to be within the past 24 hours
+                    joinSeq = (root, '/', item)
+                    full_path = ''.join(joinSeq)
+                    # Check to see if the file is a fits file created/modified
+                    # in the last day. st_mtime needs to be greater than the m
+                    # inTimeSinceMod to be within the past 24 hours
                     modTime = os.stat(full_path).st_mtime
-                    if '.fits' in item[-5:] and modTime <= maxTimeSinceMod and modTime > minTimeSinceMod:
-                        ofile.write(full_path+'\n')
+                    if ('.fits' in item[-5:] 
+                            and modTime <= maxTimeSinceMod 
+                            and modTime > minTimeSinceMod):
+                        joinSeq = (full_path, '\n')
+                        toFile = ''.join(joinSeq)
+                        ofile.write(toFile)
 
     # Append the action to the log
-    log_writer.info('Copied fits file names from {} to {}'.format(usedir, outfile))
+    log_writer.info(
+            'Copied fits file names from {} to {}'.format(usedir, outfile))
 
 
 #-----------------------End PyFind-----------------------------------
