@@ -75,7 +75,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
 
     # Create the udf directory in the anc_dir
     try:
-        joinSeq(ancDir, '/udf')
+        joinSeq = (ancDir, '/udf')
         udfDir = ''.join(joinSeq)
         os.makedirs(udfDir)
     except FileExistsError:
