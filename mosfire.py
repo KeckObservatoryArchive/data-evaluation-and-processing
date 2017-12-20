@@ -23,6 +23,7 @@ class Mosfire(instrument.Instrument):
         self.stageDir = '/koadata21/stage'
         # Generate the paths to the MOSFIRE datadisk accounts
         self.paths = self.get_dir_list()
+        self.prefix = 'MF'
 
 
     def get_dir_list(self):
@@ -43,3 +44,10 @@ class Mosfire(instrument.Instrument):
         path2 = ''.join(joinSeq)
         dirs.append(path2)
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_instr(keys)
+        if instr == 'mosfire':
+            self.prefix = 'MF'
+        else:
+            self.prefix = ''

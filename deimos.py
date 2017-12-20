@@ -16,8 +16,6 @@ class Deimos(instrument.Instrument):
         """
         Values to be overwritten from Superclass
         """
-        # We know what instrument this is
-        self.instr = 'DEIMOS'
         # DEIMOS uses DATAFILE instead of OUTFILE
         self.fileRoot = 'OUTFILE'
         # DEIMOS uses FRAMENUM instead of FRAMENO
@@ -53,3 +51,12 @@ class Deimos(instrument.Instrument):
             seq = (path2, 'dmoseng')
             dirs.append(''.join(seq))
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_instr(keys)
+        if '/fcs' in keys[self.outdir]:
+            self.prefix = 'DF'
+        elif instr == 'deimos':
+            self.prefix = 'DE'
+        else:
+            self.prefix = ''

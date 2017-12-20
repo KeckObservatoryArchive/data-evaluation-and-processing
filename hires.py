@@ -46,3 +46,10 @@ class Hires(instrument.Instrument):
             path3 = ''.join(joinSeq)
             dirs.append(path2 + 'eng')
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_instr(keys)
+        if instr == 'hires':
+            self.prefix = 'HI'
+        else:
+            self.prefix = ''

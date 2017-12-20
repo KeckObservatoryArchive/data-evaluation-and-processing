@@ -39,3 +39,10 @@ class Esi(instrument.Instrument):
                 path3 = ''.join(joinSeq)
                 dirs.append(path3)
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_prefix(keys)
+        if instr == 'esi':
+            self.prefix = 'EI'
+        else:
+            self.prefix = ''
