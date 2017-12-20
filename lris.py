@@ -35,3 +35,12 @@ class Lris(instrument.Instrument):
                 dirs.append(path3)
             dirs.append(path2 + 'eng')
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_instr(keys)
+        if instr == 'lrisblue':
+            self.prefix = 'LB'
+        elif instr == 'lris':
+            self.prefix = 'LR'
+        else:
+            self.prefix = ''

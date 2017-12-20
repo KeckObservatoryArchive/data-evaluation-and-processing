@@ -40,3 +40,22 @@ class Kcwi(instrument.Instrument):
         path2 = ''.join(joinSeq)
         dirs.append(path2)
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_instr(keys)
+        if instr == 'kcwi':
+            try:
+                camera = keys['CAMERA'].lower()
+            except KeyError:
+                self.prefix = ''
+                raise KeyError
+            if camera == 'blue':
+                self.prefix = 'KB'
+            elif camera == 'red':
+                self.prefix = 'KR'
+            elif camera == 'fpc':
+                self.prefix = 'KF'
+            else:
+                self.prefix = ''
+        else:
+            self.prefix = ''

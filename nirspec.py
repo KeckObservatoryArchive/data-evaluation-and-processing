@@ -46,3 +46,16 @@ class Nirspec(instrument.Instrument):
             path3 = ''.join(joinSeq)
             dirs.append(path3)
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_instr(keys)
+        outdir = keys[self.outdir]
+        if instr == 'nirspec':
+            if '/scam' in outdir:
+                self.prefix = 'NC'
+            elif '/spec' in outdir:
+                self.prefix = 'NS'
+            else:
+                self.prefix = ''
+        else:
+            self.prefix = ''

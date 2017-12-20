@@ -26,7 +26,6 @@ class Nires(instrument.Instrument):
 
         # Generate the paths to the NIRES datadisk accounts
         self.paths = self.get_dir_list()
-        self.dataType = 'INSTR'
 
 
     def get_dir_list(self):
@@ -42,12 +41,17 @@ class Nires(instrument.Instrument):
             dirs.append(path2)
         return dirs
 
-    def set_prefix(self):
+    def set_prefix(self, keys):
         '''
-        Sets the prefix based on the type of file (imag or spec)
+        Sets the KOAID prefix
+        Defaults to nullstr
         '''
-        if self.ftype == 'imag':
+        instr = self.set_instr(keys)
+        ftype = keys['INSTR']
+        if ftype == 'imag':
             self.prefix = 'NI'
-        else: # self.ftype == 'spec'
+        elif ftype == 'spec':
             self.prefix = 'NR'
+        else:
+            self.prefix = ''
 

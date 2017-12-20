@@ -21,6 +21,7 @@ class Nirc2(instrument.Instrument):
         self.stageDir = '/new/koaserver2/koadata11/stage'
         # Generate the paths to the NIRC2 datadisk accounts
         self.paths = self.get_dir_list()
+        self.prefix = 'N2'
 
 
     def get_dir_list(self):
@@ -41,3 +42,10 @@ class Nirc2(instrument.Instrument):
             path3 = ''.join(joinSeq)
             dirs.append(path3)
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_prefix(keys)
+        if instr == 'nirc2':
+            self.prefix = 'N2'
+        else:
+            self.prefix = ''

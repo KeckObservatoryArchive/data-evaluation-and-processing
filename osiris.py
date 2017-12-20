@@ -43,3 +43,16 @@ class Osiris(instrument.Instrument):
             seq = (path2, '/osrseng')
             dirs.append(''.join(seq))
         return dirs
+
+    def set_prefix(self, keys):
+        instr = self.set_instr(keys)
+        outdir = keys[self.outdir]
+        if instr == 'osiris':
+            if '/scam' in outdir:
+                self.prefix = 'OI'
+            elif '/spec' in outdir:
+                self.prefix = 'OS'
+            else:
+                self.prefix = ''
+        else:
+            self.prefix = ''

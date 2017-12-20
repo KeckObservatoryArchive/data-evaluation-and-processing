@@ -14,6 +14,7 @@ class Instrument:
         """
 
         # Keyword values to be used with a FITS file during runtime
+        self.instr = 'INSTRUME'
         self.utc = 'UTC'
         self.dateObs = 'DATE'
         self.semester = 'SEMESTER'
@@ -22,11 +23,18 @@ class Instrument:
         self.koaid = 'KOAID'
         self.outdir = 'OUTDIR'
         self.ftype = 'INSTR'         # For instruments with two file types
-        self.utDate = endTime.strftime('%Y%m%d')
-        self.endHour = endTime.strftime('%H:%M:%S')
+        try: # Let's see if endTime was passed as a string
+            endTime = endTime.replace('-','')
+            endTime = endTime.replace('/','')
+            self.utDate = endTime[:8]
+            self.endHour = endTime[9:]
+            if self.endHour == '':
+                self.endHour = '20:00:00'
+        except TypeError: # It wasn't so it's a datetime object
+            self.utDate = endTime.strftime('%Y%m%d')
+            self.endHour = endTime.strftime('%H:%M:%S')
 
         # Values to be populated by subclass
-        self.instr = ''
         self.prefix = ''
         self.origFile = ''
         self.rootDir = ''
@@ -34,3 +42,29 @@ class Instrument:
         self.ancDir = ''
         self.paths = []
         self.keys = {}
+
+    def koaid(self, keys):
+        utc = keys[self.utc]
+        dateobs = keys[self.dateObs]
+        try:
+            utc = datetime.strptime(utc, '%H:%M:%S.%f')
+        except ValueError:
+            raise ValueError
+
+        hour = utc.hour
+        minute = utc.minute
+        second = utc.second
+
+        totalSeconds = str((hour*3600) + (minute*60) + second)
+
+        dateobs = dateobs.replace('-','')
+        dateobs = dateobs.replace('/','')
+        seq = (self.prefix, '.', dateobs, '.', totalseconds.zfill(5), '.fits')
+        self.koaid = ''.join(seq)
+        return True
+
+    def set_instr(self, keys):
+        instr = keys[self.instr].lower()
+        instr = instr.split(' ')
+        instr = instr[0].replace(':','')
+        return instr
