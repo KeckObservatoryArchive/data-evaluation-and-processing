@@ -6,22 +6,24 @@ NIRC2 specific DR techniques can be added to it in the future
 '''
 
 import instrument
+import datetime as dt
 
 class Nirc2(instrument.Instrument):
-    def __init__(self):
+    def __init__(self, endTime=dt.datetime.now()):
         # Call the parent init to get all the shared variables
-        super().__init__()
+        super().__init__(endTime)
 
         # NIRC2 uses ROOTNAME instead of OUTDIR
         self.fileRoot = 'ROOTNAME'
         # Set the NIRC2 specific paths to anc and stage
-        self.ancDir = '/net/koaserver2/koadata11/NIRC2/' + self.reducedDate + '/anc'
+        joinSeq = ('/net/koaserver2/koadata11/NIRC2/', self.utDate, '/anc')
+        self.ancDir = ''.join(joinSeq)
         self.stageDir = '/new/koaserver2/koadata11/stage'
         # Generate the paths to the NIRC2 datadisk accounts
-        self.paths = self.getDirList()
+        self.paths = self.get_dir_list()
 
 
-    def getDirList(self):
+    def get_dir_list(self):
         '''
         Function to generate the paths to all the NIRC2 accounts, including engineering
         Returns the list of paths
@@ -29,9 +31,13 @@ class Nirc2(instrument.Instrument):
         dirs = []
         path = '/s/sdata90'
         for i in range(5):
-            path2 = path + str(i) + '/nirc'
-            for i in range(1,21):
-                path3 = path2 + str(i)
+            joinSeq = (path, str(i), '/nirc')
+            path2 = ''.join(joinSeq)
+            for j in range(1,21):
+                joinSeq = (path2, str(j))
+                path3 = ''.join(joinSeq)
                 dirs.append(path3)
-            dirs.append(path2 + '2eng')
+            joinSeq(path2, '2eng')
+            path3 = ''.join(joinSeq)
+            dirs.append(path3)
         return dirs

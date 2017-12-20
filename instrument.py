@@ -9,10 +9,11 @@ Children will contain the instrument specific values
 import datetime as dt
 
 class Instrument:
-    def __init__(self, endhr):
+    def __init__(self, endTime=dt.datetime.now()):
         """
-        Keyword values to be used with a FITS file during runtime
         """
+
+        # Keyword values to be used with a FITS file during runtime
         self.utc = 'UTC'
         self.dateObs = 'DATE'
         self.semester = 'SEMESTER'
@@ -21,16 +22,15 @@ class Instrument:
         self.koaid = 'KOAID'
         self.outdir = 'OUTDIR'
         self.ftype = 'INSTR'         # For instruments with two file types
-        self.endHour = endhr
-        self.currDate = dt.datetime.now()
-        self.reducedDate = self.currDate.strftime('%Y%m%d')
+        self.utDate = endTime.strftime('%Y%m%d')
+        self.endHour = endTime.strftime('%H:%M:%S')
 
-        """
-        Values to be populated by subclass
-        """
+        # Values to be populated by subclass
         self.instr = ''
         self.prefix = ''
         self.origFile = ''
+        self.rootDir = ''
         self.stageDir = ''
         self.ancDir = ''
         self.paths = []
+        self.keys = {}

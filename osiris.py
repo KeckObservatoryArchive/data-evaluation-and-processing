@@ -6,22 +6,23 @@ OSIRIS specific DR techniques can be added to it in the future
 '''
 
 import instrument
+import datetime as dt
 
 class Osiris(instrument.Instrument):
-    def __init__(self):
+    def __init__(self, endTime=dt.datetime.now()):
         # Call the parent init to get all the shared variables
-        super().__init__()
+        super().__init__(endTime)
 
         # OSIRIS has 'DATAFILE' instead of OUTFILE
         self.fileRoot = 'DATAFILE'
         # Set the OSIRIS specific paths to anc and stage
-        self.ancDir = '/net/koaserver3/koadata23/OSIRIS/' + self.reducedDate + '/anc'
-        self.stageDir = '/new/koaserver3/koadata23/stage'
+        joinSeq = ('/net/koaserver3/koadata23/OSIRIS/', self.utDate, '/anc')
+        self.ancDir = ''.join(joinSeq)
+        self.stageDir = '/net/koaserver3/koadata23/stage'
         # Generate the paths to the OSIRIS datadisk accounts
-        self.paths = self.getDirList()
+        self.paths = self.get_dir_list()
 
-
-    def getDirList(self):
+    def get_dir_list(self):
         '''
         Function to generate the paths to all the OSIRIS accounts, including engineering
         Returns the list of paths
@@ -29,11 +30,16 @@ class Osiris(instrument.Instrument):
         dirs = []
         path = '/s/sdata110'
         for i in range (2):
-            path2 = path + str(i)
-            dirs.append(path2 + '/osiris')
-            for i in range(1,21):
-                path3 = path + '/osiris' + str(i)
+            seq = (path, str(i))
+            path2 = ''.join(seq)
+            seq = (path2, '/osiris')
+            dirs.append(''.join(seq))
+            for j in range(1,21):
+                seq = (path, '/osiris', str(j))
+                path3 = ''.join(seq)
                 dirs.append(path3)
-            dirs.append(path2 + '/osiriseng')
-            dirs.append(path2 + '/osrseng')
+            seq = (path2, '/osiriseng')
+            dirs.append(''.join(seq))
+            seq = (path2, '/osrseng')
+            dirs.append(''.join(seq))
         return dirs

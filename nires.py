@@ -6,11 +6,12 @@ NIRES specific DR techniques can be added to it in the future
 '''
 
 import instrument
+import datetime as dt
 
 class Nires(instrument.Instrument):
-    def __init__(self):
+    def __init__(self, endTime=dt.datetime.now()):
         # Call the parent init to get all the shared variables
-        super().__init__()
+        super().__init__(endTime)
 
         # NIRES uses DATAFILE instead of OUTFILE
         self.root = 'DATAFILE'
@@ -19,15 +20,16 @@ class Nires(instrument.Instrument):
         # Date observed is stored as DATE-OBS for NIRES
         self.dateObs = 'DATE-OBS'
         # Set the NIRES specific paths to anc and stage
-        self.ancDir = '/koadataXX/NIRES/' + self.reducedDate + '/anc'
+        joinSeq = ('/koadataXX/NIRES/', self.utDate, '/anc')
+        self.ancDir = ''.join(joinSeq)
         self.stageDir = '/koadataXX/stage'
 
         # Generate the paths to the NIRES datadisk accounts
-        self.paths = self.getDirList()
+        self.paths = self.get_dir_list()
         self.dataType = 'INSTR'
 
 
-    def getDirList(self):
+    def get_dir_list(self):
         '''
         Function to generate the paths to all the DEIMOS accounts, including engineering
         Returns the list of paths
@@ -35,11 +37,12 @@ class Nires(instrument.Instrument):
         dirs = []
         path = '/s/sdata150'
         for i in range(1,4):
-            path2 = path + str(i) + '/nireseng'
+            joinSeq = (path, str(i), '/nireseng')
+            path2 = ''.join(joinSeq)
             dirs.append(path2)
         return dirs
 
-    def setPrefix(self):
+    def set_prefix(self):
         '''
         Sets the prefix based on the type of file (imag or spec)
         '''
