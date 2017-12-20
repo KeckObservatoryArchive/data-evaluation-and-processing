@@ -6,24 +6,26 @@ NIRSPEC specific DR techniques can be added to it in the future
 '''
 
 import instrument
+import datetime as dt
 
 class Nirspec(instrument.Instrument):
-    def __init__(self):
+    def __init__(self, endTime=dt.datetime.now()):
         # Call the parent init to get all the shared variables
-        super().__init__()
+        super().__init__(endTime)
 
         # NIRSPEC uses ROOTNAME instead of OUTDIR
         self.fileRoot = 'ROOTNAME'
         # NIRSPEC uses FILENUM2 instead of FRAMENO
         self.frameno = 'FILENUM2'
         # Set the NIRSPEC specific paths to anc and stage
-        self.ancDir = '/net/koaserver/koadata7/NIRSPEC/' + self.reducedDate + '/anc'
+        joinSeq = ('/net/koaserver/kodata7/NIRSPEC/', self.utDate, '/anc')
+        self.ancDir = ''.join(joinSeq)
         self.stageDir = '/new/koaserver/koadata7/stage'
         # Generate the paths to the NIRSPEC datadisk accounts
-        self.paths = self.getDirList()
+        self.paths = self.get_dir_list()
 
 
-    def getDirList(self):
+    def get_dir_list(self):
         '''
         Function to generate the paths to all the NIRSPEC accounts, including engineering
         Returns the list of paths
@@ -31,10 +33,16 @@ class Nirspec(instrument.Instrument):
         dirs = []
         path = '/s/sdata90'
         for i in range(4):
-            path2 = path + str(i)
-            for i in range(1,21):
-                path3 = path2 + '/nspec' + str(i)
+            joinSeq = (path, str(i))
+            path2 = ''.join(joinSeq)
+            for j in range(1,21):
+                joinSeq = (path2, '/nspec', str(j))
+                path3 = ''.join(joinSeq)
                 dirs.append(path3)
-            dirs.append(path2 + '/nspeceng')
-            dirs.append(path2 + '/nirspec')
+            joinSeq = (path2, '/nspeceng')
+            path3 = ''.join(joinSeq)
+            dirs.append(path3)
+            joinSeq = (path2, 'nirspec')
+            path3 = ''.join(joinSeq)
+            dirs.append(path3)
         return dirs

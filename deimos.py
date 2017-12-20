@@ -6,11 +6,12 @@ DEIMOS specific DR techniques can be added to it in the future
 """
 
 import instrument
+import datetime as dt
 
 class Deimos(instrument.Instrument):
-    def __init__(self, endhr):
+    def __init__(self, endTime=dt.datetime.now()):
         # Call the parent init to get all the shared variables
-        super().__init__(endhr)
+        super().__init__(endTime)
 
         """
         Values to be overwritten from Superclass
@@ -22,13 +23,14 @@ class Deimos(instrument.Instrument):
         # DEIMOS uses FRAMENUM instead of FRAMENO
         self.frameno = 'FRAMENUM'
         # Set the deimos specific paths to anc and stage
-        self.ancDir = '/koadata29/DEIMOS/' + self.reducedDate + '/anc'
+        joinSeq = ('/koadata29/DEIMOS/', self.utDate, '/anc')
+        self.ancDir = ''.join(joinSeq)
         self.stageDir = '/koadata29/stage'
         # Generate the paths to the DEIMOS datadisk accounts
         self.paths = self.get_dir_list()
 
         """
-        Values not included in superclass
+        Values not included in superclass, specific to DEIMOS
         """
         # add the FCSIMGFI config file for deimos
         self.fcsimgfi = 'FCSIMGFI'
