@@ -42,7 +42,7 @@ def getDirList(instr, log_writer):
                 dirs.append(path3)
             # Add the engineering folder
             dirs.append(path2 + '/dmoseng')
-    if instr == 'ESI':
+    elif instr == 'ESI':
         for i in range(1,8):
             if i != 5:
                 path2 = path + str(i) + '/esi'
