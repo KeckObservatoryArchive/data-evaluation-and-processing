@@ -46,13 +46,18 @@ class Osiris(instrument.Instrument):
 
     def set_prefix(self, keys):
         instr = self.set_instr(keys)
-        outdir = keys[self.outdir]
         if instr == 'osiris':
-            if '/scam' in outdir:
-                self.prefix = 'OI'
-            elif '/spec' in outdir:
-                self.prefix = 'OS'
+            try:
+                outdir = keys[self.outdir]
+            except KeyError:
+                prefix = ''
             else:
-                self.prefix = ''
+                if '/scam' in outdir:
+                    prefix = 'OI'
+                elif '/spec' in outdir:
+                    prefix = 'OS'
+                else:
+                    prefix = ''
         else:
-            self.prefix = ''
+           prefix = ''
+        return prefix

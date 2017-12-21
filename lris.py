@@ -39,8 +39,9 @@ class Lris(instrument.Instrument):
     def set_prefix(self, keys):
         instr = self.set_instr(keys)
         if instr == 'lrisblue':
-            self.prefix = 'LB'
+            prefix = 'LB'
         elif instr == 'lris':
-            self.prefix = 'LR'
+            prefix = 'LR'
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix

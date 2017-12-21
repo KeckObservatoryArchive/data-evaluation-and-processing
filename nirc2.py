@@ -46,6 +46,7 @@ class Nirc2(instrument.Instrument):
     def set_prefix(self, keys):
         instr = self.set_prefix(keys)
         if instr == 'nirc2':
-            self.prefix = 'N2'
+            prefix = 'N2'
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix

@@ -47,11 +47,19 @@ class Nires(instrument.Instrument):
         Defaults to nullstr
         '''
         instr = self.set_instr(keys)
-        ftype = keys['INSTR']
-        if ftype == 'imag':
-            self.prefix = 'NI'
-        elif ftype == 'spec':
-            self.prefix = 'NR'
+        if instr == 'nires':
+            try:
+                ftype = keys['INSTR']
+            except KeyError:
+                prefix = ''
+            else:
+                if ftype == 'imag':
+                    prefix = 'NI'
+                elif ftype == 'spec':
+                    prefix = 'NR'
+                else:
+                    prefix = ''
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix
 

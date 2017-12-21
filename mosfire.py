@@ -48,6 +48,7 @@ class Mosfire(instrument.Instrument):
     def set_prefix(self, keys):
         instr = self.set_instr(keys)
         if instr == 'mosfire':
-            self.prefix = 'MF'
+            prefix = 'MF'
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix
