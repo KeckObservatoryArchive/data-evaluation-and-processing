@@ -7,6 +7,8 @@ Children will contain the instrument specific values
 """
 
 import datetime as dt
+import logging as lg
+import os
 
 class Instrument:
     def __init__(self, endTime=dt.datetime.now()):
@@ -47,6 +49,16 @@ class Instrument:
         self.koaid = ''
         self.paths = []
         self.keys = {}
+
+        # Separate section for log init
+        user = os.getLogin()
+        self.log = lg.getLogger(user)
+        self.log.setLevel(lg.INFO)
+        fh = lg.FileHandler(type(self).__name__ + 'Log.txt')
+        fh.setLevel(lg.INFO)
+        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+        fh.setFormatter(fmat)
+        self.log.addHandler(fh)
 
     def make_koaid(self, keys):
         """
