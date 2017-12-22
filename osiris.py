@@ -9,16 +9,17 @@ import instrument
 import datetime as dt
 
 class Osiris(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         # OSIRIS has 'DATAFILE' instead of OUTFILE
         self.fileRoot = 'DATAFILE'
         # Set the OSIRIS specific paths to anc and stage
-        joinSeq = ('/net/koaserver3/koadata23/OSIRIS/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/net/koaserver3/koadata23/stage'
+        seq = (self.rootDir, '/OSIRIS/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the OSIRIS datadisk accounts
         self.paths = self.get_dir_list()
 

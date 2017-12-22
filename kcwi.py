@@ -9,18 +9,19 @@ import instrument
 import datetime as dt
 
 class Kcwi(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         # KCWI has the original file name
         self.origFile = 'OFNAME'
         self.camera = 'CAMERA'
         self.endHour = 'DATE-END'
         # Set the KCWI specific paths to anc and stage
-        joinSeq = ('/koadata28/KCWI/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/koadata28/stage'
+        seq = (self.rootDir, '/KCWI/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the KCWI datadisk accounts
         self.paths = self.get_dir_list()
 

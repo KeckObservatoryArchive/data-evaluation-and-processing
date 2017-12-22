@@ -9,16 +9,17 @@ import instrument
 import datetime as dt
 
 class Nirc2(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         # NIRC2 uses ROOTNAME instead of OUTDIR
         self.fileRoot = 'ROOTNAME'
         # Set the NIRC2 specific paths to anc and stage
-        joinSeq = ('/net/koaserver2/koadata11/NIRC2/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/new/koaserver2/koadata11/stage'
+        seq = (self.rootDir,'/NIRC2/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the NIRC2 datadisk accounts
         self.paths = self.get_dir_list()
         self.prefix = 'N2'

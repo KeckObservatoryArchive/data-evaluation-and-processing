@@ -11,7 +11,7 @@ import logging as lg
 import os
 
 class Instrument:
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         """
         Base Instrument class to hold all the values common between
         instruments. Contains default values where possible
@@ -20,6 +20,7 @@ class Instrument:
         """
 
         # Keyword values to be used with a FITS file during runtime
+        self.rootDir = rDir
         self.instrume = 'INSTRUME'
         self.utc = 'UTC'
         self.dateObs = 'DATE'
@@ -43,7 +44,6 @@ class Instrument:
         self.instr = ''
         self.prefix = ''
         self.origFile = ''
-        self.rootDir = ''
         self.stageDir = ''
         self.ancDir = ''
         self.koaid = ''
@@ -51,10 +51,10 @@ class Instrument:
         self.keys = {}
 
         # Separate section for log init
-        user = os.getLogin()
+        user = os.getlogin()
         self.log = lg.getLogger(user)
         self.log.setLevel(lg.INFO)
-        fh = lg.FileHandler(type(self).__name__ + 'Log.txt')
+        fh = lg.FileHandler(self.rootDir + type(self).__name__ + 'Log.txt')
         fh.setLevel(lg.INFO)
         fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
         fh.setFormatter(fmat)

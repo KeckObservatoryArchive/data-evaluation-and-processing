@@ -9,18 +9,19 @@ import instrument
 import datetime as dt
 
 class Nirspec(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         # NIRSPEC uses ROOTNAME instead of OUTDIR
         self.fileRoot = 'ROOTNAME'
         # NIRSPEC uses FILENUM2 instead of FRAMENO
         self.frameno = 'FILENUM2'
         # Set the NIRSPEC specific paths to anc and stage
-        joinSeq = ('/net/koaserver/kodata7/NIRSPEC/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/new/koaserver/koadata7/stage'
+        seq = (self.rootDir, '/NIRSPEC/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the NIRSPEC datadisk accounts
         self.paths = self.get_dir_list()
 

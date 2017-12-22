@@ -8,14 +8,15 @@ ESI specific DR techniques can be added to it in the future
 import instrument
 
 class Esi(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         # Set the esi specific paths to anc and stage
-        joinSeq = ('/koadata29/ESI/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/koadata29/stage'
+        seq = (self.rootDir,'/ESI/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the ESI datadisk accounts
         self.paths = self.get_dir_list()
 
