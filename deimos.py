@@ -55,8 +55,9 @@ class Deimos(instrument.Instrument):
     def set_prefix(self, keys):
         instr = self.set_instr(keys)
         if '/fcs' in keys[self.outdir]:
-            self.prefix = 'DF'
+            prefix = 'DF'
         elif instr == 'deimos':
-            self.prefix = 'DE'
+            prefix = 'DE'
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix

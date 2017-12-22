@@ -43,6 +43,7 @@ class Esi(instrument.Instrument):
     def set_prefix(self, keys):
         instr = self.set_prefix(keys)
         if instr == 'esi':
-            self.prefix = 'EI'
+            prefix = 'EI'
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix

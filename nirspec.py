@@ -49,13 +49,18 @@ class Nirspec(instrument.Instrument):
 
     def set_prefix(self, keys):
         instr = self.set_instr(keys)
-        outdir = keys[self.outdir]
         if instr == 'nirspec':
-            if '/scam' in outdir:
-                self.prefix = 'NC'
-            elif '/spec' in outdir:
-                self.prefix = 'NS'
+            try:
+                outdir = keys[self.outdir]
+            except KeyError:
+                prefix = ''
             else:
-                self.prefix = ''
+                if '/scam' in outdir:
+                    prefix = 'NC'
+                elif '/spec' in outdir:
+                    prefix = 'NS'
+                else:
+                    prefix = ''
         else:
-            self.prefix = ''
+            prefix = ''
+       return prefix

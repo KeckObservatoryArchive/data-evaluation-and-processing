@@ -50,6 +50,7 @@ class Hires(instrument.Instrument):
     def set_prefix(self, keys):
         instr = self.set_instr(keys)
         if instr == 'hires':
-            self.prefix = 'HI'
+            prefix = 'HI'
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix

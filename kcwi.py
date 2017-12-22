@@ -47,15 +47,15 @@ class Kcwi(instrument.Instrument):
             try:
                 camera = keys['CAMERA'].lower()
             except KeyError:
-                self.prefix = ''
-                raise KeyError
+                prefix = ''
             if camera == 'blue':
-                self.prefix = 'KB'
+                prefix = 'KB'
             elif camera == 'red':
-                self.prefix = 'KR'
+                prefix = 'KR'
             elif camera == 'fpc':
-                self.prefix = 'KF'
+                prefix = 'KF'
             else:
-                self.prefix = ''
+                prefix = ''
         else:
-            self.prefix = ''
+            prefix = ''
+        return prefix
