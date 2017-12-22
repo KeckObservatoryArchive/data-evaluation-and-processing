@@ -250,7 +250,7 @@ def dep_rawfiles(
         filename, successful = construct_filename(instr,fitsList[i], 
                 ancDir, header0, log_writer)
         if not successful:
-            move_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log_writer)
+            move_bad_file(instr, fitsList[i], ancDir, 'Bad Header', log_writer)
             raw[i] = 2
             continue
 

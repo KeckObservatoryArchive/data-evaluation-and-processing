@@ -17,6 +17,13 @@ class Instrument:
         instruments. Contains default values where possible
         but null values should be replaced in the init of the 
         subclasses.
+
+        @type endTime: string or datetime
+        @param endTime: The date as a string if passed or datetime
+            object if not passed
+        @type rDir: string
+        @param rDir: Working directory of the instrument
+            Defaults to a null string
         """
 
         # Keyword values to be used with a FITS file during runtime
@@ -51,11 +58,18 @@ class Instrument:
         self.keys = {}
 
         # Separate section for log init
+        # Get the user currently logged in
         user = os.getlogin()
+        # Create a logger object with the user name
         self.log = lg.getLogger(user)
         self.log.setLevel(lg.INFO)
-        fh = lg.FileHandler(self.rootDir + type(self).__name__ + 'Log.txt')
+        # Give the path to the log file. If directory exists but
+        # log does not, it will create the file. 
+        seq = (self.rootDir, '/', type(self).__name__, 'Log.txt')
+        fh = lg.FileHandler(''.join(seq))
         fh.setLevel(lg.INFO)
+        # Create the format of the logged messages: 
+        # Time - Name - MessageLevel: Message
         fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
         fh.setFormatter(fmat)
         self.log.addHandler(fh)
