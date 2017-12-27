@@ -19,7 +19,7 @@ class Instrument:
         subclasses.
 
         @type endTime: string or datetime
-        @param endTime: The date as a string if passed or datetime
+        @param endTime: The date is a string if passed or datetime
             object if not passed
         @type rDir: string
         @param rDir: Working directory of the instrument
@@ -32,8 +32,8 @@ class Instrument:
         self.utc = 'UTC'
         self.dateObs = 'DATE'
         self.semester = 'SEMESTER'
-        self.fileRoot = 'OUTFILE'        # Can be DATAFILE or ROOTNAME for specific instruments
-        self.frameno = 'FRAMENO'     # Can be IMGNUM, FRAMENUM, FILENUM1, FILENUM2
+        self.fileRoot = 'OUTFILE'        # Can be DATAFILE or ROOTNAME
+        self.frameno = 'FRAMENO'     # IMGNUM, FRAMENUM, FILENUM1/2
         self.outdir = 'OUTDIR'
         self.ftype = 'INSTR'         # For instruments with two file types
         try: # Let's see if endTime was passed as a string
@@ -55,24 +55,9 @@ class Instrument:
         self.ancDir = ''
         self.koaid = ''
         self.paths = []
-        self.keys = {}
 
         # Separate section for log init
-        # Get the user currently logged in
-        user = os.getlogin()
-        # Create a logger object with the user name
-        self.log = lg.getLogger(user)
-        self.log.setLevel(lg.INFO)
-        # Give the path to the log file. If directory exists but
-        # log does not, it will create the file. 
-        seq = (self.rootDir, '/', type(self).__name__, 'Log.txt')
-        fh = lg.FileHandler(''.join(seq))
-        fh.setLevel(lg.INFO)
-        # Create the format of the logged messages: 
-        # Time - Name - MessageLevel: Message
-        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
-        fh.setFormatter(fmat)
-        self.log.addHandler(fh)
+        self.log = set_logger()
 
     def make_koaid(self, keys):
         """
@@ -133,3 +118,21 @@ class Instrument:
         # The instrument name should always be the first value
         instr = instr[0].replace(':','')
         return instr
+
+    def set_logger(self):
+        # Get the user currently logged in
+        user = os.getlogin()
+        # Create a logger object with the user name
+        self.log = lg.getLogger(user)
+        self.log.setLevel(lg.INFO)
+        # Give the path to the log file. If directory exists but
+        # log does not, it will create the file. 
+        seq = (self.rootDir, '/', type(self).__name__, 'Log.txt')
+        fh = lg.FileHandler(''.join(seq))
+        fh.setLevel(lg.INFO)
+        # Create the format of the logged messages: 
+        # Time - Name - MessageLevel: Message
+        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+        fh.setFormatter(fmat)
+        self.log.addHandler(fh)
+
