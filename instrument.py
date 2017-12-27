@@ -11,21 +11,29 @@ import logging as lg
 import os
 
 class Instrument:
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         """
         Base Instrument class to hold all the values common between
         instruments. Contains default values where possible
         but null values should be replaced in the init of the 
         subclasses.
+
+        @type endTime: string or datetime
+        @param endTime: The date is a string if passed or datetime
+            object if not passed
+        @type rDir: string
+        @param rDir: Working directory of the instrument
+            Defaults to a null string
         """
 
         # Keyword values to be used with a FITS file during runtime
+        self.rootDir = rDir
         self.instrume = 'INSTRUME'
         self.utc = 'UTC'
         self.dateObs = 'DATE'
         self.semester = 'SEMESTER'
-        self.fileRoot = 'OUTFILE'        # Can be DATAFILE or ROOTNAME for specific instruments
-        self.frameno = 'FRAMENO'     # Can be IMGNUM, FRAMENUM, FILENUM1, FILENUM2
+        self.fileRoot = 'OUTFILE'        # Can be DATAFILE or ROOTNAME
+        self.frameno = 'FRAMENO'     # IMGNUM, FRAMENUM, FILENUM1/2
         self.outdir = 'OUTDIR'
         self.ftype = 'INSTR'         # For instruments with two file types
         try: # Let's see if endTime was passed as a string
@@ -43,22 +51,13 @@ class Instrument:
         self.instr = ''
         self.prefix = ''
         self.origFile = ''
-        self.rootDir = ''
         self.stageDir = ''
         self.ancDir = ''
         self.koaid = ''
         self.paths = []
-        self.keys = {}
 
         # Separate section for log init
-        user = os.getLogin()
-        self.log = lg.getLogger(user)
-        self.log.setLevel(lg.INFO)
-        fh = lg.FileHandler(type(self).__name__ + 'Log.txt')
-        fh.setLevel(lg.INFO)
-        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
-        fh.setFormatter(fmat)
-        self.log.addHandler(fh)
+        self.log = set_logger()
 
     def make_koaid(self, keys):
         """
@@ -119,3 +118,21 @@ class Instrument:
         # The instrument name should always be the first value
         instr = instr[0].replace(':','')
         return instr
+
+    def set_logger(self):
+        # Get the user currently logged in
+        user = os.getlogin()
+        # Create a logger object with the user name
+        self.log = lg.getLogger(user)
+        self.log.setLevel(lg.INFO)
+        # Give the path to the log file. If directory exists but
+        # log does not, it will create the file. 
+        seq = (self.rootDir, '/', type(self).__name__, 'Log.txt')
+        fh = lg.FileHandler(''.join(seq))
+        fh.setLevel(lg.INFO)
+        # Create the format of the logged messages: 
+        # Time - Name - MessageLevel: Message
+        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+        fh.setFormatter(fmat)
+        self.log.addHandler(fh)
+

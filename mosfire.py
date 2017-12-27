@@ -9,22 +9,21 @@ import instrument
 import datetime as dt
 
 class Mosfire(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         # MOSFIRE has 'DATAFILE' instead of OUTFILE
         self.fileRoot = 'DATAFILE'
         # MOSFIRE has FRAMENUM instead of FRAMENO
         self.frameno = 'FRAMENUM'
         # Set the MOSFIRE specific paths to anc and stage
-        joinSeq = ('/koadata21/MOSFIRE/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/koadata21/stage'
+        seq = (self.rootDir, '/MOSFIRE/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the MOSFIRE datadisk accounts
         self.paths = self.get_dir_list()
-        self.prefix = 'MF'
-
 
     def get_dir_list(self):
         '''

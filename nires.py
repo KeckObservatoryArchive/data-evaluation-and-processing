@@ -9,9 +9,9 @@ import instrument
 import datetime as dt
 
 class Nires(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         # NIRES uses DATAFILE instead of OUTFILE
         self.root = 'DATAFILE'
@@ -20,9 +20,10 @@ class Nires(instrument.Instrument):
         # Date observed is stored as DATE-OBS for NIRES
         self.dateObs = 'DATE-OBS'
         # Set the NIRES specific paths to anc and stage
-        joinSeq = ('/koadataXX/NIRES/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/koadataXX/stage'
+        seq = (self.rootDir,'/NIRES/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
 
         # Generate the paths to the NIRES datadisk accounts
         self.paths = self.get_dir_list()

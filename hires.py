@@ -9,17 +9,18 @@ import instrument
 import datetime as dt
 
 class Hires(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime, rDir)
 
         '''
         Values to be overwritten from superclass
         '''
         # Set the hires specific paths to anc and stage
-        joinSeq = ('/net/koaserver2/koadata13/HIRES/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/net/koaserver2/koadata13/stage'
+        seq = (self.rootDir,'/HIRES/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the HIRES datadisk accounts
         self.paths = self.get_dir_list()
 

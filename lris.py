@@ -9,14 +9,15 @@ import instrument
 import datetime as dt
 
 class Lris(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now()):
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
         # Call the parent init to get all the shared variables
-        super().__init__(endTime)
+        super().__init__(endTime. rDir)
 
         # Set the lris specific paths to anc and stage
-        joinSeq =( '/koadata27/LRIS/', self.utDate, '/anc')
-        self.ancDir = ''.join(joinSeq)
-        self.stageDir = '/koadata27/stage'
+        seq =(self.rootDir, '/LRIS/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
         # Generate the paths to the LRIS datadisk accounts
         self.paths = self.get_dir_list()
 
