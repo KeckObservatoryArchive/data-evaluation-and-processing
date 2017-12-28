@@ -14,7 +14,7 @@ class Nirc2(instrument.Instrument):
         super().__init__(endTime, rDir)
 
         # NIRC2 uses ROOTNAME instead of OUTDIR
-        self.fileRoot = 'ROOTNAME'
+        self.ofName = 'ROOTNAME'
         # Set the NIRC2 specific paths to anc and stage
         seq = (self.rootDir,'/NIRC2/', self.utDate, '/anc')
         self.ancDir = ''.join(seq)

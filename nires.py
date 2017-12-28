@@ -14,8 +14,8 @@ class Nires(instrument.Instrument):
         super().__init__(endTime, rDir)
 
         # NIRES uses DATAFILE instead of OUTFILE
-        self.root = 'DATAFILE'
-        # NIRES frame numbers are a part of their data file
+        self.ofName = 'DATAFILE'
+        # NIRES does not have a frameno keyword
         self.frameno = ''
         # Date observed is stored as DATE-OBS for NIRES
         self.dateObs = 'DATE-OBS'
@@ -64,3 +64,20 @@ class Nires(instrument.Instrument):
             prefix = ''
         return prefix
 
+    def set_raw_fname(self, keys):
+        """
+        Overloaded method to create the NIRES rawfile name
+        NIRES uses DATAFILE to retrieve the filename without
+        the FITS extension, so we have to add that back on
+
+        @type keys: dictionary
+        @param keys: FITS header keys for th given file
+        """
+        try:
+            outfile = keys[self.ofName]
+        except KeyError:
+            return '', False
+        else:
+            seq = (outfile, '.fits')
+            filename = ''.join(seq)
+            return filename, True
