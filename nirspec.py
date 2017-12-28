@@ -14,9 +14,10 @@ class Nirspec(instrument.Instrument):
         super().__init__(endTime, rDir)
 
         # NIRSPEC uses ROOTNAME instead of OUTDIR
-        self.fileRoot = 'ROOTNAME'
-        # NIRSPEC uses FILENUM2 instead of FRAMENO
-        self.frameno = 'FILENUM2'
+        self.ofName = 'FILENAME'
+        # NIRSPEC uses FILENUM and FILENUM2 so we'll
+        # just use DATAFILE to get the name instead
+        self.frameno = ''
         # Set the NIRSPEC specific paths to anc and stage
         seq = (self.rootDir, '/NIRSPEC/', self.utDate, '/anc')
         self.ancDir = ''.join(seq)
@@ -65,3 +66,20 @@ class Nirspec(instrument.Instrument):
         else:
             prefix = ''
        return prefix
+
+   def set_raw_fname(self, keys):
+       """
+       Overloaded method to retrieve the raw filename for
+       the given FITS file. NIRSPEC uses two different keys
+       for the frameno so we'll save a lot of headaches by
+       using DATAFILE where it stores the raw filename.
+
+       @type keys: dictionary
+       @param keys: the header keys from a given FITS file
+       """
+       try:
+           filename = keys[self.ofName]
+       except KeyError:
+           return '', False
+       else:
+           return filename, True

@@ -32,7 +32,7 @@ class Instrument:
         self.utc = 'UTC'
         self.dateObs = 'DATE'
         self.semester = 'SEMESTER'
-        self.fileRoot = 'OUTFILE'        # Can be DATAFILE or ROOTNAME
+        self.ofName = 'OUTFILE'        # Can be DATAFILE or ROOTNAME
         self.frameno = 'FRAMENO'     # IMGNUM, FRAMENUM, FILENUM1/2
         self.outdir = 'OUTDIR'
         self.ftype = 'INSTR'         # For instruments with two file types
@@ -50,7 +50,7 @@ class Instrument:
         # Values to be populated by subclass
         self.instr = ''
         self.prefix = ''
-        self.origFile = ''
+        self.rawfile = ''
         self.stageDir = ''
         self.ancDir = ''
         self.koaid = ''
@@ -120,6 +120,12 @@ class Instrument:
         return instr
 
     def set_logger(self):
+        """
+        Method to initialize the logger for each individual instrument. 
+        Log files will be created in their local directories 
+        as <instrument>Log.txt
+        """
+
         # Get the user currently logged in
         user = os.getlogin()
         # Create a logger object with the user name
@@ -136,3 +142,35 @@ class Instrument:
         fh.setFormatter(fmat)
         self.log.addHandler(fh)
 
+    def set_raw_fname(self, keys):
+        """
+        Determines the original filename from the keywords given
+
+        @type keys: dictionary
+        @param keys: contains the FITS file header information
+        """
+        # Get the root name of the file
+        try:
+            outfile = keys[self.ofName]
+        except KeyError:
+            return '', False
+       
+        # Get the frame number of the file
+        try:
+            frameno = keys[self.frameno]
+        except KeyError:
+            return '', False
+
+        # Determine the necessary padding required
+        zero = ''
+        if float(frameno) < 10:
+            zero = '000'
+        elif 10 <= float(frameno) < 100:
+            zero = '00'
+        elif 100 <= float(frameno) < 1000:
+            zero = '0'
+
+        # Construct the original filename
+        seq = (outfile.strip(), zero, str(frameno).strip(), '.fits')
+        filename = ''.join(seq)
+        return filename, True

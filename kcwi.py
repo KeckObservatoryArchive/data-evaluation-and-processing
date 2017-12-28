@@ -14,7 +14,7 @@ class Kcwi(instrument.Instrument):
         super().__init__(endTime, rDir)
 
         # KCWI has the original file name
-        self.origFile = 'OFNAME'
+        self.ofName = 'OFNAME'
         self.camera = 'CAMERA'
         self.endHour = 'DATE-END'
         # Set the KCWI specific paths to anc and stage
@@ -60,3 +60,19 @@ class Kcwi(instrument.Instrument):
         else:
             prefix = ''
         return prefix
+
+    def set_raw_fname(self, keys):
+        """
+        Overloaded method to retrieve the raw filename of the
+        KCWI FITS file. KCWI stores the raw filename in the
+        OFNAME keyword.
+
+        @type keys: dictionary
+        @param keys: Keys and values of the header for the FITS file
+        """
+        try:
+            filename = keys[self.ofName]
+        except KeyError:
+            return '', False
+        else:
+            return filename, True

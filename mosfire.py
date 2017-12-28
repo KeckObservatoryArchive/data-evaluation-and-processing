@@ -14,7 +14,7 @@ class Mosfire(instrument.Instrument):
         super().__init__(endTime, rDir)
 
         # MOSFIRE has 'DATAFILE' instead of OUTFILE
-        self.fileRoot = 'DATAFILE'
+        self.ofName = 'DATAFILE'
         # MOSFIRE has FRAMENUM instead of FRAMENO
         self.frameno = 'FRAMENUM'
         # Set the MOSFIRE specific paths to anc and stage
@@ -51,3 +51,21 @@ class Mosfire(instrument.Instrument):
         else:
             prefix = ''
         return prefix
+
+    def set_raw_fname(self, keys):
+        """
+        Overloaded method to construct the raw filename 
+        of the original file. MOSFIRE stores the raw filename
+        without the FITS extension in DATAFILE.
+
+        @type keys: dictionary
+        @param keys: FITS header file values
+        """
+        try:
+            outfile = keys[self.ofName]
+        except KeyError:
+            return '', False
+        else:
+            seq = (outfile, '.fits')
+            filename = ''.join(seq)
+            return filename, True

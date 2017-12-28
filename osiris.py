@@ -14,7 +14,7 @@ class Osiris(instrument.Instrument):
         super().__init__(endTime, rDir)
 
         # OSIRIS has 'DATAFILE' instead of OUTFILE
-        self.fileRoot = 'DATAFILE'
+        self.ofName = 'DATAFILE'
         # Set the OSIRIS specific paths to anc and stage
         seq = (self.rootDir, '/OSIRIS/', self.utDate, '/anc')
         self.ancDir = ''.join(seq)
@@ -62,3 +62,19 @@ class Osiris(instrument.Instrument):
         else:
            prefix = ''
         return prefix
+
+    def set_raw_fname(self, keys):
+        """
+        Overloaded method to retrieve the raw filename for
+        the OSIRIS FITS files. OSIRIS stores the raw filename
+        in the DATAFILE keyword.
+
+        @type keys: dictionary
+        @param keys: Values of the header for a FITS file
+        """
+        try:
+            filename = keys[self.ofName]
+        except KeyError:
+            return '', False
+        else:
+            return filename, True
