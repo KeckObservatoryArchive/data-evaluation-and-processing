@@ -364,8 +364,8 @@ def pyfind(usedir, utDate, endHour, outfile, log):
                     joinSeq = (root, '/', item)
                     full_path = ''.join(joinSeq)
                     # Check to see if the file is a fits file created/modified
-                    # in the last day. st_mtime needs to be greater than the m
-                    # inTimeSinceMod to be within the past 24 hours
+                    # in the last day. st_mtime needs to be greater than the
+                    # minTimeSinceMod to be within the past 24 hours
                     modTime = os.stat(full_path).st_mtime
                     if ('.fits' in item[-5:] 
                             and modTime <= maxTimeSinceMod 
