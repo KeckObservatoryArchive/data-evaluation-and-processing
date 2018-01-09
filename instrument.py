@@ -53,6 +53,8 @@ class Instrument:
         self.rawfile = ''
         self.stageDir = ''
         self.ancDir = ''
+        self.lev0 = ''
+        self.lev1 = ''
         self.koaid = ''
         self.paths = []
 
@@ -72,20 +74,20 @@ class Instrument:
         # Note: set_prefix() is a subclass method
         self.prefix = self.set_prefix(keys)
         if self.prefix == '':
-            return False
+            return '', False
 
         # Extract the UTC time and date observed from the header
         try:
             utc = keys[self.utc]
             dateobs = keys[self.dateObs]
         except KeyError:
-            return False
+            return '', False
 
         # Create a timedate object using the string from the header
         try:
             utc = datetime.strptime(utc, '%H:%M:%S.%f')
         except ValueError:
-            return False
+            return '', False
 
         # Extract the hour, minute, and seconds from the UTC time
         hour = utc.hour
@@ -102,8 +104,8 @@ class Instrument:
 
         # Create the KOAID from the parts
         seq = (self.prefix, '.', dateobs, '.', totalseconds.zfill(5), '.fits')
-        self.koaid = ''.join(seq)
-        return True
+        koaid = ''.join(seq)
+        return koaid, True
 
     def set_instr(self, keys):
         """
@@ -174,3 +176,4 @@ class Instrument:
         seq = (outfile.strip(), zero, str(frameno).strip(), '.fits')
         filename = ''.join(seq)
         return filename, True
+
