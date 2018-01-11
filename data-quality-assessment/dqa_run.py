@@ -36,6 +36,7 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog)
     log.info(__name__ + ' ' + instr + ': DQA Started')
     
     udate = date
+    createprog(instr, udate, stageDir)
     
     
     files = glob('*.fits*')
@@ -73,13 +74,14 @@ def create_prog(instr, utdate, stageDir, log):
                 oa.append(items)
     
     # Get all files
+    ''' This part was commented out in the idl file
     for root, dirs, files in os.walk(stageDir):
         for item in files:
             if '.fits' in item:
                 seq = (root, item)
                 fileName = ''.join(seq)
                 fileList.append(fileName)
-
+    '''
     seq = (stageDir, '/dqa_', instr, '.txt')
     dqa_instr = ''.join(seq)
     with open(dqa_instr, 'r') as dqa:
@@ -99,14 +101,12 @@ def create_prog(instr, utdate, stageDir, log):
                         continue
                 header = fits.getheader(item)
 
-                # need to fix this somehow
+                # Temp fix for bad file times(NIRSPEC legacy)
                 fixdate = utdate
-                fixdatetime, fixdate, item, header = header
-                imagetyp_instr, instr, header, imagetyp=imagetyp
-                try:
-                    udate = header['DATE-OBS'].strip()
-                except KeyError:
-                    log.warning('Bad header file')
+                fixdatetime(fixdate, item, header)
+                imagetyp = imagetyp_instr(instr, header)
+                udate = header.get('DATE-OBS').strip()
+                if 'Error' in udate or udate == '':
                     lastMod = os.stat(item).st_mtime
                     udate = dt.fromtimestamp(lastMod).strftime('%Y-%m-%d')
 
@@ -122,10 +122,7 @@ def create_prog(instr, utdate, stageDir, log):
                         utc = header['UTC'].strip()
                     except KeyError:
                         utc = dt.fromtimestamp(lastMod).strftime('%H:%M:%S')
-                try:
-                    observer = header['OBSERVER'].strip()
-                except KeyError:
-                    pass
+                observer = header.get('OBSERVER').strip()
                 try:
                     fileno = header['FILENUM'].strip()
                 except KeyError:
@@ -150,7 +147,13 @@ def create_prog(instr, utdate, stageDir, log):
                 if len(newFile) > 1:
                     newFile = '/sdata' + newFile[-1]
                 newFile = newFile.replace('//','/')
-                ofile.write(file, udate, utc, outdir, observer, fileno, imagetyp)
+                ofile.write(newFile+'\n')
+                ofile.write(udate+'\n')
+                ofile.write(utc+'\n')
+                ofile.write(outdir+'\n')
+                ofile.write(observer+'\n')
+                ofile.write(fileno+'\n')
+                ofile.write(imagetyp+'\n')
 
                 try:
                     progname = header['PROGNAME'].strip()
@@ -161,12 +164,9 @@ def create_prog(instr, utdate, stageDir, log):
                     ofile.write('PROGTITL\n')
                 else:
                     ofile.write(progname + '\n')
-                    try:
-                        semester = header['SEMESTER']
-                    except KeyError:
-                        pass
+                    semester(header)
 
-def imagetype_instr(self, instr, keys):
+def imagetype_instr(instr, keys):
     """
     """
     imagetyp = 'undefined'
@@ -669,7 +669,66 @@ def imagetype_instr(self, instr, keys):
                 imagetyp = 'dark'
     return imagetyp
 
-def fixdatetime(self, keys):
-    datestuff = ''
+def fixdatetime(utdate, fname, keys):
+    utdate = utdate.replace('-','')
+    utdate = utdate.replace('/','')
 
-    return datestuff
+    seq = ('/home/koaadmin/fixdatetime/', utdate, '.txt')
+    datefile = '' .join(seq)
+
+    if os.path.isfile(fname) is False:
+        return
+
+    fileroot = fname.split('/')
+    fileroot = [-1]
+
+    output = ''
+
+    with open(datefile, 'r') as df:
+        for line in df:
+            if rootfile in line:
+                output = line
+                break
+    if output != '':
+        dateobs = keys.get('DATE-OBS')
+        if 'Error' not in dateobs and dateobs.strip() != '':
+            return
+        vals = output.split(' ')
+        keys.update('DATE-OBS', vals[1], ' Original value missing - added by KOA')
+        keys.update('UTC', vals[2], 'Original value missing - added by KOA')
+
+#---------------------------------- End fixdatetime ----------------------------
+
+def semester(keys):
+    try:
+        dateobs = keys['DATE-OBS']
+    except KeyError:
+        dateobs = keys.get('DATE').strip()[0:10]
+    if '-' not in dateobs:
+        day, month, year = dateobs.split('/')
+        if int(year)<50:
+            year = '20' + year
+        else:
+            year = '19' + year
+        dateval = year + '-' + month + '-' + day
+        note = " DATE-OBS corrected (" + dateobs + ")"
+        keys.update('DATE-OBS', dateval, note)
+    else:
+        year, month, day = dateobs.split('-')
+        iyear = int(year)
+        imonth = int(month)
+        iday = int(day)
+
+    # Determine SEMESTER from DATE-OBS
+    semester = ''
+    sem = 'A'
+    if imonth >8 or imonth < 2:
+        sem = 'B'
+    elif imonth == 8 and iday > 1:
+        sem = 'B'
+    elif imonth == 2 and iday == 1:
+        sem = 'B'
+    if imonth == 1 or (imonth == 2 and iday == 1):
+        year = str(iyear-1)
+
+    semester = year + sem
