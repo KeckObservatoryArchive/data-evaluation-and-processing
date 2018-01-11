@@ -166,10 +166,9 @@ def create_prog(instr, utdate, stageDir, log):
                     except KeyError:
                         pass
 
-def imagetype_instr(self, keys):
+def imagetype_instr(self, instr, keys):
     """
     """
-    instr = keys.get('INSTR')
     imagetyp = 'undefined'
     imtype = ''
     if "KCWI" in instr:
@@ -179,8 +178,6 @@ def imagetype_instr(self, keys):
             imtype = keys.get('CAMERA')
             if imtype != None and imtype.strip().upper() != 'FPC':
                 imtype = ''
-        else:
-            imtype = ''
         imagetyp = imtype.strip().lower()
         if imagetyp = '':
             imagetyp = 'undefined'
@@ -194,7 +191,7 @@ def imagetype_instr(self, keys):
         obsfx = keys.get('OBSFX').strip().lower()
         obsfy = keys.get('OBSFY').strip().lower()
         obsfz = keys.get('OBSFZ').strip().lower()
-        instr = keys.get('INSTR').strip().lower()
+        inst = keys.get('INSTR').strip().lower()
         el = keys.get('EL').strip().lower()
         datafile = keys.get('DATAFILE').strip().lower()
         coadds = keys.get('COADDS').strip().lower()
@@ -210,7 +207,7 @@ def imagetype_instr(self, keys):
         elif sfilter == 'drk' and datafile[0] == 's':
             imagetyp = 'dark'
         # If instr='imag' uses dome lamps
-        elif instr == 'imag':
+        elif inst == 'imag':
             if (obsfname == 'telescope' and axestat == 'not controlling' 
                     and el < 45.11 and el gt 44.89 
                     and abs(float(domeposn)-float(az)) > 80 
@@ -348,20 +345,24 @@ def imagetype_instr(self, keys):
 
             if lampname == 'none' and (lmirrin!=0 or darkclos != 1):
                 bad = 'y'
-            if ttime == 0 and bad == 'n':
-                imagetyp = 'bias'
-            elif ttime == 0 and bad == 'y':
-                imagetyp = 'bias_lamp_on'
-            elif ttime != 0 and bad == 'n':
-                imagetyp = 'dark'
-            elif ttime != 0 and bad == 'y':
-                imagetyp = 'dark_lamp_on'
-            return
+            if ttime == 0:
+                if bad == 'n':
+                    imagetyp = 'bias'
+                else: # bad == 'y':
+                    imagetyp = 'bias_lamp_on'
+            else: #  ttime != 0 
+                if bad == 'n':
+                    imagetyp = 'dark'
+                else: # bad == 'y':
+                    imagetyp = 'dark_lamp_on'
         elif autoshut == 1:
-            deckname = keys.get('DECKNAME').strip()
-            catcur1 = keys.get('CATCUR1')
-            catcur2 = keys.get('CATCUR2')
-            hatclos = keys.get('HATCLOS')
+            try:
+                deckname = keys['DECKNAME'].strip()
+                catcur1 = keys['CATCUR1']
+                catcur2 = keys['CATCUR2']
+                hatclos = keys['HATCLOS']
+            except KeyError:
+                return
             xcovclos = keys.get('XCOVCLOS')
             ecovclos = keys.get('ECOVCLOS')
 
@@ -372,14 +373,12 @@ def imagetype_instr(self, keys):
                     imagetyp = 'dark'
                 else:
                     imagetyp = 'object'
-
-
             elif lampname in ['quartz' ,'quartz1', 'quartz2']:
                 if deckname == 'D5':
                     imagetyp == 'trace'
-                else: # deckname != 'D5'
+                elif deckname != 'D5':
                     imagetyp = 'flatlamp'
-                if lmirrin == 0:
+                elif lmirrin == 0:
                     if hatclos == 0:
                         imagetyp = 'object_lamp_on'
                     elif hatclos == 1:
@@ -401,14 +400,274 @@ def imagetype_instr(self, keys):
                     imagetyp = 'undefined'
             elif lampname == 'undefined':
                 imagetyp = 'undefined'
-    
-    else:
-        # do something
+    elif 'LRIS' in instr:
+        try:
+            instrume = keys['INSTRUME'].strip()
+        except:
+            return 'undefined'
 
-    imgtype = imgtype.strip()
-    imgtype = imgtype.lower()
+        # Focus
+        slitname = keys.get('SLITNAME').strip()
+        outfile = keys.get('OUTFILE').strip()
+        if slitname == 'GOH_LRIS' or outfile in ['rfoc', 'bfoc']:
+            imagetyp = focus
 
-    return imgtype
+        # Bias
+        elaptime = keys.get('ELAPTIME').strip()
+        if elaptime == 0:
+            imagetyp = 'bias'
+
+        # Flat, dark, wave, object
+        try:
+            trapdoor = keys['TRAPDOOR'].strip()
+        except:
+            return 'undefined'
+        graname = keys.get('GRANAME').strip()
+        grisname = keys.get('GRISNAME').strip()
+
+        if trapdoor == 'open':
+            flimagin = keys.get('FLIMAGIN').strip()
+            flspectr = keys.get('FLSPECTR').strip()
+            flat1 = keys.get('FLAMP1').strip()
+            flat2 = keys.get('FLAMP2').strip()
+
+            if 'on' in [flimagin, flspectr, flat1, flat2]:
+                imagetyp = 'flatlamp'
+            else:
+                try:
+                    autoshut = keys['AUTOSHUT']
+                except KeyError:
+                    return 'undefined'
+                else:
+                    calname = keys.get('CALNAME').strip()
+                    if calname in ['ir', 'hnpb', 'uv']:
+                        imagetyp = polcal
+                    else:
+                        imagetyp = obj
+        elif trapdoor == 'closed':
+            lamps = keys.get('LAMPS').strip()
+
+            if lamps not in ['', '0']:
+                if '1' in lamps:
+                    if lamps == '0,0,0,0,0,1':
+                        imagetyp = 'flatlamp'
+                    else:
+                        if instrume == 'LRIS':
+                            if graname != 'mirror':
+                                imagetyp = 'arclamp'
+                        elif instrume == 'LRISBLUE':
+                            if graname != 'clear':
+                                imagetyp = 'aarclamp'
+                else:
+                    if lamps == '0,0,0,0,0,0':
+                        imagetyp = dark
+            else:
+                mercury = keys.get('MERCURY').strip()
+                neon = keys.get('NEON').strip()
+                argon = keys.get('ARGON').strip()
+                cadmium = keys.get('CADMIUM').strip()
+                zinc = keys.get('ZINC').strip()
+                halogen = keys.get('HALOGEN').strip()
+                krypton = keys.get('KRYPTON').strip()
+                xenon = keys.get('XENON').strip()
+                feargon = keys.get('FEARGON').strip()
+                deuteri = keys.get('DEUTERI').strip()
+
+                if halogen == 'on':
+                    imagetyp = 'flatlamp'
+                elif 'on' in [neon, argon, cadmium, zinc, krypton, xenon, feargon, deuteri]:
+                    if instrume == 'LRIS':
+                        if graname != 'mirror':
+                            imagetyp = arclamp
+                    elif instrume == 'LRISBLUE':
+                        if graname != 'clear':
+                            imagetyp = 'arclamp'
+                elif neon == argon == cadmium == zinc == krypton == xenon == feargon == deuteri == 'off':
+                    imagetyp = 'dark'
+    elif 'MOSFIRE' in instr:
+        # Defaults
+        el = keys.get('EL')
+        domestat = keys.get('DOMESTAT').strip()
+        axestat = keys.get('AXESTAT').strip()
+
+        # Dust Cover
+        mdcmech = keys.get('MDCMECH').strip()
+        mdcstat = keys.get('MDCSTAT').strip()
+        mdcname = keys.get('MDCNAME').strip()
+        dustcov = ''
+        if mdcmech == 'Dust Cover' and mdcstat == 'OK':
+            if mdcname == 'Open':
+                dustcov = 'open'
+            elif mdcname == 'Closed':
+                dustcov = 'closed'
+
+        # Dome Lamps
+        try:
+            flatspec = keys['FLATSPEC'].strip()
+        except KeyError:
+            flatspec = ''
+        try: 
+            flimagin = keys['FLIMAGIN'].strip()
+        except KeyError:
+            flimagin = ''
+        try:
+            flspectr = keys['FLSPECTR'].strip()
+        except KeyError:
+            flspectr = ''
+
+        # Arc Lamps
+        try:
+            pwstata7 = keys['PWSTATA7'].strip()
+        except KeyError:
+            pwstata7 = ''
+        try:
+            pwstata8 = keys['PWSTATA8'].strip()
+        except KeyError:
+            pwstata8 = ''
+
+        # Obs_mode
+        obsmode = keys.get('OBSMODE').strip()
+
+        # Mask name
+        maskname = keys.get('MASKNAME').strip()
+
+        # Dark
+        if 'Dark' in obsmode and pwstata7 == pwstata8 == 0:
+            imagetyp = 'dark'
+
+        if dustcov == 'closed':
+            # Arclamp
+            if 'spectroscopy' in obsmode and 1 in [pwstata7, pwstata8]:
+                imagetyp = 'arclamp'
+        elif dustcov == 'open':
+            # Object
+            imagetyp = 'object'
+
+            # Flatlamp
+            if flatspec == 1 or 'on' in [flimagin, flspectr]:
+                imagetyp = 'flatlamp'
+            else:
+                if 44.99 <= el <= 45.01 and 'tracking' not in [domestat, axestat]:
+                    imagetyp = 'flatlamp'
+        # For when no flatlamp keywords
+        if imagetyp == 'undefined':
+            if 44.99 <= el <= 45.01 and 'tracking' not in [domestat, axestat]:
+                img = fits.open(filename)[0].data
+                img_mean = np.mean(img)
+                if img_mean > 500:
+                    imagetyp = 'flatlamp'
+                else:
+                    imagetyp = 'flatlampoff'
+    elif 'NIRSPEC' in instr:
+        # Check calibration
+        try:
+            calmpos = keys['CALMPOS']
+            calppos = keys['CALPPOS']
+            calcpos = keys['CALCPOS']
+        except KeyError:
+            return
+
+        # Arc
+        xenon = keys.get('XENON')
+        krypton = keys.get('KRYPTON')
+        argon = keys.get('ARGON')
+        neon = keys.get('NEON')
+        if 1 in [argon. krypton, neon, xenon]:
+            if calmpos == 1 and calppos == 0:
+                imagetyp = 'arclamp'
+            else:
+                imagetyp = 'undefined'
+            return imagetyp
+
+        # Flat
+        flat = keys.get('FLAT')
+        if flat == 0 and calmpos == 1:
+            imagetyp = 'flatlampoff'
+        elif flat == 1:
+            if calmpos == 1 and calppos == 0:
+                imagetyp = 'flatlamp'
+            else:
+                imagetyp = 'undefined'
+            return imagetyp
+        
+        # Dark
+        filname = keys.get('FILNAME').strip()
+        if filname == 'BLANK':
+            imagetyp = dark
+            try:
+                itime = keys['ITIME']
+            except KeyError:
+                itime = keys.get('ITIME2')
+            if itime == 0: 
+                imagetyp = 'bias'
+            return
+
+        # If cal mirror, pinhole, and cover are out, then 'object'
+        if calmpos == calppos == calcpos == 0:
+            imagetyp = 'object'
+    elif 'NIRC2' in instr:
+        grsname = keys.get('GRSNAME').strip()
+        shrname = keys.get('SHRNAME').strip()
+        obsfname = keys.get('OBSFNAME').strip()
+        domestat = keys.get('DOMESTAT').strip()
+        axestat = keys.get('AXESTAT').strip()
+
+        # Shutter open
+        if shrname == 'open':
+            if obsfname == 'telescope':
+                if domestat != 'tracking' and axestat != 'tracking':
+                    if grsname != 'clear':
+                        imagetyp = 'telTBD'
+                        return
+                    flimagin = keys.get('FLIMAGIN').strip()
+
+                    # if domelamps keyword exists
+                    try:
+                        flspectr = keys['FLSPECTR'].strip()
+                    except KeyError:
+                        el = float(keys.get('EL'))
+                        if 44.99 <  el < 45.01:
+                            imagetyp = 'flatTBD'
+                    else:
+                        flspectr = keys.get('FLSPECTR')
+                        if 'on' in [flimagin, flspectr]:
+                            imagetyp = 'flatlamp'
+                        else:
+                            imagetyp = 'flatlampoff'        
+                else:
+                    imagetyp = 'object'
+            elif obsfname == 'telsim':
+                try:
+                    argonpwr = keys.get('ARGONPWR')
+                    xenonpwr = keys.get('XENONPWR')
+                    kryptpwr = keys.get('KRYPTPWR')
+                    neonpwr = keys.get('NEONPWR')
+                    lamppwr = keys.get('LAMPPWR')
+                except KeyError:
+                    if grsname in ['lowres', 'medres', 'GRS1', 'GRS2']:
+                        imagetyp = 'specTBD'
+                else:
+                    # Special processing for lamppwr valid after 2011-10-10
+                    dateObs = keys.get('DATE-OBS').strip()
+                    date = dateObs.replace('-','')
+                    dateVal = long(date)
+                    goodDate = long(20111010)
+
+                    if dateVal >= goodDate):
+                        if lamppwr == 1:
+                            imagetyp = 'flatlamp'
+                        elif 1 in[argonpwr, xenonpwr, kryptpwr, neonpwr]:
+                            imagetyp = 'arclamp'
+                    else:
+                        imagetyp = 'specTBD'
+        # Dark or Bias
+        elif shrname == 'closed':
+            itime = keys.get('ITIME')
+            if itime == 0:
+                imagetyp = 'bias'
+            else:
+                imagetyp = 'dark'
+    return imagetyp
 
 def fixdatetime(self, keys):
     datestuff = ''
