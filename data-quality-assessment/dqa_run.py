@@ -6,6 +6,7 @@ import numpy as np
 from glob import glob
 from datetime import datetime as dt
 from astropy.io import fits
+from urllib import urlopen
 
 modules = ['nirspec', 'kcwi']
 
@@ -69,9 +70,10 @@ def create_prog(instr, utdate, stageDir, log):
         for line in dob:
             items = line.split(' ')
             if len(items)>1:
-                oa.append(items[0])
-            else:
-                oa.append(items)
+                oa.append(items[1])
+
+    if len(oa) >= 1:
+        oa = oa[0]
     
     # Get all files
     ''' This part was commented out in the idl file
@@ -165,6 +167,23 @@ def create_prog(instr, utdate, stageDir, log):
                 else:
                     ofile.write(progname + '\n')
                     semester(header)
+                    sem = header['SEMESTER'].strip()
+                    seq = (sem, '_', progname)
+                    ktn = ''.join(seq)
+                    progpi,proginst, progtitl = get_prog_info(ktn)                   
+                    if progpi == '':
+                        ofile.write('PROGPI\n')
+                    else:
+                        ofile.write(progpi+'\n')
+                    if proginst == '':
+                        ofile.write('PROGINST\n')
+                    else:
+                        ofile.write(proginst+'\n')
+                    if progtitl == '':
+                        ofile.write('PROGTITL\n')
+                    else:
+                        ofile.write(progtitl+'\n')
+                ofile.write(oa + '\n')
 
 def imagetype_instr(instr, keys):
     """
@@ -712,7 +731,7 @@ def semester(keys):
             year = '19' + year
         dateval = year + '-' + month + '-' + day
         note = " DATE-OBS corrected (" + dateobs + ")"
-        keys.update('DATE-OBS', dateval, note)
+        keys.update({'DATE-OBS':(dateval, note)})
     else:
         year, month, day = dateobs.split('-')
         iyear = int(year)
@@ -731,4 +750,17 @@ def semester(keys):
     if imonth == 1 or (imonth == 2 and iday == 1):
         year = str(iyear-1)
 
-    semester = year + sem
+    seq = (year, sem)
+    semester = ''.join(seq).strip()
+    keys.update({'SEMESTER':(semester, 'Calculated SEMESTER from DATE-OBS')})
+
+#------------------ END SEMESTER ---------------------------------------------
+
+def get_prog_info(ktn):
+    url = 'http://www.keck.hawaii.edu/software/db_api/proposalsAPI.php?ktn='+ktn+'&cmd='
+    progpi = request.urlopen(url+'getPI').read().decode('utf8')
+    proginst = urlopen(url+'getAllocInst').read().decode('utf8')
+    progtitl = urlopen(url+'getTitle').read().decode('utf8')
+    return progpi, proginst, progtitl
+
+#--------------- END GET PROG INFO-----------------------------------------
