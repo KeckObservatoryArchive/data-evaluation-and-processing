@@ -6,10 +6,11 @@ import numpy as np
 from glob import glob
 from datetime import datetime as dt
 from astropy.io import fits
+from urllib.request import urlopen
 
 modules = ['nirspec', 'kcwi']
 
-def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog)
+def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
     
     # Set up default directories
     tablesDir = '/kroot/archive/tables'
@@ -28,7 +29,7 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog)
     log = lg.getLogger(user)
     log.setLevel(lg.INFO)
     fh = lg.FileHandler(__name__ + '.txt')
-    fh.setLevel(lg.INFO
+    fh.setLevel(lg.INFO)
     fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
     fh.setFormatter(fmat)
     log.addHandler(fh)
@@ -59,7 +60,7 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog)
 def create_prog(instr, utdate, stageDir, log):
     log.info('create_prog: Getting FITS file information')
     
-    dep_obtain = stageDir + '/dep_obtain' + instr + '.txt')
+    dep_obtain = stageDir + '/dep_obtain' + instr + '.txt'
  
     oa = []
     fileList = []
@@ -67,11 +68,12 @@ def create_prog(instr, utdate, stageDir, log):
     # Get OA
     with open(dep_obtain, 'r') as dob:
         for line in dob:
-            items = line.split(' ')
+            items = line.strip().split(' ')
             if len(items)>1:
-                oa.append(items[0])
-            else:
-                oa.append(items)
+                oa.append(items[1])
+
+    if len(oa) >= 1:
+        oa = oa[0]
     
     # Get all files
     ''' This part was commented out in the idl file
@@ -86,7 +88,7 @@ def create_prog(instr, utdate, stageDir, log):
     dqa_instr = ''.join(seq)
     with open(dqa_instr, 'r') as dqa:
         for item in dqa:
-            fileList.append(item)
+            fileList.append(item.strip())
 
     # Open output file
     seq = (stageDir, '/createprog.txt')
@@ -124,18 +126,21 @@ def create_prog(instr, utdate, stageDir, log):
                         utc = dt.fromtimestamp(lastMod).strftime('%H:%M:%S')
                 observer = header.get('OBSERVER').strip()
                 try:
-                    fileno = header['FILENUM'].strip()
+                    fileno = header['FILENUM']
                 except KeyError:
                     try:
-                        fileno = header['FILENUM2'].strip()
+                        fileno = header['FILENUM2']
                     except KeyError:
                         try:
-                            fileno = header['FRAMENO'].strip()
+                            fileno = header['FRAMENO']
                         except KeyError:
                             try:
-                                fileno = header['IMGNUM'].strip()
+                                fileno = header['IMGNUM']
                             except KeyError:
-                                pass
+                                try:
+                                    fileno = header['FRAMENUM']
+                                except KeyError:
+                                    pass
                 try:
                     outdir = header['OUTDIR']
                 except KeyError:
@@ -143,35 +148,63 @@ def create_prog(instr, utdate, stageDir, log):
                         outdir = header['OUTDIR2']
                     except KeyError:
                         pass
-                newFile = item.split('/sdata')
-                if len(newFile) > 1:
-                    newFile = '/sdata' + newFile[-1]
+                fileparts = item.split('/sdata')
+                if len(fileparts) > 1:
+                    newFile = '/sdata' + fileparts[-1]
+                else:
+                    newFile = item
                 newFile = newFile.replace('//','/')
                 ofile.write(newFile+'\n')
                 ofile.write(udate+'\n')
                 ofile.write(utc+'\n')
                 ofile.write(outdir+'\n')
                 ofile.write(observer+'\n')
-                ofile.write(fileno+'\n')
+                ofile.write(str(fileno)+'\n')
                 ofile.write(imagetyp+'\n')
 
                 try:
-                    progname = header['PROGNAME'].strip()
+                    progname = header.get('PROGNAME')
+                    if progname == None:
+                        progname = header['PROGID']
                 except KeyError:
                     ofile.write('PROGNAME\n')
                     ofile.write('PROGPI\n')
                     ofile.write('PROGINST\n')
                     ofile.write('PROGTITL\n')
                 else:
+                    progname = progname.strip()
                     ofile.write(progname + '\n')
-                    semester(header)
 
-def imagetype_instr(instr, keys):
+                    # Get the viewing semester from obs-date
+                    semester(header)
+                    sem = header['SEMESTER'].strip()
+
+                    # Get the program ID
+                    seq = (sem, '_', progname)
+                    ktn = ''.join(seq)
+
+                    # Get the program information from the program ID
+                    progpi,proginst, progtitl = get_prog_info(ktn)                   
+                    if 'Usage' in progpi:
+                        ofile.write('PROGPI\n')
+                    else:
+                        ofile.write(progpi+'\n')
+                    if 'Usage' in proginst:
+                        ofile.write('PROGINST\n')
+                    else:
+                        ofile.write(proginst+'\n')
+                    if 'Usage' in progtitl:
+                        ofile.write('PROGTITL\n')
+                    else:
+                        ofile.write(progtitl+'\n')
+                ofile.write(oa + '\n')
+
+def imagetyp_instr(instrument, keys):
     """
     """
     imagetyp = 'undefined'
     imtype = ''
-    if "KCWI" in instr:
+    if "KCWI" in instrument:
         try:
             imtype = keys['IMTYPE']
         except KeyError:
@@ -179,37 +212,37 @@ def imagetype_instr(instr, keys):
             if imtype != None and imtype.strip().upper() != 'FPC':
                 imtype = ''
         imagetyp = imtype.strip().lower()
-        if imagetyp = '':
+        if imagetyp == '':
             imagetyp = 'undefined'
-    elif "OSIRIS" in instr:
-        ifilter = keys.get('IFILTER').strip().lower()
-        sfilter = keys.get('SFILTER').strip().lower()
-        axestat = keys.get('AXESTAT').strip().lower()
-        domeposn = keys.get('DOMEPOSN').strip().lower()
-        az = keys.get('AZ').strip().lower()
-        obsfname = keys.get('OBSFNAME').strip().lower()
-        obsfx = keys.get('OBSFX').strip().lower()
-        obsfy = keys.get('OBSFY').strip().lower()
-        obsfz = keys.get('OBSFZ').strip().lower()
-        inst = keys.get('INSTR').strip().lower()
-        el = keys.get('EL').strip().lower()
-        datafile = keys.get('DATAFILE').strip().lower()
-        coadds = keys.get('COADDS').strip().lower()
+    elif "OSIRIS" in instrument:
+        ifilter = keys.get('IFILTER').strip().lower() if keys.get('IFILTER') != None else ''
+        sfilter = keys.get('SFILTER').strip().lower() if keys.get('SFILTER') != None else ''
+        axestat = keys.get('AXESTAT').strip().lower() if keys.get('AXESTAT') != None else ''
+        domeposn = keys.get('DOMEPOSN')
+        az = keys.get('AZ')
+        obsfname = keys.get('OBSFNAME').strip().lower() if keys.get('OBSFNAME') != None else ''
+        obsfx = float(keys.get('OBSFX'))
+        obsfy = float(keys.get('OBSFY'))
+        obsfz = float(keys.get('OBSFZ'))
+        instr = keys.get('INSTR').strip().lower() if keys.get('INSTR') != None else ''
+        el = keys.get('EL')
+        datafile = keys.get('DATAFILE').strip().lower() if keys.get('DATAFILE') != None else ''
+        coadds = keys.get('COADDS')
 
         if 'telescope' in obsfname:
             imagetyp = 'object'
-        if datafile[8] == 'c':
+        elif datafile[8] == 'c':
             imagetyp = 'calib'
         
         # If ifilter or sfilter is 'dark' we have a dark
-        if ifilter == 'drk' and datafile[0] == 'i':
+        elif ifilter == 'drk' and datafile[0] == 'i':
             imagetyp = 'dark'
         elif sfilter == 'drk' and datafile[0] == 's':
             imagetyp = 'dark'
         # If instr='imag' uses dome lamps
-        elif inst == 'imag':
+        elif instr == 'imag':
             if (obsfname == 'telescope' and axestat == 'not controlling' 
-                    and el < 45.11 and el gt 44.89 
+                    and el < 45.11 and el < 44.89 
                     and abs(float(domeposn)-float(az)) > 80 
                     and abs(float(domeposn)-float(az)) < 100):
                 image1 = fits.open(infile)
@@ -221,14 +254,14 @@ def imagetype_instr(instr, keys):
                 else:
                     imagetyp = 'flatlampoff'
         # If instr == 'spec' use internal source
-        if datafile[8] == 'a':
-            if obsfname == 'telsim' or (obsfx > 30 and abs(obsfy) < 0.1 and abs(obsfz) < 0.1):
+        elif len(datafile) > 8 and datafile[8] == 'a':
+            if obsfname == 'telsim' or (abs(obsfx) > 30 and abs(obsfy) < 0.1 and abs(obsfz) < 0.1):
                 imagetyp = 'undefined'
             elif obsfz > 10:
                 imagetyp = 'undefined'
-        elif datafile[8] = 'c':
+        elif len(datafile) > 8 and datafile[8] == 'c':
             imagetyp = 'calib'
-    elif 'ESI' in instr:
+    elif 'ESI' in instrument:
         obstype = keys.get('OBSTYPE').strip().lower()
         hatchpos = keys.get('HATCHPOS').strip().lower()
         lampqtz1 = keys.get('LAMPQTZ1').strip().lower()
@@ -239,7 +272,7 @@ def imagetype_instr(instr, keys):
         imfltnam = keys.get('IMFLTNAM').strip().lower()
         ldfltnam = keys.get('LDFLTNAM').strip().lower()
         prismnam = keys.get('PRISMNAM').strip().lower()
-        el = keys.get('EL').strip().lower()
+        el = keys.get('EL')
         domestat = keys.get('DOMESTAT').strip().lower()
         axestat = keys.get('AXESTAT').strip().lower()
         slmsknam = keys.get('SLMSKNAM').strip().lower()
@@ -279,10 +312,10 @@ def imagetype_instr(instr, keys):
         instConfig = [(slmsk, hatchpos, lampqtz1, lampar1, lampcu1, lampne1, lampne2),
                 (slmsk, hatchpos, lampqtz1, lampar1, lampcu1, lampne1, lampne2, prismnam, imfltnam),
                 (slmsk, hatchpos,'on' in [lampar1, lampcu1, lampne1, lampne2], imfltnam, prismnam),
-                (slmsk, hatchpos, [44.00<=el<=46.01, domestat=='not tracking', axestat=='not tracking'
+                (slmsk, hatchpos, [44.00<=el<=46.01, domestat=='not tracking', axestat=='not tracking',
                         obstype=='dmflat'].count(True)>=3),
                 (slmsk, hatchpos, prismnam, imfltnam, 
-                        [44.00<=el<=46.01, domestat=='not tracking', axestat=='not tracking'
+                        [44.00<=el<=46.01, domestat=='not tracking', axestat=='not tracking',
                         obstype=='dmflat'].count(True)>=3),
                 (slmsk, imfltnam, ldfltnam, prismnam),
                 (slmsk, apmsknam, dwfilnam, imfltnam, prismnam)
@@ -297,16 +330,16 @@ def imagetype_instr(instr, keys):
         # Otherwise use the list of configs to figure out the imagetyp
         else:
             for item in instConfig:
-                if configs.get(item) not None:
+                if configs.get(item) != None:
                     imagetyp = configs.get(item)
-    elif 'DEIMOS' in instr:
-        obstype = keys.get('OBSTYPE').strip().lower()
-        slmsknam = keys.get('SLMSKNAM').strip().lower()
-        hatchpos = keys.get('HATCHPOS').strip().lower()
-        flimagin = keys.get('FLIMGNAM').strip().lower()
-        flspectr = keys.get('FLSPECTR').strip().lower()
-        lamps = keys.get('LAMPS').strip().lower()
-        gratepos = keys.get('GRATEPOS').strip().lower()
+    elif 'DEIMOS' in instrument:
+        obstype = keys.get('OBSTYPE').strip().lower() if keys.get('OBSTYPE') != None else ''
+        slmsknam = keys.get('SLMSKNAM').strip().lower() if keys.get('SLMSKNAM') != None else ''
+        hatchpos = keys.get('HATCHPOS').strip().lower() if keys.get('HATCHPOS') != None else ''
+        flimagin = keys.get('FLIMGNAM').strip().lower() if keys.get('FLIMGNAM') != None else ''
+        flspectr = keys.get('FLSPECTR').strip().lower() if keys.get('FLSPECTR') != None else ''
+        lamps = keys.get('LAMPS').strip().lower() if keys.get('LAMPS') != None else ''
+        gratepos = keys.get('GRATEPOS')
 
         # If obstype == 'bias' we have a bias
         if obstype == 'bias':
@@ -333,7 +366,7 @@ def imagetype_instr(instr, keys):
         if 'fcs' in outdir:
             imagetyp = 'fcscal'
 
-    elif 'HIRES' in instr:
+    elif 'HIRES' in instrument:
         autoshut = keys.get('AUTOSHUT')
         lampname = keys.get('LAMPNAME').strip()
         lmirrin = keys.get('LMIRRIN')
@@ -400,7 +433,7 @@ def imagetype_instr(instr, keys):
                     imagetyp = 'undefined'
             elif lampname == 'undefined':
                 imagetyp = 'undefined'
-    elif 'LRIS' in instr:
+    elif 'LRIS' in instrument:
         try:
             instrume = keys['INSTRUME'].strip()
         except:
@@ -413,7 +446,7 @@ def imagetype_instr(instr, keys):
             imagetyp = focus
 
         # Bias
-        elaptime = keys.get('ELAPTIME').strip()
+        elaptime = keys.get('ELAPTIME')
         if elaptime == 0:
             imagetyp = 'bias'
 
@@ -439,11 +472,11 @@ def imagetype_instr(instr, keys):
                 except KeyError:
                     return 'undefined'
                 else:
-                    calname = keys.get('CALNAME').strip()
+                    calname = keys.get('CALNAME').strip() if keys.get('CALNAME') != None else ''
                     if calname in ['ir', 'hnpb', 'uv']:
                         imagetyp = polcal
                     else:
-                        imagetyp = obj
+                        imagetyp = 'object'
         elif trapdoor == 'closed':
             lamps = keys.get('LAMPS').strip()
 
@@ -484,7 +517,7 @@ def imagetype_instr(instr, keys):
                             imagetyp = 'arclamp'
                 elif neon == argon == cadmium == zinc == krypton == xenon == feargon == deuteri == 'off':
                     imagetyp = 'dark'
-    elif 'MOSFIRE' in instr:
+    elif 'MOSFIRE' in instrument:
         # Defaults
         el = keys.get('EL')
         domestat = keys.get('DOMESTAT').strip()
@@ -503,7 +536,7 @@ def imagetype_instr(instr, keys):
 
         # Dome Lamps
         try:
-            flatspec = keys['FLATSPEC'].strip()
+            flatspec = keys['FLATSPEC']
         except KeyError:
             flatspec = ''
         try: 
@@ -517,11 +550,11 @@ def imagetype_instr(instr, keys):
 
         # Arc Lamps
         try:
-            pwstata7 = keys['PWSTATA7'].strip()
+            pwstata7 = keys['PWSTATA7']
         except KeyError:
             pwstata7 = ''
         try:
-            pwstata8 = keys['PWSTATA8'].strip()
+            pwstata8 = keys['PWSTATA8']
         except KeyError:
             pwstata8 = ''
 
@@ -558,7 +591,7 @@ def imagetype_instr(instr, keys):
                     imagetyp = 'flatlamp'
                 else:
                     imagetyp = 'flatlampoff'
-    elif 'NIRSPEC' in instr:
+    elif 'NIRSPEC' in instrument:
         # Check calibration
         try:
             calmpos = keys['CALMPOS']
@@ -572,7 +605,7 @@ def imagetype_instr(instr, keys):
         krypton = keys.get('KRYPTON')
         argon = keys.get('ARGON')
         neon = keys.get('NEON')
-        if 1 in [argon. krypton, neon, xenon]:
+        if 1 in [argon, krypton, neon, xenon]:
             if calmpos == 1 and calppos == 0:
                 imagetyp = 'arclamp'
             else:
@@ -605,7 +638,7 @@ def imagetype_instr(instr, keys):
         # If cal mirror, pinhole, and cover are out, then 'object'
         if calmpos == calppos == calcpos == 0:
             imagetyp = 'object'
-    elif 'NIRC2' in instr:
+    elif 'NIRC2' in instrument:
         grsname = keys.get('GRSNAME').strip()
         shrname = keys.get('SHRNAME').strip()
         obsfname = keys.get('OBSFNAME').strip()
@@ -653,7 +686,7 @@ def imagetype_instr(instr, keys):
                     dateVal = long(date)
                     goodDate = long(20111010)
 
-                    if dateVal >= goodDate):
+                    if dateVal >= goodDate:
                         if lamppwr == 1:
                             imagetyp = 'flatlamp'
                         elif 1 in[argonpwr, xenonpwr, kryptpwr, neonpwr]:
@@ -676,7 +709,7 @@ def fixdatetime(utdate, fname, keys):
     seq = ('/home/koaadmin/fixdatetime/', utdate, '.txt')
     datefile = '' .join(seq)
 
-    if os.path.isfile(fname) is False:
+    if os.path.isfile(datefile) is False:
         return
 
     fileroot = fname.split('/')
@@ -694,8 +727,8 @@ def fixdatetime(utdate, fname, keys):
         if 'Error' not in dateobs and dateobs.strip() != '':
             return
         vals = output.split(' ')
-        keys.update('DATE-OBS', vals[1], ' Original value missing - added by KOA')
-        keys.update('UTC', vals[2], 'Original value missing - added by KOA')
+        keys.update({'DATE-OBS':(vals[1], ' Original value missing - added by KOA')})
+        keys.update({'UTC':(vals[2], 'Original value missing - added by KOA')})
 
 #---------------------------------- End fixdatetime ----------------------------
 
@@ -703,7 +736,11 @@ def semester(keys):
     try:
         dateobs = keys['DATE-OBS']
     except KeyError:
-        dateobs = keys.get('DATE').strip()[0:10]
+        try:
+            dateobs = keys.get('DATE').strip()[0:10]
+        except:
+            dateobs = keys.get('DQA_DATE').strip()[0:10]
+        keys.update({'DATE-OBS':(dateobs, 'Added missing DATE-OBS keyword')})
     if '-' not in dateobs:
         day, month, year = dateobs.split('/')
         if int(year)<50:
@@ -712,7 +749,7 @@ def semester(keys):
             year = '19' + year
         dateval = year + '-' + month + '-' + day
         note = " DATE-OBS corrected (" + dateobs + ")"
-        keys.update('DATE-OBS', dateval, note)
+        keys.update({'DATE-OBS':(dateval, note)})
     else:
         year, month, day = dateobs.split('-')
         iyear = int(year)
@@ -731,4 +768,24 @@ def semester(keys):
     if imonth == 1 or (imonth == 2 and iday == 1):
         year = str(iyear-1)
 
-    semester = year + sem
+    seq = (year, sem)
+    semester = ''.join(seq).strip()
+    keys.update({'SEMESTER':(semester, 'Calculated SEMESTER from DATE-OBS')})
+
+#------------------ END SEMESTER ---------------------------------------------
+
+def get_prog_info(ktn):
+    """
+    Retrives the program PI, allocating institution,
+    and title from the proposals database web API
+
+    @type ktn: string
+    @param ktn: the program ID - consists of semester and progname (ie 2017B_U428)
+    """
+    url = 'http://www.keck.hawaii.edu/software/db_api/proposalsAPI.php?ktn='+ktn+'&cmd='
+    progpi = urlopen(url+'getPI').read().decode('utf8')
+    proginst = urlopen(url+'getAllocInst').read().decode('utf8')
+    progtitl = urlopen(url+'getTitle').read().decode('utf8')
+    return progpi, proginst, progtitl
+
+#--------------- END GET PROG INFO-----------------------------------------
