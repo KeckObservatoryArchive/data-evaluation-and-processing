@@ -3,6 +3,7 @@
 
 import os
 import koa_db_conn as kdb
+import mysql_conn as msc
 
 class ProgSplit:
     def __init__(self, ut_date, instr, stage_diri, lg):
@@ -124,16 +125,75 @@ class ProgSplit:
                             query = 'SELECT koa_pi.*, koa_program.* FROM koa_pi LEFT JOIN koa_program '
                             query += 'ON koa_pi.piID=koa_program.piID WHERE koa_program.semid='
                             query += self.semester + '_' + sem + 'and koa_program.type="ToO"'
-                            with db.cursor() as cursor:
+                            with db.cursor(pymysql.cursors.DictCursor) as cursor:
                                 cursor.execute(query)
-                                if cursor.rowcount == 1:
-                                    res = cursor.fetchone()
-
-
+                                res = cursor.fetchone()
+                                sem, prog = res[7].split('_')
+                                self.fileList[count]['proginst'] = 'KECK'
+                                self.fileList[count]['progid'] = prog
+                                self.fileList[count]['progpi'] = res[1].replace(' ','')
+                                self.fileList[count]['progtitl'] = res[9]
                     # Reset for the next file
                     num = 0
                     del row
                     row = {}
+            # Number of files found
+            self.numFiles = count
+# ---------------- END READ FILE LIST--------------------------------------------------------
+
+    def assignToPi(self, num):
+        num -= 1
+        save = ('oa','proginst','progpi','progid')
+        for i in range(self.numFiles):
+            # If file already has PI, skip
+            if self.fileList[i]['progpi'] != 'PROGPI':
+                continue
+            for col in save:
+                self.fileList[i][col] = self.programs[num][col]
+            if self.fileList[i]['progid'] == 'ENG':
+                seq = (self.instrument, ' Engineering')
+                self.fileList[i]['progtitl'] = ''.join(seq)
+            else:
+                self.fileList[i]['progtitl'] = self.get_prog_title(self.programs[num]['progid'])
+            if (self.fileList[i]['progpi'] == 'PROGPI' 
+                    or self.fileList[i]['progpi'] == ''  
+                    or self.fileList[i]['progpi'] == 'NONE'):
+                self.backup_program()
+
+#--------------------------- END ASSIGN TO PI---------------------------------------------
+
+    def assignSingleToPi(self, filenum, num):
+        # If file already has PI, skip
+        if (self.fileList[filenum]['progpi'] != 'PROGPI'
+                and self.fileList[filenum]['progpi'] != ''):
+            return
+        num -= 1
+        save = ('oa', 'proginst', 'progpi', 'progid')
+        if len(self.programs) == 1 and num == 1:
+            num = 0
+        for col in save:
+            self.fileList[filenum][col] = self.programs[num][col]
+        if self.fileList[filenum]['progid'] == 'ENG':
+            seq = (self.instrument, ' Engineering')
+            self.fileList[filenum]['progtitl'] = ''.join(seq)
+        else:
+            self.fileList[filenum]['progtitl'] = self.get_prog_title(self.programs[num]['progid'])
+
+#---------------------------- END ASSIGN SINGLE TO PI-------------------------------------------
+
+    def get_schedule_value(self, col):
+        cnx = msc.mysql_conn()
+        date = self.utdate
+        telnr = str(self.instrList[self.instrument])
+        seq = ("SELECT ", col, ' FROM telsched WHERE Date=', date, 
+               ' AND TelNr=', telnr)
+        query = ''.join(seq)
+        with cnx.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(query)
+            row = cursor.fetchone()
+        if len(row)==1:
+            return row[col]
+        return ''
 
 def getProgInfo(utdate, instrument, stageDir):
     utdate = utdate.replace('/','-')
