@@ -2,8 +2,11 @@
 """
 
 import os
+import json
 import koa_db_conn as kdb
 import mysql_conn as msc
+import metrics_conn as metrics
+import urllib.request as url
 
 class ProgSplit:
     def __init__(self, ut_date, instr, stage_diri, lg):
@@ -25,10 +28,10 @@ class ProgSplit:
         outdir = ''
         programs = [{}]
         semester = this.get_semester()
-        splitTime = ''
+        splitTime = 0.0
         stageDir = stage_dir
-        sunset = ''
-        sunrise = ''
+        sunset = 0.0
+        sunrise = 0.0
         utDate = ut_date
         log = lg
 
@@ -194,6 +197,24 @@ class ProgSplit:
         if len(row)==1:
             return row[col]
         return ''
+
+#---------------------------------- END GET SCHEDULE VALUE------------------------------------
+
+    def getSunTimes(self):
+        seq = ('http://vm-koaserver5:50001/metrics_api?date=', self.utdate)
+        res = url.urlopen(''.join(seq))
+        suntimes = res.read().decode()[1:-1]
+        suntimes = json.loads(res)
+        rise = suntimes['dawn_12deg']
+        sset = suntimes['dusk_12deg']
+        risHr, risMin, risSec = rise.split(':')
+        setHr, setMin, setSec = sset.split(':')
+        self.sunrise = float(risHr)+float(risMin)/60.0+float(risSec)/3600
+        self.sunset = float(setHr)+float(setMin)/60.0+float(setSec)/3600
+        self.splitTime = (self.sunrise+self.sunset)/2.0
+
+#---------------------END GET SUN TIMES------------------------------------------------
+
 
 def getProgInfo(utdate, instrument, stageDir):
     utdate = utdate.replace('/','-')
