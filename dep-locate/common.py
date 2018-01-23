@@ -81,7 +81,10 @@ def koaid(keywords, utDate):
 
         instr_prefix = {'esi':'EI', 'hires':'HI', 'lris':'LR', 'lrisblue':'LB', 'mosfire':'MF', 'nirc2':'N2'}
 
-        instr = keywords['INSTRUME'].lower()
+        try:
+            instr = keywords['INSTRUME'].lower()
+        except KeyError:
+            return False
         instr = instr.split(' ')
         instr = instr[0].replace(':', '')
         outdir = keywords['OUTDIR']
