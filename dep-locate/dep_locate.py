@@ -20,6 +20,7 @@ from common import koaid             ## Used to determine the KOAID of a file fo
 import os
 import verification
 import shutil
+from sys import argv
 
 def dep_locate(instr, utDate, rootDir, endHour):
     """ 
@@ -42,10 +43,10 @@ def dep_locate(instr, utDate, rootDir, endHour):
     dateDir = utDate.replace('-', '')
     dateDir = dateDir.replace('/', '')
 
-    joinSeq = (rootDir, '/stage/', dateDir)
+    joinSeq = (rootDir, '/stage/', instr, '/', dateDir)
     stageDir = ''.join(joinSeq)
 
-    joinSeq = (rootDir, '/', dateDir, '/anc')
+    joinSeq = (rootDir, '/', instr, '/', dateDir, '/anc')
     ancDir = ''.join(joinSeq)
 
     ### Set up logging ###
@@ -56,7 +57,9 @@ def dep_locate(instr, utDate, rootDir, endHour):
     log_writer.setLevel(lg.INFO)
     
     # create a file handler
-    log_handler = lg.FileHandler('debug.log')
+    joinSeq = (rootDir, '/', instr, '/', instr, '_', dateDir, '.log')
+    log_file = ''.join(joinSeq)
+    log_handler = lg.FileHandler(log_file)
     log_handler.setLevel(lg.INFO)
     
     # Create a logging format
@@ -78,6 +81,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
         joinSeq = (ancDir, '/udf')
         udfDir = ''.join(joinSeq)
         os.makedirs(udfDir)
+        log_writer.info('udf directory created')
     except FileExistsError:
         log_writer.warning('udf directory already exists!')
     except:
@@ -87,6 +91,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
     # Create the stage directory
     try:
         os.makedirs(stageDir)
+        log_writer.info('stage directory created')
     except FileExistsError:
         log_writer.warning('stage directory already exists!')
     except:
@@ -109,6 +114,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
     files = ''.join(joinSeq)
 
     # Find the files in the last 24 hours
+    log_writer.info('looking for FITS files')
     pyfind(usedir, utDate, endHour, presort, log_writer)
 
     # We only wants the .fits files
@@ -125,6 +131,7 @@ def dep_locate(instr, utDate, rootDir, endHour):
                     # to use local copy file list
                     joinSeq = (stageDir, line.strip())
                     newFile = ''.join(joinSeq)
+                    log_writer.info('copying file {} to {}'.format(line.strip(), newFile))
                     copy_file(line.strip(), newFile)
 
                     joinSeq = (newFile, '\n')
@@ -158,8 +165,9 @@ def dep_locate(instr, utDate, rootDir, endHour):
     log_writer.info(
             '{0}: finished rawfiles {0} {1} {2} {3} {4}'.format(instr, utDate, endHour, stageDir, ancDir))
 
+    num = sum(1 for line in open(files, 'r'))
     log_writer.info('{}: Using files found in {}'.format(instr, usedir))
-    log_writer.info('{}: dep_locate successful'.format(instr))
+    log_writer.info('{}: dep_locate successful - {} files found'.format(instr, num))
 
 #-----------------------END DEP LOCATE----------------------------------
 
@@ -361,7 +369,21 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
            filename = ''.join(joinSeq)
        return filename, True
    elif instr == 'MOSFIRE':
-       outfile = keywords['DATAFILE']
+       try:
+           outfile = keywords['DATAFILE']
+           return outfile, True
+       except KeyError:
+           move_bad_file(
+                   instr, fitsFile, ancDir, 'Bad Outfile', log_writer)
+           return '', False
+   elif instr == 'KCWI':
+       try:
+           outfile = keywords['OFNAME']
+           return outfile, True
+       except KeyError:
+           move_bad_file(
+                   instr, fitsFile, ancDir, 'Bad Outfile', log_writer)
+           return '', False
    else:
        try:
            outfile = keywords['OUTFILE']
@@ -476,3 +498,11 @@ def pyfind(usedir, utDate, endHour, outfile, log_writer):
 #-----------------------End PyFind-----------------------------------
 
 
+
+print(len(argv))
+if len(argv) == 5:
+    print(argv[1])
+    print(argv[2])
+    print(argv[3])
+    print(argv[4])
+    dep_locate(argv[1], argv[2], argv[3], argv[4])
