@@ -227,6 +227,7 @@ def dep_rawfiles(
     # Loop through the file list and read in
     # the fits files found from within 24 hours
     # of the given date
+    print(fileList)
     with open(fileList, 'r') as ffiles:
         for line in ffiles:
             fitsList.append(line.strip())
@@ -371,6 +372,9 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
    elif instr == 'MOSFIRE':
        try:
            outfile = keywords['DATAFILE']
+           if '.fits' not in outfile:
+               joinSeq = (outfile, '.fits')
+               outfile = ''.join(joinSeq)
            return outfile, True
        except KeyError:
            move_bad_file(
@@ -391,9 +395,12 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
            try:
                outfile = keywords['ROOTNAME']
            except KeyError:
-               move_bad_file(
-                       instr, fitsFile, ancDir, 'Bad Outfile', log_writer)
-               return '', False
+               try:
+                   outfile = keywords['FILENAME']
+               except KeyError:
+                   move_bad_file(
+                           instr, fitsFile, ancDir, 'Bad Outfile', log_writer)
+                   return '', False
 
    # Get the frame number of the file
    if outfile[:2] == 'kf':
@@ -476,6 +483,8 @@ def pyfind(usedir, utDate, endHour, outfile, log_writer):
             for root, dirs, files in os.walk(fitsDir):
                 # Iterate through the leaf files in the directory
                 for item in files:
+                    if not '.fits' in item:
+                        continue
                     # Create the path to the current file we want to check
                     joinSeq = (root, '/', item)
                     full_path = ''.join(joinSeq)
