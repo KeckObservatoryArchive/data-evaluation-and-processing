@@ -246,7 +246,11 @@ def dep_rawfiles(
         raw[i] = 0
 
         # Get the header of the current fits file
-        header0 = fits.getheader(fitsList[i])
+        if instr == 'NIRC2':
+            header0 = fits.getheader(fitsList[i], ignore_missing_end=True)
+            header0['INSTRUME'] = 'NIRC2'
+        else:
+            header0 = fits.getheader(fitsList[i])
 
         # Break the file path into a list
         root = fitsList[i].split('/')
