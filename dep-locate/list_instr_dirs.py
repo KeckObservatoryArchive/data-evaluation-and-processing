@@ -80,7 +80,7 @@ def getDirList(instr, log_writer):
             for j in range(1,21):
                 path3 = path2 + str(j)    
                 dirs.append(path3)
-        dirs.append(path2 + '2eng')
+            dirs.append(path2 + '2eng')
     elif instr == 'NIRSPEC':
         path += '60'
         for i in range(4):
