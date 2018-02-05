@@ -7,6 +7,16 @@ import hashlib
 
 def dep_add(telNr, utDate, ancDir):
 	"""
+	This function will add the weather and focus log files to 
+	the ancillary directory.  Log files are copied from either
+	/h/nightly#/yy/mm/dd or /s/nightly#/yy/mm/dd.
+
+	@param telNr: Telescope number
+	@type telnr: string
+	@param utDate: UT date (yyyy-mm-dd)
+	@type utDate: string
+	@param ancDir: ancillary directry
+	@type ancDir: string
 	"""
 	
 	verify_date(utDate)
@@ -47,6 +57,13 @@ def dep_add(telNr, utDate, ancDir):
 
 def dep_tar(utDate, ancDir):
 	"""
+	This function will tar the ancillary directory, gzip that
+	tarball and remove the original contents of the directory.
+
+	@param utDate: UT date (yyyy-mm-dd)
+	@type utDate: string
+	@param ancDir: ancillary directry
+	@type ancDir: string
 	"""
 	
 	verify_date(utDate)
