@@ -10,13 +10,91 @@ import urllib.request as url
 import pymysql as pms
 
 class ProgSplit:
-    def __init__(self, ut_date, instr, stage_diri, lg):
+    """
+    Variables:
+    @type engineering: dictionary
+    @param engineering: different engineering directories
+    @type fileList: list of dictionaries
+    @param fileList: stores the files read from dep_obtain
+    @type instrList: dictionary
+    @param instrList: stores which instruments are on which telescope
+    @type instrument: string
+    @param instrument: Stores the current instrument being used
+    @type numFiles: int
+    @param numFiles: number of valid files found
+    @type numSciencePI: int
+    @param numSciencePI: Number of unique PIs found
+    @type too: dictionary
+    @param too: stores _ToO_ as a key for outdir
+    @type observer: list
+    @parma observer: Stores the observers for a project
+    @type obsValues: list
+    @param obsValues: stores various observation values
+    @type outdir: string
+    @param outdir: Directory where the original files are located
+    @type programs: list of dictionaries
+    @param programs: list of program information for the FITS files
+    @type semester: string
+    @param semester: Semester during which the observation occured in
+    @type splitTime: float
+    @param splitTime: the time in decimal hours when the programs switched
+    @type stageDir: string
+    @param stageDir: temporary storge location for files waiting to be sent
+    @type sunset: float
+    @param sunset: time in decimal hours when 12deg sunset occured
+    @type sunrise: float
+    @param sunrise: time in decimal hours when 12deg sunrise occured
+    @type utDate: string (datetime in db)
+    @param utDate: date in UT when observation occured
+    @type log: Logger object
+    @param log: log handler that writes messages to a log
+    @type sciFiles: list
+    @param sciFiles: stores the valid science files
+    @type api: string
+    @param api: base url for querying the RESTful API
+
+    Methods:
+    __init__(self, ut_date, instr, stage_dir, lg)
+    get_semester(self)
+    check_stage_dir(self)
+    check_instrument(self)
+    read_dep_obtain(self)
+    read_file_list(self)
+    assign_to_pi(self, num)
+    assign_single_to_pi(self, filenum, num)
+    get_schedule_value(self, col)
+    get_sun_times(self)
+    get_prog_title(self, progid)
+    get_outdir(self)
+    get_observer(self)
+    split_by_observer(self)
+    split_by_time(self)
+    split_by_science(self)
+    split_multi_by_science(self)
+    fix_outdir(self, outdir)
+    backup_program(self)
+    get_program(self, num, progid, inst, pi)
+    split_by_frameno(self)
+    """
+    def __init__(self, ut_date, instr, stage_dir, lg):
+        """
+        Initialization function for the ProgSplit class
+
+        @type ut_date: string
+        @param ut_date: Date of observaton in UT timezone
+        @type instr: string
+        @param instr: Instrument that is being observed
+        @type stage_dir: string
+        @param stage_dir: directory we are moving processed files to
+        @type lg: Logger object
+        @param lg: Logger object that handles information, warning, and error logging
+        """
         self.engineering = {'kcwieng':'outdir', 'kcwirun':'outdir', 
                 'hireseng':'outdir','nspeceng':'outdir', 
                 'nirc2eng':'outdir', 'engineering':'observer',
                 'dmoseng':'outdir', 'lriseng':'outdir', 'esieng':'outdir',
                 'keck ipdm':'observer', 'nirspec':'observer'}
-        self.fileList = [{}]
+        self.fileList = []
         self.instrList = {'DEIMOS':2, 'ESI':2, 'HIRES':1, 
                 'KCWI':2, 'LRIS':1, 'MOSFIRE':1, 
                 'NIRC2':2, 'NIRSPEC':2, 'OSIRIS':1}
@@ -27,15 +105,16 @@ class ProgSplit:
         self.observer = []
         self.obsValues = []
         self.outdir = []
-        self.programs = [{}]
-        self.semester = this.get_semester()
+        self.programs = []
         self.splitTime = 0.0
         self.stageDir = stage_dir
         self.sunset = 0.0
         self.sunrise = 0.0
         self.utDate = ut_date
+        self.semester = self.get_semester()
         self.log = lg
         self.sciFiles = []
+        self.api = 'https://www.keck.hawaii.edu/software/db_api/'
 
     def get_semester(self):
         """
@@ -70,17 +149,17 @@ class ProgSplit:
         This method checks if the instrument is one of the existing
         instruments
         """
-        if instrument not in instrList:
+        if self.instrument not in self.instrList:
             self.log.warning('progInfo - unknown instrument!')
             print("Instrument must be one of: ")
-            for item in instrList:
+            for item in self.instrList:
                 print('\t' + item)
 
     def read_dep_obtain(self):
         """
         This method reads the files from the dep_obtain output file
         """
-        seq = (self.stageDir, '/dep_obtain', instrument, '.txt')
+        seq = (self.stageDir, '/dep_obtain', self.instrument, '.txt')
         readfile = ''.join(seq)
         if not os.path.exists(readfile):
             self.log.warning('progInfo - file does not exist!!')
@@ -105,9 +184,9 @@ class ProgSplit:
         colsToSave = ['file','utdate','utc','outdir','observer','frameno',
                 'imagetyp','progid','progpi','proginst','progtitl','oa']
         colCount = len(colsToSave)
-        seq = (self.stageDir, 'createprog.txt')
+        seq = (self.stageDir, '/createprog.txt')
         fname = ''.join(seq)
-        if not os.path.isFile(fname):
+        if not os.path.isfile(fname):
             self.log.warning('This file does not exist!!!')
             exit()
         with open(fname, 'r') as flist:
@@ -120,7 +199,6 @@ class ProgSplit:
                 num += 1
                 if num == colCount:
                     self.fileList.append(row)
-                    count += 1
                     # Check to see if it is an engineering night
                     for key, value in self.engineering.items():
                         if key in self.fileList[count][value].lower():
@@ -141,19 +219,19 @@ class ProgSplit:
                             garbage, sem = self.fileList[count][value].split('_ToO_')
                             sem, garbage = sem.split('/')
                             # Get program information
-                            db = kdb.get_connection()
-                            query = 'SELECT koa_pi.*, koa_program.* FROM koa_pi LEFT JOIN koa_program '
-                            query += 'ON koa_pi.piID=koa_program.piID WHERE koa_program.semid='
-                            query += self.semester + '_' + sem + 'and koa_program.type="ToO"'
-                            with db.cursor(pymysql.cursors.DictCursor) as cursor:
-                                cursor.execute(query)
-                                res = cursor.fetchone()
-                                sem, prog = res[7].split('_')
-                                self.fileList[count]['proginst'] = 'KECK'
-                                self.fileList[count]['progid'] = prog
-                                self.fileList[count]['progpi'] = res[1].replace(' ','')
-                                self.fileList[count]['progtitl'] = res[9]
+                            semid = ''.join((self.semester, '-', sem))
+                            req = ''.join((self.api, 'koa.php?cmd=getPI&semid=', 
+                                    semid))
+                            pid = url.urlopen(req).read().decode()['progpi']
+                            req = ''.join((self.api, 'koa.php?cmd=getTitle&semid=', 
+                                    semid))
+                            titl = url.urlopen(req).read().decode()['progtitl']
+                            self.fileList[count]['proginst'] = 'KECK'
+                            self.fileList[count]['progid'] = sem
+                            self.fileList[count]['progpi'] = pid
+                            self.fileList[count]['progtitl'] = titl
                     # Reset for the next file
+                    count += 1
                     num = 0
                     del row
                     row = {}
@@ -182,7 +260,9 @@ class ProgSplit:
                 seq = (self.instrument, ' Engineering')
                 self.fileList[i]['progtitl'] = ''.join(seq)
             else:
-                self.fileList[i]['progtitl'] = self.get_prog_title(self.programs[num]['progid'])
+                self.fileList[i]['progtitl'] = self.get_prog_title(
+                        self.semester,
+                        self.programs[num]['progid'])
             if (self.fileList[i]['progpi'] == 'PROGPI' 
                     or self.fileList[i]['progpi'] == ''  
                     or self.fileList[i]['progpi'] == 'NONE'):
@@ -213,7 +293,9 @@ class ProgSplit:
             seq = (self.instrument, ' Engineering')
             self.fileList[filenum]['progtitl'] = ''.join(seq)
         else:
-            self.fileList[filenum]['progtitl'] = self.get_prog_title(self.programs[num]['progid'])
+            self.fileList[filenum]['progtitl'] = self.get_prog_title(
+                    self.semester,
+                    self.programs[num]['progid'])
 
 #---------------------------- END ASSIGN SINGLE TO PI-------------------------------------------
 
@@ -224,23 +306,18 @@ class ProgSplit:
         @type col: string
         @param col: the key for the value to extract from the database
         """
-        seq = ('vm-koaserver5:50001/sched_api?cmd=getSchedule&date=', 
-                self.utDate, '&col=', col)
-        qry = ''.join(seq)
-        req = url.urlopen(qry).read().decode()
-        # single json dicts won't allow [] so remove them
-        if '},' not in req and req[0] == '[':
-            req = req[1:-1]
-        data = json.loads(req)
-        return data[col]
+        req = ''.join((self.api, 'telSchedule.php?cmd=getSchedule&date=', 
+                self.utDate))
+        val = url.urlopen(req).read().decode()
+        val = json.loads(val)[col]
+        return val
 
 #---------------------------------- END GET SCHEDULE VALUE------------------------------------
 
     def get_sun_times(self):
-        seq = ('http://vm-koaserver5:50001/metrics_api?date=', self.utDate)
-        res = url.urlopen(''.join(seq))
-        suntimes = res.read().decode()
-        suntimes = json.loads(res)
+        req = url.urlopen(''.join((self.api, 'metrics.php?date=', self.utDate)))
+        suntimes = req.read().decode()
+        suntimes = json.loads(suntimes)
         rise = suntimes['dawn_12deg']
         sset = suntimes['dusk_12deg']
         risHr, risMin, risSec = rise.split(':')
@@ -251,10 +328,19 @@ class ProgSplit:
 
 #------------------------------END GET SUN TIMES------------------------------------------------
 
-    def get_prog_title(self, progid):
-        seq = ('http://vm-koaserver5:50001/koa_api?cmd=getTitle&semid=', progid)
-        res = url.urlopen(''.join(seq))
-        title = res.read().decode()
+    def get_prog_title(self, sem, progid):
+        """
+        Query the DB and get the program title
+
+        @type sem: string
+        @param sem: semester of the observation
+        @type progid: string
+        @param progid: ID of the observation program
+        """
+        semid = ''.join((sem, '_', progid))
+        req = ''.join((self.api, 'koa.php?cmd=getTitle&semid=', semid))
+        req = url.urlopen(req)
+        title = req.read().decode()
         title = json.loads(title)['progtitl']
         return title
 
@@ -472,25 +558,35 @@ class ProgSplit:
             return
 
         yr, mo, dy = self.utDate.split('-')
-        seq = (yr, '/', mo, '/', str(int(dy)-1))
-        date = ''.join(seq)
+        date = ''.join((yr, '/', mo, '/', str(int(dy)-1)))
         for key, val in self.fileList:
             if (self.fileList[key]['progpi'] != 'PROGPI'
                     and self.fileList[key]['progpi'] != 'NONE'
                     and self.fileList['progpi'] != ''):
                 continue
-            qry  = 'SELECT * FROM telsched WHERE Date="' + date + '" AND TelNr=2'
-            crs = msc.mysql_conn().cursor(pms.cursors.DictCursor)
-            crs.execute(qry)
-            backup = crs.fetchone()
 
-            if len(backup) != 1:
-                return
+            # Base url request for DB query
+            req = ''.join((self.api, 'telSchedule.php?cmd=getScheduleColumn&date=',
+                    self.utDate, '&telnr=2&column='))
 
-            program = row['ProjCode'].split('/')
+            # Get the Project Code, Institution and Principal from TelSched
+            # First we create the url to query the db
+            projcode = ''.join((req, 'ProjCode'))
+            inst = ''.join((req, 'Institution'))
+            pi = ''.join((req, 'Principal'))
+
+            # Then we get the results returned by the query
+            projcode = url.urlopen(projcode).read().decode()
+            inst = url.urlopen(inst).read().decode()
+            pi = url.urlopen(pi).read().decode()
+
+            #  Finally we load the JSON into a dict and access the value
+            projcode = json.loads(projcode)['ProjCode']
+            inst = json.loads(inst)['Institution']
+            pi = json.loads(pi)['Principal']
 
             if len(program) == 1:
-                title = get_program(-1, program[0], row['Institution'], row['Principal'])
+                title = get_program(-1, program, institution, pi)
             else: # split night
                 # Get sun times
                 self.get_sun_times()
@@ -498,22 +594,23 @@ class ProgSplit:
                 midNight = self.sunset + nightLen/2.0
                 hr, mn, sc = self.utc.split(':')
                 time = float(hr) + float(mn)/60.0 + float(sc)/3600.0
-                if time < midNight:
+                if time <= midNight:
                     num = 0
                 else:
                     num = 1
                 progid = program[num]
-                title = get_program(num, progid, row['Institution'], row['Principal'])
+                title = get_program(num, progid, inst, pi)
 
             progid = backup['ProjCode'].strip()
             inst = backup['Institution'].strip()
             pi = backup['Principal'].strip()
-            title = 
+            title = ''
 
 #--------------------------------------END BACKUP PROGRAM---------------------------------
 
     def get_program(self, num, progid, inst, pi):
         """
+        Method to determine which program to use
         """
         if num != -1:
             split1 = inst.split('/')
@@ -530,7 +627,7 @@ class ProgSplit:
                 pi = split2[num]
             else:
                 pi = split2[0]
-        pi = pi.replace(" ", '')
+        pi = pi.replace(' ', '')
 
         instr = ''
         if '/N2' in progid:
@@ -579,8 +676,97 @@ class ProgSplit:
 
 #--------------------------END SPLIT BY FRAMENO------------------------------------
 
-    def getProgInfo(utdate, instrument, stageDir):
-        utdate = utdate.replace('/','-')
-        instrument = instrument.upper()
+def getProgInfo(utdate, instrument, stageDir):
+    utdate = utdate.replace('/','-')
+    instrument = instrument.upper()
+    progSplit = new ProgSplit(utdate, instrument, stageDir)
+    progSplit.check_stage_dir()
+    progSplit.check_instrument()
+    progSplit.read_dep_obtain()
+    progSplit.read_file_list()
 
+    splitNight = 0
+    if '/' in progSplit.get_schedule_value('ProjCode'):
+        splitNight = 1
+    if splitNight == 0:
+        progSplit.log.warning(utdate + ' is not a split night')
+        if count progSplit.program == 1:
+            msg = ('Assigning to ', progsplit.instrument, ' PI')
+            msg = ''.join(msg)
+            print(msg)
+            progSplit.log.info(msg)
+            progSplit.assign_single_to_pi(1)
+        elif instrument == 'NIRSPEC':
+            # Check for NIRSPEC backup
+            print('NIRSPEC backup program')
+            progSplit.log.info('NIRSPEC backup program')
+            progSplit.backup_program()
+        elif instrument == 'NIRC2':
+            # check for NIRC2 backup
+            print('NIRC2 backup program')
+            progSplit.log.info('NIRC2 backup program')
+            progSplit.backup_program()
+    else:
+        msg = (utdate, ' is a split night with ', str(len(progSplit.programs)), ' programs')
+        msg = ''.join(msg)
+        print(msg)
+        progSplit.log.info(msg)
+        progSplit.get_sun_times()
+        progSplit.get_outdir()
+        msg = (len(progSplit.outdir), 'OUTDIRs found')
+        msg = ''.join(msg)
+        print(msg)
+        progSplit.log.info(msg)
+
+        for key, val in progSplit.outdir:
+            temp = (key, ' -- ', val, ': first half of sci = ', 
+                    progSplit.sciFiles[val]['firsthalf'], 
+                    '  second half of sci = ', 
+                    progSplit.sciFiles[val]['secondhalf'])
+            msg = ''.join(temp)
+            print(msg)
+            progSplit.log.info(msg)
+
+        if len(progSplit.outdir) == 1:
+            print('Checking FRAMENO')
+            progSplit.log.info('Checking FRAMENO')
+            return_val = progSplit.split_by_frameno()
+            if return_val > 0:
+                progSplit.split_by_time()
+            else:
+                progSplit.get_observer()
+                if progSplit.obsValues > 1 or progSplit.numSciencePI == 1:
+                    print('Splitting by observer')
+                    progSplit.log.info('Splitting by Observer')
+                    progSplit.split_by_observer()
+        elif len(progSplit.outdir) == 2:
+            # Split by OUTDIR
+            print('Checking FRAMENO')
+            progSplit.log.info('Checking FRAMENO')
+            return_val = progSplit.split_by_frameno()
+            if len(progSplit.programs) == len(progSplit.outdir):
+                sci1 = progSplit.sciFiles[progSplit.outdir[0]]['firsthalf']
+                sci2 = progSplit.sciFiles[progSplit.outdir[1]]['firsthalf']
+                if sci1 != sci2:
+                    print('Splitting by OUTDIR/Science Files')
+                    progSplit.log.info('Splitting by OUTDIR/Science Files')
+                    progSplit.split_by_science()
+            elif return_val > 0:
+                progSplit.split_by_time()
+            else: # Split by observer
+                print('Splitting by observer')
+                progSplit.log.info('Splitting by Observer')
+                progSplit.split_by_observer()
+        else:
+            sci1 = progSplit.sciFiles[progSplit.outdir[0]]['firsthalf']
+            sci2 = progSplit.sciFiles[progSplit.outdir[1]]['firsthalf']
+            if sci1 != sci2:
+                print('Splitting by OUTDIR/Science files')
+                splitProg.log.info('Splitting by OUTDIR/Science files')
+                progSplit.split_multi_by_science()
+            # Observers
+            else:
+                print('Splitting by Observer')
+                splitProg.log.info('Splitting by Observer')
+                progSplit.split_by_observer()
 
