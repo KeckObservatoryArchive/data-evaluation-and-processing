@@ -5,7 +5,7 @@ import tarfile
 import gzip
 import hashlib
 
-def dep_add(telNr, utDate, ancDir):
+def dep_add(telNr, utDate, ancDir, log_writer=''):
 	"""
 	This function will add the weather and focus log files to 
 	the ancillary directory.  Log files are copied from either
@@ -28,6 +28,9 @@ def dep_add(telNr, utDate, ancDir):
 	tel = [1, 2]
 	assert telNr not in tel, 'telNr not allowed'
 
+	if log_writer:
+		log_writer.info('dep_add.py started for telnr {} {}'.format(telNr, utDate))
+
 	# Make ancDir/[nightly,udf]
 
 	dirs = ['nightly', 'udf']
@@ -35,6 +38,8 @@ def dep_add(telNr, utDate, ancDir):
 		ancDirNew = (ancDir, '/', dir)
 		ancDirNew = ''.join(ancDirNew)
 		if not os.path.isdir(ancDirNew):
+			if log_writer:
+				log_writer.info('dep_add.py creating {}'.format(ancDirNew))
 			os.makedirs(ancDirNew)
 
 	# Copy nightly data to ancDir/nightly
@@ -44,6 +49,8 @@ def dep_add(telNr, utDate, ancDir):
 	if not os.path.isdir(nightlyDir):
 		nightlyDir.replace('/h/', '/s/')
 		if not os.path.isdir(nightlyDir):
+			if log_writer:
+				log_writer.info('dep_add.py no nightly directory found')
 			return
 
 	files = ['envMet.arT', 'envFocus.arT']
@@ -53,6 +60,8 @@ def dep_add(telNr, utDate, ancDir):
 		if os.path.exists(source):
 			destination = (ancDir, '/nightly/', file)
 			destination = ''.join(destination)
+			if log_writer:
+				log_writer.info('dep_add.py copying {} to {}'.format(source, destination))
 			shutil.copyfile(source, destination)
 
 def dep_tar(utDate, ancDir):
@@ -72,6 +81,9 @@ def dep_tar(utDate, ancDir):
 
 	assert ancDir != '', 'ancDir value is blank'
 	
+	if log_writer:
+		log_writer.info('dep_tar.py started for {}'.format(ancDir))
+
 	if os.path.isdir(ancDir):
 
 		# Tarball name
@@ -82,12 +94,16 @@ def dep_tar(utDate, ancDir):
 	
 		# Go to directory and create tarball
 
+		if log_writer:
+			log_writer.info('dep_tar.py creating {}'.format(tarFileName))
 		os.chdir(ancDir)
 		with tarfile.open(tarFileName, 'w:gz') as tar:
 			tar.add('./')
 
 		# gzip the tarball
 
+		if log_writer:
+			log_writer.info('dep_tar.py gzipping {}'.format(tarFileName))
 		gzipTarFile = (tarFileName, '.gz')
 		gzipTarFile = ''.join(gzipTarFile)
 		with open(tarFileName, 'rb') as fIn:
@@ -99,6 +115,9 @@ def dep_tar(utDate, ancDir):
 		os.remove(tarFileName)
 	
 		# Create md5sum of the tarball
+
+		if log_writer:
+			log_writer.info('dep_tar.py creating {}'.format(md5sumFile))
 
 		md5sumFile = gzipTarFile.replace('tar.gz', 'md5sum')
 		md5 = hashlib.md5(open(gzipTarFile, 'rb').read()).hexdigest()
@@ -112,4 +131,6 @@ def dep_tar(utDate, ancDir):
 		for dir in dirs:
 			delDir = (ancDir, '/', dir)
 			delDir = ''.join(delDir)
+			if log_writer:
+				log_writer.info('dep_tar.py removing {}'.format(delDir))
 			shutil.rmtree(delDir)
