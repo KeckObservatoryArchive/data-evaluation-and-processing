@@ -153,7 +153,7 @@ class ProgSplit:
             self.log.warning('progInfo - unknown instrument!')
             print("Instrument must be one of: ")
             for item in self.instrList:
-                print('\t' + item)
+                print('\t', item)
 
     def read_dep_obtain(self):
         """
@@ -306,10 +306,11 @@ class ProgSplit:
         @type col: string
         @param col: the key for the value to extract from the database
         """
+        telno = self.instrList[self.instrument]
         req = ''.join((self.api, 'telSchedule.php?cmd=getSchedule&date=', 
-                self.utDate))
+                self.utDate, '&telnr=', telno, '&column=', col))
         val = url.urlopen(req).read().decode()
-        val = json.loads(val)[col]
+        val = json.loads(val)[0][col]
         return val
 
 #---------------------------------- END GET SCHEDULE VALUE------------------------------------
@@ -676,21 +677,22 @@ class ProgSplit:
 
 #--------------------------END SPLIT BY FRAMENO------------------------------------
 
-def getProgInfo(utdate, instrument, stageDir):
+def getProgInfo(utdate, instrument, stageDir, log):
     utdate = utdate.replace('/','-')
     instrument = instrument.upper()
-    progSplit = new ProgSplit(utdate, instrument, stageDir)
+    progSplit = ProgSplit(utdate, instrument, stageDir, log)
     progSplit.check_stage_dir()
     progSplit.check_instrument()
     progSplit.read_dep_obtain()
     progSplit.read_file_list()
 
     splitNight = 0
-    if '/' in progSplit.get_schedule_value('ProjCode'):
+    code = progSplit.get_schedule_value('ProjCode')
+    if '/' in code:
         splitNight = 1
     if splitNight == 0:
         progSplit.log.warning(utdate + ' is not a split night')
-        if count progSplit.program == 1:
+        if len(progSplit.programs) == 1:
             msg = ('Assigning to ', progsplit.instrument, ' PI')
             msg = ''.join(msg)
             print(msg)
