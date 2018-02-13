@@ -87,39 +87,50 @@ def koaid(keywords, utDate):
             return False
         instr = instr.split(' ')
         instr = instr[0].replace(':', '')
-        outdir = keywords['OUTDIR']
+        outdir = ''
+        try:
+            outdir = keywords['OUTDIR']
+        except KeyError:
+            if instr == 'nires':
+                outdir = ''
 
         if '/fcs' in outdir:
-                instr = 'deimos'
+            instr = 'deimos'
 
         if instr in instr_prefix:
-                prefix = instr_prefix[instr]
+            prefix = instr_prefix[instr]
         elif instr == 'deimos':
-                if '/fcs' in outdir:
-                        prefix = 'DF'
-                else:
-                        prefix = 'DE'
+            if '/fcs' in outdir:
+                prefix = 'DF'
+            else:
+                prefix = 'DE'
         elif instr == 'kcwi':
-                try:
-                        camera = keywords['CAMERA'].lower()
-                except KeyError:
-                        logging.warning('No keyword CAMERA exists for {}'.format(instr))
-                if camera == 'blue':
-                        prefix = 'KB'
-                elif camera == 'red':
-                        prefix = 'KR'
-                elif camera == 'fpc':
-                        prefix = 'KF'
+            try:
+                camera = keywords['CAMERA'].lower()
+            except KeyError:
+                logging.warning('No keyword CAMERA exists for {}'.format(instr))
+            if camera == 'blue':
+                prefix = 'KB'
+            elif camera == 'red':
+                prefix = 'KR'
+            elif camera == 'fpc':
+                prefix = 'KF'
         elif instr == 'nirspec':
-                if '/scam' in outdir:
-                        prefix = 'NC'
-                elif '/spec' in outdir:
-                        prefix = 'NC'
+            if '/scam' in outdir:
+                prefix = 'NC'
+            elif '/spec' in outdir:
+                prefix = 'NC'
         elif instr == 'osiris':
-                if '/SCAM' in outdir:
-                        prefix = 'OI'
-                elif '/SPEC' in outdir:
-                        prefix = 'OS'
+            if '/SCAM' in outdir:
+                prefix = 'OI'
+            elif '/SPEC' in outdir:
+                prefix = 'OS'
+        elif instr == 'nires':
+            dfile = keywords['DATAFILE']
+            if dfile[0] == 's':
+                prefix = 'NR'
+            elif dfile[0] == 'v':
+                prefix = 'NI'
         else:
                 print('Cannot determine prefix')
                 return False
