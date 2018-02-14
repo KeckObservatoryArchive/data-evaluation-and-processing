@@ -41,19 +41,15 @@ def dep_locate(obj):
     verification.verify_date(obj.utDate)
 
     # Create stage and anc directory strings
-    joinSeq = (obj.rootDir, '/stage/', obj.utDate)
-    obj.stageDir = ''.join(joinSeq)
-
-    joinSeq = (obj.rootDir, '/', obj.utDate, '/anc')
-    obj.ancDir = ''.join(joinSeq)
+    obj.stageDir = ''.join((obj.rootDir, '/stage/', obj.utDate))
+    obj.ancDir = ''.join((obj.rootDir, '/', obj.utDate, '/anc'))
 
     # Make sure the staging directory is not blank
     assert obj.stageDir != '', 'stageDir value is blank'
 
     # Create the udf directory in the anc_dir
     try:
-        joinSeq(obj.ancDir, '/udf')
-        udfDir = ''.join(joinSeq)
+        udfDir = ''.join((obj.ancDir, '/udf'))
         os.makedirs(udfDir)
     except FileExistsError:
         obj.log.warning('udf directory already exists!')
@@ -79,11 +75,8 @@ def dep_locate(obj):
         return
 
     # Create files to store the valid FITS files
-    joinSeq = (obj.stageDir, '/dep_locate', obj.instr, 'pre.text')
-    presort = ''.join(joinSeq)
-
-    joinSeq = (obj.stageDir, '/dep_locate', obj.instr, '.txt')
-    files = ''.join(joinSeq)
+    presort = ''.join((obj.stageDir, '/dep_locate', obj.instr, 'pre.text'))
+    files = ''.join((obj.stageDir, '/dep_locate', obj.instr, '.txt'))
 
     # Find the files in the last 24 hours
     pyfind(usedir, obj.utDate, obj.endHour, presort, obj.log)
@@ -100,12 +93,10 @@ def dep_locate(obj):
                         and 'idf' not in line):
                     # Copy the files to stageDir and update files 
                     # to use local copy file list
-                    joinSeq = (obj.stageDir, line.strip())
-                    newFile = ''.join(joinSeq)
+                    newFile = ''.join((obj.stageDir, line.strip()))
                     copy_file(line.strip(), newFile)
 
-                    joinSeq = (newFile, '\n')
-                    toFile = ''.join(joinSeq)
+                    toFile = ''.join((newFile, '\n'))
                     f.write(toFile)
                     if 'DEIMOS' in obj.instr:
                         try:
@@ -114,12 +105,10 @@ def dep_locate(obj):
                                 fcsConfigs.append(fcs)
                                 if '/s/' not in fcs:
                                     fcs = '/s' + fcs
-                                joinSeq = (obj.stageDir, fcs)
-                                newFile = ''.join(joinSeq)
+                                newFile = ''.join((obj.stageDir, fcs))
                                 copy_file(fcs, newFile)
 
-                                joinSeq = (newFile, '\n')
-                                toFile = ''.join(joinSeq)
+                                toFile = ''.join((newFile, '\n'))
                                 f.write(toFile)
                         except:
                             pass
@@ -226,7 +215,7 @@ def dep_rawfiles(obj, fileList):
         # Construct the original file name
         obj.rawfile, successful = obj.set_raw_fname(header0)
         if not successful:
-            move_bad_file(obj.instr, fitsList[i], 
+            copy_bad_file(obj.instr, fitsList[i], 
                     obj.ancDir, 'Bad KOAID', obj.log)
             raw[i] = 2
             continue
@@ -234,7 +223,7 @@ def dep_rawfiles(obj, fileList):
         # Get KOAID
         obj.koaid, successful = obj.make_koaid(header0)
         if not successful:
-            move_bad_file(obj.instr, fitsList[i], obj.ancDir, 
+            copy_bad_file(obj.instr, fitsList[i], obj.ancDir, 
                     'Bad KOAID', obj.log)
             raw[i] = 2
             continue
@@ -252,16 +241,16 @@ def dep_rawfiles(obj, fileList):
             continue
         elif raw[i] == 0:
             for j in range(i+1,len(fitsList)):
-                if koa[j]==koa[i]: # j will always be greater than i
-                    move_bad_file(
-                            obj.instr, fitsList[i], obj.ancDir, 
+                if koa[j]==koa[i]: # j should always be greater than i
+                    copy_bad_file(
+                            obj.instr, fitsList[i], obj.ancDir,
                             'Duplicate KOAID', obj.log)
                     break
 
         # Check the date
         prefix, fdate, ftime, postfix = koa[i].split('.')
         if fdate != obj.utDate and float(ftime) < endtime:
-            move_bad_file(obj.instr, fitsList[i],
+            copy_bad_file(obj.instr, fitsList[i],
                     obj.ancDir, 'KOADATE', obj.log)
             break
 
@@ -279,7 +268,7 @@ def dep_rawfiles(obj, fileList):
 
 #------------------END RAWFILES-----------------------------
 
-def move_bad_file(instr, fitsFile, ancDir, errorCode, log):
+def copy_bad_file(instr, fitsFile, ancDir, errorCode, log):
     """ 
     Log the error where the fits file failed 
     and copy the fits file to the anc directory
@@ -306,14 +295,14 @@ def move_bad_file(instr, fitsFile, ancDir, errorCode, log):
                 'rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
     log.info(
             'rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
-    udfDir = ancDir + '/udf/'
+    udfDir = ''.join((ancDir,'/udf/'))
     try:
         # Use copy2 from shutil to copy the file with its metadata
         shutil.copy2(fitsFile, udfDir)
     except:
         log.error('{}: {} file was not copied!'.format(instr, fitsFile))
 
-#-------------End move-bad-file()---------------------------
+#-------------End copy-bad-file()---------------------------
 
 def pyfind(usedir, utDate, endHour, outfile, log):
     """
@@ -339,12 +328,11 @@ def pyfind(usedir, utDate, endHour, outfile, log):
     dayMax = int(day)# + 1
 
     # Create a string date and time to convert to seconds since epoch
-    joinSeq = (str(year), str(month), str(dayMax), ' ', str(endHour), ':00:00')
-    utMaxTime = ''.join(joinSeq)
+    utMaxTime = ''.join((str(year), str(month), 
+            str(dayMax), ' ', str(endHour), ':00:00'))
+    utMinTime = ''.join((str(year), str(month), 
+            str(dayMin), ' ', str(endHour), ':00:00'))
 
-    joinSeq = (str(year), str(month), str(dayMin), ' ', str(endHour), ':00:00')
-    utMinTime = ''.join(joinSeq)
-    
     # st_mtime records the time in seconds of the last file modification since 
     # Jan 1 1970 00:00:00 UTC We need to create a time_construct object 
     # (using time.strptime()) to convert to seconds (using calendar.timegm())
@@ -361,8 +349,7 @@ def pyfind(usedir, utDate, endHour, outfile, log):
                 # Iterate through the leaf files in the directory
                 for item in files:
                     # Create the path to the current file we want to check
-                    joinSeq = (root, '/', item)
-                    full_path = ''.join(joinSeq)
+                    full_path = ''.join((root, '/', item))
                     # Check to see if the file is a fits file created/modified
                     # in the last day. st_mtime needs to be greater than the
                     # minTimeSinceMod to be within the past 24 hours
@@ -370,8 +357,7 @@ def pyfind(usedir, utDate, endHour, outfile, log):
                     if ('.fits' in item[-5:] 
                             and modTime <= maxTimeSinceMod 
                             and modTime > minTimeSinceMod):
-                        joinSeq = (full_path, '\n')
-                        toFile = ''.join(joinSeq)
+                        toFile = ''.join((full_path, '\n'))
                         ofile.write(toFile)
 
     # Append the action to the log
