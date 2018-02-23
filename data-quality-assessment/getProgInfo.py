@@ -540,7 +540,7 @@ def getProgInfo(utdate, instrument, stageDir, log):
     utdate = utdate.replace('/','-')
     instrument = instrument.upper()
     progSplit = ProgSplit(utdate, instrument, stageDir, log)
-        progSplit.check_stage_dir()
+    progSplit.check_stage_dir()
     progSplit.check_instrument()
     progSplit.read_dep_obtain()
     progSplit.read_file_list()
@@ -549,7 +549,7 @@ def getProgInfo(utdate, instrument, stageDir, log):
     codeStartEnd = progSplit.get_schedule_value('ProjCode,StartTime,EndTime')
 
     # Check if a Dict or a List was returned
-    if type(codeStartEnd) == type(list()) and len(self.programs) != 1:
+    if type(codeStartEnd) == type(list()) and len(progSplit.programs) != 1:
         splitNight = len(codeStartEnd)
     else:
         splitNight = 1
@@ -591,7 +591,7 @@ def getProgInfo(utdate, instrument, stageDir, log):
             # fileNum is the number of the file from createprog
             for fileNum in range(len(progSplit.fileList)):
                 try:
-                    if progSplit.fileList[fileNum]['outdir'] == self.outdir[setNum][0]:
+                    if progSplit.fileList[fileNum]['outdir'] == progSplit.outdir[setNum][0]:
                         progSplit.assign_single_to_pi(fileNum, setNum)
                 except KeyError:
                     if (t.strptime(codeStartEnd[setNum]['StartTime'],'%H:%M:%S')
@@ -602,9 +602,10 @@ def getProgInfo(utdate, instrument, stageDir, log):
         print('No project code was found!!!')
         progSplit.log.warning('No project code was found!!!')
 
-    fname = ''.join((self.stageDir, '/newproginfo.txt'))
+    fname = ''.join((stageDir, '/newproginfo.txt'))
     with open(fname, 'w') as ofile:
-        for key, val in self.fileList:
-            ofile.writelines(val['file'], ' ', val['outdir'], ' ',
-                    val['proginst'],' ', val['progid'], ' ',
-                    val['progpi'], ' ', val['progtitl'], '\n')
+        for progfile in progSplit.fileList:
+            for key, val in progfile:
+                ofile.writelines(val['file'], ' ', val['outdir'], ' ',
+                        val['proginst'],' ', val['progid'], ' ',
+                        val['progpi'], ' ', val['progtitl'], '\n')
