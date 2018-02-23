@@ -313,7 +313,8 @@ class ProgSplit:
         """
         telno = self.instrList[self.instrument]
         req = ''.join((self.api, 'telSchedule.php?cmd=getSchedule&date=',
-                str(self.utDate), '&telnr=', str(telno), '&column=', col))
+                str(self.utDate), '&telnr=', str(telno),
+                '&instr=', self.instrument, '&column=', col))
         val = url.urlopen(req).read().decode()
         val = json.loads(val)
         return val
@@ -364,10 +365,12 @@ class ProgSplit:
             for engname, name in self.engineering:
                 if engname in fdir:
                     eng = 1
+
+            # Add new outdirs to the outdir list
             if fdir not in self.outdir and eng != 0 and fdir != '0':
                 if 'fcs' in fdir:
                     continue
-                self.outdir.append(fdir)
+                self.outdir.append([fdir, times['ProjCode']])
                 self.sciFiles[fdir] = {}
                 for index in splits:
                     self.sciFiles[fdir][index] = 0
@@ -408,27 +411,27 @@ class ProgSplit:
         # Loop through the OUTDIRs and assume yyyyMMMdd, yyyyMMMdd_B...
         num =  cycle = 0
         diff1 = diff2 = 0
-        for key, val in self.outdir:
-            if '/_A/' in val:
-                assign[key] = 1
-            elif '/_B/' in val:
-                assign[key] = 2
-            elif '/_C/' in val:
-                assign[key] = 3
-            elif '/_D' in val:
-                assign[key] = 4
-            elif '/_E' in val:
-                assign[key] = 5
+        for i in range(len(self.outdir)):
+            if '/_A/' in self.outdir[i]:
+                assign[i] = 1
+            elif '/_B/' in self.outdir[i]:
+                assign[i] = 2
+            elif '/_C/' in self.outdir[i]:
+                assign[i] = 3
+            elif '/_D' in self.outdir[i]:
+                assign[i] = 4
+            elif '/_E' in self.outdir[i]:
+                assign[i] = 5
             else:
-                assign[key] = 1
+                assign[i] = 1
             self.log.info(''.join(
-                ('Assigning', val, 'to', assign[key])))
+                ('Assigning', self.outdir[i], 'to', assign[i])))
 
         # Split by OUTDIR
         for key, val in self.fileList:
-            for key2, val2 in self.outdir:
-                if self.fix_outdir(val['outdir']) == val2:
-                    self.assign_single_to_pi(key, assign[key2])
+            for i in range(len(self.outdir)):
+                if self.fix_outdir(val['outdir']) == self.outdir[i]:
+                    self.assign_single_to_pi(key, assign[i])
 
 #---------------------END SPLIT MULTI BY SCIENCE---------------------------
 
@@ -486,6 +489,7 @@ class ProgSplit:
                 inst = dat[num]['Institution']
                 pi = dat[num]['Principal']
                 title = get_program(num, progid, inst, pi)
+                title = ''.join(title.split(' ')[3:])
 
             self.fileList[key]['proginst'] = inst
             self.fileList[key]['progid'] = progid
@@ -536,17 +540,17 @@ def getProgInfo(utdate, instrument, stageDir, log):
     utdate = utdate.replace('/','-')
     instrument = instrument.upper()
     progSplit = ProgSplit(utdate, instrument, stageDir, log)
-    progSplit.check_stage_dir()
+        progSplit.check_stage_dir()
     progSplit.check_instrument()
     progSplit.read_dep_obtain()
     progSplit.read_file_list()
 
     splitNight = 0
-    code = progSplit.get_schedule_value('ProjCode,StartTime,EndTime')
+    codeStartEnd = progSplit.get_schedule_value('ProjCode,StartTime,EndTime')
 
     # Check if a Dict or a List was returned
-    if type(code) == type(list()):
-        splitNight = len(code)
+    if type(codeStartEnd) == type(list()) and len(self.programs) != 1:
+        splitNight = len(codeStartEnd)
     else:
         splitNight = 1
 
@@ -574,22 +578,33 @@ def getProgInfo(utdate, instrument, stageDir, log):
                 str(len(progSplit.programs)), ' programs'))
         print(msg)
         progSplit.log.info(msg)
-        progSplit.sort_by_time(code)
+        progSplit.sort_by_time(codeStartEnd)
         progSplit.get_sun_times()
-        progSplit.get_outdir(code, splitNight)
+        progSplit.get_outdir(codeStartEnd, splitNight)
         msg = ''.join((len(progSplit.outdir), ' OUTDIRs found'))
         print(msg)
         progSplit.log.info(msg)
 
         # Split the stuff
-        for setNum in range(len(code)):
+        # setNum is the number of the program from dep_obtain
+        for setNum in range(len(codeStartEnd)):
+            # fileNum is the number of the file from createprog
             for fileNum in range(len(progSplit.fileList)):
-                if 
-                elif (t.strptime(code[setNum]['StartTime'],'%H:%M:%S')
-                        <= t.strptime(progSplit.fileList[fileNum]['utc'],'%H:%M:%S')
-                        <= t.strptime(code[setNum]['EndTime'],'%H:%M:%S')):
-                    progSplit.assign_single_to_pi(fileNum,setNum)
-                elif ('_A' in progSplit.fileList[fileNum]['outdir']
+                try:
+                    if progSplit.fileList[fileNum]['outdir'] == self.outdir[setNum][0]:
+                        progSplit.assign_single_to_pi(fileNum, setNum)
+                except KeyError:
+                    if (t.strptime(codeStartEnd[setNum]['StartTime'],'%H:%M:%S')
+                            <= t.strptime(progSplit.fileList[fileNum]['utc'],'%H:%M:%S')
+                            <= t.strptime(codeStartEnd[setNum]['EndTime'],'%H:%M:%S')):
+                        progSplit.assign_single_to_pi(fileNum,setNum)
     else:
         print('No project code was found!!!')
         progSplit.log.warning('No project code was found!!!')
+
+    fname = ''.join((self.stageDir, '/newproginfo.txt'))
+    with open(fname, 'w') as ofile:
+        for key, val in self.fileList:
+            ofile.writelines(val['file'], ' ', val['outdir'], ' ',
+                    val['proginst'],' ', val['progid'], ' ',
+                    val['progpi'], ' ', val['progtitl'], '\n')
