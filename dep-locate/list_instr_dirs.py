@@ -109,8 +109,11 @@ def getDirList(instr, log_writer):
     elif instr == 'NIRES':
         path += '150'
         for i in range(3):
-            path2 = path + str(i) + '/nireseng'
-            dirs.append(path2)
+            path2 = path + str(i)
+            for j in range(1,10):
+                path3 = path2 + '/nires'  + str(j)
+                dirs.append(path3)
+            dirs.append(path2 + '/nireseng')
     else: # If you get here, you put in a wrong instrument keyword
         log_writer.warn('dep_locate %s: Could not find instrument %s', instr, instr)
         return []
