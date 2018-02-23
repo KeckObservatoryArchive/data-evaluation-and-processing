@@ -8,6 +8,7 @@ import mysql_conn as msc
 import metrics_conn as metrics
 import urllib.request as url
 import pymysql as pms
+import time
 
 class ProgSplit:
     """
@@ -97,7 +98,7 @@ class ProgSplit:
         self.fileList = []
         self.instrList = {'DEIMOS':2, 'ESI':2, 'HIRES':1, 
                 'KCWI':2, 'LRIS':1, 'MOSFIRE':1, 
-                'NIRC2':2, 'NIRSPEC':2, 'OSIRIS':1}
+                'NIRC2':2, 'NIRSPEC':2, 'OSIRIS':1, 'NIRES':2}
         self.instrument = instr
         self.numFiles = 0
         self.numSciencePI = 0
@@ -113,7 +114,7 @@ class ProgSplit:
         self.utDate = ut_date
         self.semester = self.get_semester()
         self.log = lg
-        self.sciFiles = []
+        self.sciFiles = {}
         self.api = 'https://www.keck.hawaii.edu/software/db_api/'
 
     def get_semester(self):
@@ -159,19 +160,23 @@ class ProgSplit:
         """
         This method reads the files from the dep_obtain output file
         """
-        seq = (self.stageDir, '/dep_obtain', self.instrument, '.txt')
-        readfile = ''.join(seq)
+        readfile = ''.join((self.stageDir, '/dep_obtain',
+                self.instrument, '.txt'))
         if not os.path.exists(readfile):
-            self.log.warning('progInfo - file does not exist!!')
+            self.log.warning('read_dep_obtain - file does not exist!!')
             exit()
 
-        save = ['utdate', 'oa','account', 'proginst', 'progpi', 'progid', 'observer']
+        save = ['utdate', 'oa','account', 'proginst',
+                'progpi', 'progid', 'observer']
         with open(readfile, 'r') as rfile:
             for line in rfile:
                 vals = line.strip().split(' ')
-                if vals[5] != 'ENG': # vals[5] is progid
+                # vals[5] is progid
+                if vals[5] != 'ENG':
                     self.numSciencePI += 1
                 row = {}
+                # create a key-value pair from the save list
+                # and the values from dep_obtain
                 for i in range(1, len(save)):
                     row[save[i]] = vals[i]
                 self.programs.append(row)
@@ -184,8 +189,7 @@ class ProgSplit:
         colsToSave = ['file','utdate','utc','outdir','observer','frameno',
                 'imagetyp','progid','progpi','proginst','progtitl','oa']
         colCount = len(colsToSave)
-        seq = (self.stageDir, '/createprog.txt')
-        fname = ''.join(seq)
+        fname = ''.join((self.stageDir, '/createprog.txt'))
         if not os.path.isfile(fname):
             self.log.warning('This file does not exist!!!')
             exit()
@@ -200,14 +204,15 @@ class ProgSplit:
                 if num == colCount:
                     self.fileList.append(row)
                     # Check to see if it is an engineering night
+                    # Key = instrument, value = outdir/obs
                     for key, value in self.engineering.items():
                         if key in self.fileList[count][value].lower():
                             self.fileList[count]['proginst'] = 'KECK'
                             self.fileList[count]['progid'] = 'ENG'
-                            seq = (self.instrument.lower(), 'eng')
-                            self.fileList[count]['progpi'] = ''.join(seq)
-                            seq = (self.instrument.lower(), ' Engineering')
-                            self.fileList[count]['progtitl'] = ''.join(seq)
+                            self.fileList[count]['progpi'] = ''.join(
+                                    (self.instrument.lower(), 'eng'))
+                            self.fileList[count]['progtitl'] = ''.join(
+                                    (self.instrument.lower(), ' Engineering'))
                     # Check to see if it is a ToO observation
                     for key, value in self.too.items():
                         if key in self.fileList[count][value]:
@@ -257,14 +262,14 @@ class ProgSplit:
             for col in save:
                 self.fileList[i][col] = self.programs[num][col]
             if self.fileList[i]['progid'] == 'ENG':
-                seq = (self.instrument, ' Engineering')
-                self.fileList[i]['progtitl'] = ''.join(seq)
+                title = ''.join((self.instrument, ' Engineering'))
+                self.fileList[i]['progtitl'] = title
             else:
                 self.fileList[i]['progtitl'] = self.get_prog_title(
                         self.semester,
                         self.programs[num]['progid'])
-            if (self.fileList[i]['progpi'] == 'PROGPI' 
-                    or self.fileList[i]['progpi'] == ''  
+            if (self.fileList[i]['progpi'] == 'PROGPI'
+                    or self.fileList[i]['progpi'] == ''
                     or self.fileList[i]['progpi'] == 'NONE'):
                 self.backup_program()
 
@@ -290,8 +295,8 @@ class ProgSplit:
         for col in save:
             self.fileList[filenum][col] = self.programs[num][col]
         if self.fileList[filenum]['progid'] == 'ENG':
-            seq = (self.instrument, ' Engineering')
-            self.fileList[filenum]['progtitl'] = ''.join(seq)
+            title = ''.join((self.instrument, ' Engineering'))
+            self.fileList[filenum]['progtitl'] = title
         else:
             self.fileList[filenum]['progtitl'] = self.get_prog_title(
                     self.semester,
@@ -307,10 +312,11 @@ class ProgSplit:
         @param col: the key for the value to extract from the database
         """
         telno = self.instrList[self.instrument]
-        req = ''.join((self.api, 'telSchedule.php?cmd=getSchedule&date=', 
-                self.utDate, '&telnr=', telno, '&column=', col))
+        req = ''.join((self.api, 'telSchedule.php?cmd=getSchedule&date=',
+                str(self.utDate), '&telnr=', str(telno),
+                '&instr=', self.instrument, '&column=', col))
         val = url.urlopen(req).read().decode()
-        val = json.loads(val)[0][col]
+        val = json.loads(val)
         return val
 
 #---------------------------------- END GET SCHEDULE VALUE------------------------------------
@@ -347,30 +353,33 @@ class ProgSplit:
 
 #--------------------- END GET PROG TITLE-----------------------------------------------
 
-    def get_outdir(self):
-        utdate = ''
+    def get_outdir(self, times, num_splits):
+        splitTimes = []
+        for split in times:
+            splitTimes.append((t.strptime(split['StartTime'], '%H:%M:%S').
+                t.strptime(split['EndTime'], '%H:%M:%S')))
         for key, val in self.fileList:
-            ttype = 'firsthalf'
-            utdate = val['utdate']
-            uhr, umin, usec = val['utc'].split(':')
-            time = float(uhr) + float(umin)/60.0 + float(usec)/3600.0
-            if time > self.splitTime:
-                ttype = 'secondhalf'
-            if utdate != self.utDate:
-                ttype = 'firsthalf'
+            splits = list(range(1,num_splits+1))
             fdir = self.fix_outdir(val['outdir'])
             eng = 0
             for engname, name in self.engineering:
                 if engname in fdir:
                     eng = 1
+
+            # Add new outdirs to the outdir list
             if fdir not in self.outdir and eng != 0 and fdir != '0':
-                if fcs in fdir:
+                if 'fcs' in fdir:
                     continue
-                self.outdir.push(fdir)
-                self.sciFiles[fdir]['firsthalf'] = 0
-                self.sciFiles[fdir]['secondhalf'] = 0
+                self.outdir.append([fdir, times['ProjCode']])
+                self.sciFiles[fdir] = {}
+                for index in splits:
+                    self.sciFiles[fdir][index] = 0
             if val['imagetyp']=='object':
-                self.sciFiles[fdir][ttype] += 1
+                for i in range(len(splitTimes)):
+                    if (splitTimes[i][0] <= t.strptime(val['utc'], '%H:%M:%S')
+                            < splitTimes[i][1]):
+                        self.sciFiles[fdir][splits[i]] += 1
+                        break
 
 #--------------------------------END GET OUTDIR-----------------------------
 
@@ -386,122 +395,12 @@ class ProgSplit:
                 obs = obs.replace(char, ',')
             if obs not in temp:
                 temp.append(obs)
-            seq = (obs, '_', outdir)
-            obs = ''.join(seq)
+            obs = ''.join((obs, '_', outdir))
             if obs not in self.observer:
                 self.observer.append(obs)
         self.obsValues = len(temp)
 
 #----------------------END GET OBSERVER------------------------------------
-
-    def split_by_observer(self):
-        """
-        """
-        # Get observers value from telescope schedule
-        obs = self.get_schedule_value('observers')
-        obs = obs.split('/')
-        rep = [' ', '_', '/', '&', '.', ',,', ',and,']
-
-        for key, val in self.fileList:
-            found = ''
-            observer = ''
-            for char in rep:
-                observer = val['observer'].replace(char, ',')
-            split = observer.split(',')
-            for name in split:
-                if len(name) > 2:
-                    for num, obsval in obs:
-                        if name.lower() in obsval.lower():
-                            found += num + 1
-            if found%11 == 0 or found < 5:
-                if found > 5:
-                    found /= 11
-                self.assign_single_to_pi(key, found)
-
-#--------------------END SPLIT BY OBSERVER----------------------------------
-
-    def split_by_time(self):
-        seq = (' -- Splitting at ', self.splitTime)
-        self.log.info(''.join(seq))
-
-        for key, val in self.fileList:
-            utdate = val['utdate']
-            hr, mn, sc = val['utc'].split(':')
-            utc = float(hr) + float(mn)/60.0 + float(sc)/3600.0
-            num = 1
-
-            # Second half
-            if utc >= self.splitTime:
-                num = 2
-            # First half
-            if utdate != self.utDate:
-                num = 1
-            self.assign_single_to_pi(key, num)
-
-#---------------------END SPLIT BY TIME---------------------------------------
-
-    def split_by_science(self):
-        """
-        """
-        # Default, bad values
-        first = -2
-        second = -2
-
-        # How many halves have science files? Must be > 1
-        numHalf = 0
-
-        # Loop through outdirs and determine which has most sci
-        num = cycle = 0
-        diff1 = diff2 = 0
-        for key, val in self.outdir:
-            # Must get through this if twice
-            if (self.sciFiles[val]['firsthalf'] > 0
-                    or self.sciFiles[val]['secondhalf'] > 0):
-                numHalf+=1
-            # Same number of sciFiles - bad
-            if self.sciFiles[val]['firsthalf'] == num and cycle != 0:
-                first = -1
-            # Least number of sci is second half
-            if self.sciFiles[val]['firsthalf'] < num:
-                second = key
-            # Less than 4 files - bad
-            if self.sciFiles[val]['firsthalf'] + self.sciFiles[val]['secondhalf'] < 10:
-                second = -1
-            # Higher sci number is first half
-            if (self.sciFiles[val]['firsthalf'] > num
-                    and (first != -1 and second != -1)):
-                second = first
-                first = key
-                num = self.sciFiles[val]['firsthalf']
-            cycle += 1
-
-        # Do nothing if same number of science files for each half
-        if first == -1:
-            self.log.info('progInfo.php - Same number of science files in each half')
-            return
-
-        # Do nothing if one outdir has most data
-        if second == -1:
-            self.log.info('progInfo.php - not enough data in one OUTDIR, treating as one')
-            return
-
-        # Do nothing if only one half had science
-        #if numHalf <= 1:
-        #    self.log.info(' -- Science frames in half' + first + 'only')
-        #    return
-
-        # Split by OUTDIR
-        if second < 0:
-            second = 0
-        self.log.info('First half being assigned to ' + first)
-        self.log.info('Second half being assigned to ' + second)
-        for key, val in self.fileList:
-            if self.fix_outdir(val['outdir']) == self.outdir[first]:
-                self.assign_single_to_pi(key, 1)
-            else:
-                self.assign_single_to_pi(key, 2)
-
-#---------------------------------END SPLIT BY SCIENCE-----------------------------------
 
     def split_multi_by_science(self):
         """
@@ -512,27 +411,27 @@ class ProgSplit:
         # Loop through the OUTDIRs and assume yyyyMMMdd, yyyyMMMdd_B...
         num =  cycle = 0
         diff1 = diff2 = 0
-        for key, val in self.outdir:
-            if '/_A/' in val:
-                assign[key] = 1
-            elif '/_B/' in val:
-                assign[key] = 2
-            elif '/_C/' in val:
-                assign[key] = 3
-            elif '/_D' in val:
-                assign[key] = 4
-            elif '/_E' in val:
-                assign[key] = 5
+        for i in range(len(self.outdir)):
+            if '/_A/' in self.outdir[i]:
+                assign[i] = 1
+            elif '/_B/' in self.outdir[i]:
+                assign[i] = 2
+            elif '/_C/' in self.outdir[i]:
+                assign[i] = 3
+            elif '/_D' in self.outdir[i]:
+                assign[i] = 4
+            elif '/_E' in self.outdir[i]:
+                assign[i] = 5
             else:
-                assign[key] = 1
-            seq = ('Assigning ', val, ' to ', assign[key])
-            self.log.info(''.join(seq))
+                assign[i] = 1
+            self.log.info(''.join(
+                ('Assigning', self.outdir[i], 'to', assign[i])))
 
         # Split by OUTDIR
         for key, val in self.fileList:
-            for key2, val2 in self.outdir:
-                if self.fix_outdir(val['outdir']) == val2:
-                    self.assign_single_to_pi(key, assign[key2])
+            for i in range(len(self.outdir)):
+                if self.fix_outdir(val['outdir']) == self.outdir[i]:
+                    self.assign_single_to_pi(key, assign[i])
 
 #---------------------END SPLIT MULTI BY SCIENCE---------------------------
 
@@ -558,54 +457,44 @@ class ProgSplit:
         if self.instrument not in ['NIRC2', 'NIRSPEC']:
             return
 
-        yr, mo, dy = self.utDate.split('-')
-        date = ''.join((yr, '/', mo, '/', str(int(dy)-1)))
         for key, val in self.fileList:
             if (self.fileList[key]['progpi'] != 'PROGPI'
                     and self.fileList[key]['progpi'] != 'NONE'
                     and self.fileList['progpi'] != ''):
                 continue
 
-            # Base url request for DB query
-            req = ''.join((self.api, 'telSchedule.php?cmd=getScheduleColumn&date=',
-                    self.utDate, '&telnr=2&column='))
-
-            # Get the Project Code, Institution and Principal from TelSched
-            # First we create the url to query the db
-            projcode = ''.join((req, 'ProjCode'))
-            inst = ''.join((req, 'Institution'))
-            pi = ''.join((req, 'Principal'))
+        # Begin isntrBackup.php code
+            # URL to query the database for ProjCode, Institution, and Principal
+            req = ''.join((self.api, 'telSchedule.php?cmd=getSchedule&date=',
+                    self.utDate, '&telnr=2&column=ProjCode,Institution,Principal,StartTime, EndTime'))
 
             # Then we get the results returned by the query
-            projcode = url.urlopen(projcode).read().decode()
-            inst = url.urlopen(inst).read().decode()
-            pi = url.urlopen(pi).read().decode()
+            res = url.urlopen(req).read().decode()
+            dat = json.loads(res)
 
-            #  Finally we load the JSON into a dict and access the value
-            projcode = json.loads(projcode)['ProjCode']
-            inst = json.loads(inst)['Institution']
-            pi = json.loads(pi)['Principal']
-
-            if len(program) == 1:
-                title = get_program(-1, program, institution, pi)
-            else: # split night
-                # Get sun times
-                self.get_sun_times()
-                nightLen = self.sunrise - self.sunset
-                midNight = self.sunset + nightLen/2.0
-                hr, mn, sc = self.utc.split(':')
-                time = float(hr) + float(mn)/60.0 + float(sc)/3600.0
-                if time <= midNight:
-                    num = 0
-                else:
-                    num = 1
-                progid = program[num]
+            if type(dat) == type(dict()): # Single entries return as dict
+                #  Unpack the value into the variables
+                progid = dat['ProjCode']
+                inst = dat['Institution']
+                pi = dat['Principal']
+                title = get_program(-1, progid, institution, pi)
+            else: # Multiple Entries return as a list, so split night
+                for i in range(len(dat)):
+                    if (t.strptime(dat[i]['StartTime'], '%H:%M:%S')
+                            <= t.strptime(self.fileList[key]['utc'], '%H:%M:%S')
+                            < t.strptime(dat[i]['EndTime'], '%H:%M:%S')):
+                        num = i
+                        break
+                progid = dat[num]['ProjCode']
+                inst = dat[num]['Institution']
+                pi = dat[num]['Principal']
                 title = get_program(num, progid, inst, pi)
+                title = ''.join(title.split(' ')[3:])
 
-            progid = backup['ProjCode'].strip()
-            inst = backup['Institution'].strip()
-            pi = backup['Principal'].strip()
-            title = ''
+            self.fileList[key]['proginst'] = inst
+            self.fileList[key]['progid'] = progid
+            self.fileList[key]['progpi'] = pi
+            self.fileList[key]['progtitl'] = title
 
 #--------------------------------------END BACKUP PROGRAM---------------------------------
 
@@ -613,69 +502,39 @@ class ProgSplit:
         """
         Method to determine which program to use
         """
-        if num != -1:
-            split1 = inst.split('/')
-            if len(split1 == 1):
-                split1.append(split1[0])
-            split2 = pi.split('/')
-            if len(split2 == 1):
-                split2.append(split2[0])
-            if len(split1) >= num:
-                inst = split1[num]
-            else:
-                inst = split[0]
-            if count(split2) >= num:
-                pi = split2[num]
-            else:
-                pi = split2[0]
-        pi = pi.replace(' ', '')
-
         instr = ''
-        if '/N2' in progid:
+        if 'N2' in progid[-3:]:
             instr = 'NIRC2'
-        elif '/O' in progid:
+        elif 'O' in progid[-2:]:
             instr = 'OSIRIS'
-        elif '/AK' in progid:
+        elif 'AK' in progid[-2:]:
             instr = 'KCAM'
         if instr != '':
-            seq = (progid, ' ', inst, ' ', pi, ' ', instr, ' backup program')
-            return ''.join(seq)
+            return (''.join((progid, ' ', inst, ' ',
+                    pi, ' ', instr, ' backup program')))
         else:
             return 'ENG KECK Engineering Engineering'
 
 #----------------------------------END GET PROGRAM-----------------------------------
 
-    def split_by_frameno(self):
-        numSplits = 0
-        count =1
-        ftype = ''
-        prev = 0
-        tsplit = 24
-        for i in range(len(self.fileList)):
-            outdir = self.fileList[i]['outdir'].strip().replace('//','/')
-            outdir = outdir.replace('/', ' ')
-            type2 = outdir.strip().split(' ')
-            type2 = type2[-1]
-            if type2 != ftype:
-                count = 1
-            if prev != 0 and count >= 8:
-                diff = self.fileList[i]['frameno'] - prev
-                if diff > 25 and ftype == type2:
-                    hr, mn, sc = self.fileList[i]['utc'].split(':')
-                    temp = float(hr) + float(mn)/60.0 + float(sc)/3600.0
-                    if self.sunset < temp < tsplit:
-                        tsplit = temp
-                    numSplits += 1
-            if self.fileList[i]['frameno'] != 1:
-                prev = self.fileList[i]['frameno']
-            ttype = type2
-            count += 1
-        if tsplit != 24 and numSplits < 4:
-            self.splitTime = tsplit
-            return 1
-        return 0
+    def sort_by_time(self, vals):
+        """
+        Simple Bubble Sort algorithm to reorder multiple nights by StartTime
+        """
+        cont = True
+        while(cont):
+            # Set continue to false so that if it is sorted it is done
+            cont = False
+            for i in range(len(vals)-1):
+                if (time.strptime(vals[i]['StartTime'],'%H:%M:%S')
+                        > time.strptime(vals[i+1]['StartTime'],'%H:%M:%S')):
+                    temp = vals[i]
+                    vals[i] = vals[i+1]
+                    vals[i+1] = temp
+                    del temp
+                    cont = True
 
-#--------------------------END SPLIT BY FRAMENO------------------------------------
+#----------------------------------END SORT BY TIME----------------------------------
 
 def getProgInfo(utdate, instrument, stageDir, log):
     utdate = utdate.replace('/','-')
@@ -687,17 +546,23 @@ def getProgInfo(utdate, instrument, stageDir, log):
     progSplit.read_file_list()
 
     splitNight = 0
-    code = progSplit.get_schedule_value('ProjCode')
-    if '/' in code:
+    codeStartEnd = progSplit.get_schedule_value('ProjCode,StartTime,EndTime')
+
+    # Check if a Dict or a List was returned
+    if type(codeStartEnd) == type(list()) and len(progSplit.programs) != 1:
+        splitNight = len(codeStartEnd)
+    else:
         splitNight = 1
-    if splitNight == 0:
-        progSplit.log.warning(utdate + ' is not a split night')
+
+    if splitNight == 1: # No split
+        msg = ''.join((utdate, ' is not a split night'))
+        print(msg)
+        progSplit.log.info(msg)
         if len(progSplit.programs) == 1:
-            msg = ('Assigning to ', progsplit.instrument, ' PI')
-            msg = ''.join(msg)
+            msg = ''.join(('Assigning to ', progSplit.instrument, ' PI'))
             print(msg)
             progSplit.log.info(msg)
-            progSplit.assign_single_to_pi(1)
+            progSplit.assign_to_pi(1)
         elif instrument == 'NIRSPEC':
             # Check for NIRSPEC backup
             print('NIRSPEC backup program')
@@ -708,67 +573,39 @@ def getProgInfo(utdate, instrument, stageDir, log):
             print('NIRC2 backup program')
             progSplit.log.info('NIRC2 backup program')
             progSplit.backup_program()
-    else:
-        msg = (utdate, ' is a split night with ', str(len(progSplit.programs)), ' programs')
-        msg = ''.join(msg)
+    elif splitNight > 1: # Split night
+        msg = ''.join((utdate, ' is a split night with ',
+                str(len(progSplit.programs)), ' programs'))
         print(msg)
         progSplit.log.info(msg)
+        progSplit.sort_by_time(codeStartEnd)
         progSplit.get_sun_times()
-        progSplit.get_outdir()
-        msg = (len(progSplit.outdir), 'OUTDIRs found')
-        msg = ''.join(msg)
+        progSplit.get_outdir(codeStartEnd, splitNight)
+        msg = ''.join((len(progSplit.outdir), ' OUTDIRs found'))
         print(msg)
         progSplit.log.info(msg)
 
-        for key, val in progSplit.outdir:
-            temp = (key, ' -- ', val, ': first half of sci = ', 
-                    progSplit.sciFiles[val]['firsthalf'], 
-                    '  second half of sci = ', 
-                    progSplit.sciFiles[val]['secondhalf'])
-            msg = ''.join(temp)
-            print(msg)
-            progSplit.log.info(msg)
+        # Split the stuff
+        # setNum is the number of the program from dep_obtain
+        for setNum in range(len(codeStartEnd)):
+            # fileNum is the number of the file from createprog
+            for fileNum in range(len(progSplit.fileList)):
+                try:
+                    if progSplit.fileList[fileNum]['outdir'] == progSplit.outdir[setNum][0]:
+                        progSplit.assign_single_to_pi(fileNum, setNum)
+                except KeyError:
+                    if (t.strptime(codeStartEnd[setNum]['StartTime'],'%H:%M:%S')
+                            <= t.strptime(progSplit.fileList[fileNum]['utc'],'%H:%M:%S')
+                            <= t.strptime(codeStartEnd[setNum]['EndTime'],'%H:%M:%S')):
+                        progSplit.assign_single_to_pi(fileNum,setNum)
+    else:
+        print('No project code was found!!!')
+        progSplit.log.warning('No project code was found!!!')
 
-        if len(progSplit.outdir) == 1:
-            print('Checking FRAMENO')
-            progSplit.log.info('Checking FRAMENO')
-            return_val = progSplit.split_by_frameno()
-            if return_val > 0:
-                progSplit.split_by_time()
-            else:
-                progSplit.get_observer()
-                if progSplit.obsValues > 1 or progSplit.numSciencePI == 1:
-                    print('Splitting by observer')
-                    progSplit.log.info('Splitting by Observer')
-                    progSplit.split_by_observer()
-        elif len(progSplit.outdir) == 2:
-            # Split by OUTDIR
-            print('Checking FRAMENO')
-            progSplit.log.info('Checking FRAMENO')
-            return_val = progSplit.split_by_frameno()
-            if len(progSplit.programs) == len(progSplit.outdir):
-                sci1 = progSplit.sciFiles[progSplit.outdir[0]]['firsthalf']
-                sci2 = progSplit.sciFiles[progSplit.outdir[1]]['firsthalf']
-                if sci1 != sci2:
-                    print('Splitting by OUTDIR/Science Files')
-                    progSplit.log.info('Splitting by OUTDIR/Science Files')
-                    progSplit.split_by_science()
-            elif return_val > 0:
-                progSplit.split_by_time()
-            else: # Split by observer
-                print('Splitting by observer')
-                progSplit.log.info('Splitting by Observer')
-                progSplit.split_by_observer()
-        else:
-            sci1 = progSplit.sciFiles[progSplit.outdir[0]]['firsthalf']
-            sci2 = progSplit.sciFiles[progSplit.outdir[1]]['firsthalf']
-            if sci1 != sci2:
-                print('Splitting by OUTDIR/Science files')
-                splitProg.log.info('Splitting by OUTDIR/Science files')
-                progSplit.split_multi_by_science()
-            # Observers
-            else:
-                print('Splitting by Observer')
-                splitProg.log.info('Splitting by Observer')
-                progSplit.split_by_observer()
-
+    fname = ''.join((stageDir, '/newproginfo.txt'))
+    with open(fname, 'w') as ofile:
+        for progfile in progSplit.fileList:
+            for key, val in progfile:
+                ofile.writelines(val['file'], ' ', val['outdir'], ' ',
+                        val['proginst'],' ', val['progid'], ' ',
+                        val['progpi'], ' ', val['progtitl'], '\n')
