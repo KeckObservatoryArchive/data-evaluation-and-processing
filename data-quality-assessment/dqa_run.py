@@ -3,6 +3,7 @@ import importlib
 import os
 import logging as lg
 import numpy as np
+import getProgInfo as gpi
 from glob import glob
 from datetime import datetime as dt
 from astropy.io import fits
@@ -15,16 +16,16 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
     
     # Set up default directories
     tablesDir = '/kroot/archive/tables'
-    udfDir = ancDir + '/udf/'
+    udfDir = ''.join((ancDir, '/udf/'))
     os.mkdir(udfDir)
     os.mkdir(lev0Dir)
     if instr == 'NIRSPEC':
         os.mkdir(lev0Dir + '/scam')
         os.mkdir(lev0Dir + '/spec')
-    
+
     # Create the LOC file
     locFile = lev0Dir + '/dqa.LOC'
-    
+
     # Setup logfile
     user = os.getlogin()
     log = lg.getLogger(user)
@@ -34,36 +35,103 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
     fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
     fh.setFormatter(fmat)
     log.addHandler(fh)
-    
+
     log.info(__name__ + ' ' + instr + ': DQA Started')
-    
+
     udate = date
     createprog(instr, udate, stageDir, log)
+    proginfo = gpi.ProgSplit()
+    proginfo.getProgInfo()
 
-    
-    
+    # Input file for dqa_run
+    dqafile = ''.join(stageDir, '/dqa_', instr, '.txt'))
+
+    # dep_obtain file
+    obtfile = ''.join((stageDir, '/dep_obtain', instr, '.txt'))
+
+    # Read the input file and store it in a something
+    files = []
+    with open(dqafile, 'r') as dqalist:
+        for line in dqalist:
+            files.append(line)
+
+    # How many files will be processed?
+    print(len(files))
+    log.info(''.join((str(len(files)), ' files to be processed')))
+    num_files = len(files)
+
+    # Get the critical keywords from from keyword.check
+    if instrument in ['DEIMOS', 'ESI', 'LRIS', 'OSIRIS']:
+        key_check = ''.join((tablesDir, '/keywordsMyKOA.check'))
+    elif instrument == 'HIRES':
+        key_check = ''.join((tablesDir, '/keywords.check'))
+    elif instrument == 'NIRC2':
+        key_check = ''.join((tablesDir, '/keywordsNirc2.check'))
+    elif instrument == 'NIRSPEC':
+        key_check = ''.join((tablesDir, '/NIRSPECkeywords.check'))
+    elif instrument == 'NIRES':
+        pass
+
+    # Get the key meta data from the check file
+    keysMeta = []
+    with open(key_check, 'r') as fitskeys:
+        for line in fitskeys:
+            keysMeta.append(line.split(' '))
+    num_keys = len(keysMeta)
+
+    # Create containers to hold infile and outfile
+    infile = []
+    outfile = []
+
+    # Store keyword values in the following arrays
+    kname = []
+    kvalue = []
+    nkw = []
+
+    # Loop through each entry in input_list
+    sdata = ''
+    pi = ''
+    progid = ''
+    acct = ''
+    i = 0
+    i2 = 0
+    num_sci = 0
+
+    # Catch for corrupted files
+    try:
+        pass
+    except:
+        pass
+
+    # Loop Throught the files
+    for filename in files:
+        with fits.open(filename) as header:
+            keys = header[0].keys
+            data = header[0].data
+
+''' Old Stuff
     files = glob('*.fits*')
     for filename in files:
         header = get_header.HDU(filename)
         keywords = header.keywords
         data = header.data
         instr = keywords['INSTRUME'].lower()
-        
+
         if instr in modules:
             module = importlib.import_module(instr)
             module.go(keywords, data, filename)
             # Write file to lev1 directory
-            # header.hdu.writeto('')   
+            # header.hdu.writeto('')
         else:
             # Do something
             pass
-
+'''
 
 def create_prog(instr, utdate, stageDir, log):
     log.info('create_prog: Getting FITS file information')
-    
+
     dep_obtain = stageDir + '/dep_obtain' + instr + '.txt'
- 
+
     oa = []
     fileList = []
 
@@ -76,7 +144,7 @@ def create_prog(instr, utdate, stageDir, log):
 
     if len(oa) >= 1:
         oa = oa[0]
-    
+
     # Get all files
     ''' This part was commented out in the idl file
     for root, dirs, files in os.walk(stageDir):
