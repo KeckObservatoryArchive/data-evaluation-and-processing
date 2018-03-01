@@ -5,15 +5,17 @@ import logging as lg
 import numpy as np
 import getProgInfo as gpi
 from glob import glob
+from common import koaid
 from datetime import datetime as dt
 from astropy.io import fits
 from urllib.request import urlopen
 from imagetyp_instr import imagetyp_instr
 
-modules = ['nirspec', 'kcwi']
+#modules = ['nirspec', 'kcwi']
 
 def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
-    
+    """
+    """
     # Set up default directories
     tablesDir = '/kroot/archive/tables'
     udfDir = ''.join((ancDir, '/udf/'))
@@ -26,16 +28,8 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
     # Create the LOC file
     locFile = lev0Dir + '/dqa.LOC'
 
-    # Setup logfile
-    user = os.getlogin()
-    log = lg.getLogger(user)
-    log.setLevel(lg.INFO)
-    fh = lg.FileHandler(__name__ + '.txt')
-    fh.setLevel(lg.INFO)
-    fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
-    fh.setFormatter(fmat)
-    log.addHandler(fh)
-
+    # Create log file
+    log = create_log()
     log.info(__name__ + ' ' + instr + ': DQA Started')
 
     udate = date
@@ -44,7 +38,7 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
     proginfo.getProgInfo()
 
     # Input file for dqa_run
-    dqafile = ''.join(stageDir, '/dqa_', instr, '.txt'))
+    dqafile = ''.join((stageDir, '/dqa_', instr, '.txt'))
 
     # dep_obtain file
     obtfile = ''.join((stageDir, '/dep_obtain', instr, '.txt'))
@@ -60,23 +54,8 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
     log.info(''.join((str(len(files)), ' files to be processed')))
     num_files = len(files)
 
-    # Get the critical keywords from from keyword.check
-    if instrument in ['DEIMOS', 'ESI', 'LRIS', 'OSIRIS']:
-        key_check = ''.join((tablesDir, '/keywordsMyKOA.check'))
-    elif instrument == 'HIRES':
-        key_check = ''.join((tablesDir, '/keywords.check'))
-    elif instrument == 'NIRC2':
-        key_check = ''.join((tablesDir, '/keywordsNirc2.check'))
-    elif instrument == 'NIRSPEC':
-        key_check = ''.join((tablesDir, '/NIRSPECkeywords.check'))
-    elif instrument == 'NIRES':
-        pass
-
-    # Get the key meta data from the check file
-    keysMeta = []
-    with open(key_check, 'r') as fitskeys:
-        for line in fitskeys:
-            keysMeta.append(line.split(' '))
+    # Get the keys requires for the FITS files
+    keysMeta = get_keys_meta(instr, tablesDir)
     num_keys = len(keysMeta)
 
     # Create containers to hold infile and outfile
@@ -99,15 +78,169 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
 
     # Catch for corrupted files
     try:
-        pass
-    except:
-        pass
 
-    # Loop Throught the files
-    for filename in files:
-        with fits.open(filename) as header:
-            keys = header[0].keys
-            data = header[0].data
+        for filename in files:
+            log.info(''.join((instr, ': Input file ', filename)))
+            infile.append(filename.strip())
+            # Read the zero header
+            with fits.open(filename) as hdulist:
+                keys = hdulist[0].keys
+
+                # Temp fix for bad file times (NIRSPEC legacy)
+                fixdate = date
+                fixdatetime(fixdate, filename, keys)
+
+                # Is this a HIRES file?
+                test = filename.split('/')
+                goodfile = ''
+                log.info(instr,': check_instr')
+                check_instr(instr, filename, keys, udfDir, goodfile)
+                if goodfile == 'no':
+                    exit()
+                # Number of Extensions: nexten = numccds * numamps
+                log.info(instr, ': numamps')
+                numAmps = numamps(keys)
+                log.info(instr, ': numccds')
+                numCCDs = numccds(keys)
+                nexten = numAmps * numCCDs
+
+                # Need Semester to Fix DATE-OBS, if not ERROR or 0
+                if keys['DATE-OBS'] not in ['ERROR', 0]:
+                    semester(keys)
+
+                # Determine KOAID
+                log.info(instr, ': koaid')
+                koaid(keys)
+                if keys['KOAID'] == 'bad':
+                    log.warning(instr,
+                            ': KOAID could not be created for ', filename)
+                    exit()
+
+                # Add mosaic keywords to legacy data, UT from UTC
+                log.info(instr, ': add_keywords')
+                add_keywords(instr, keys, nexten)
+                skip = 'n'
+                j = 0
+                for j in range(key):
+                    if keycheck[j] eq 'Y':
+                        try:
+                            test = keys[keycheck2[j]]
+                        # If key does not exist, log it and skip
+                        except KeyError:
+                            log.warning(''.join((instr, ': ',
+                                    keycheck2[j], ' keyword missing')))
+                            exit()
+            # Read the header and image data from the input file
+            # Legacy data and NIRESPEC
+            if nexten == 0:
+                naxis1 = keys.get('NAXIS1')
+                naxis2 = keys.get('NAXIS2')
+                # Define image array
+                if instr in ['DEIMOS','ESI','HIRES','LRIS']:
+                    image = [1,int(naxis1),int(naxis2)]
+                elif instr in ['NIRC2','NIRSPEC']:
+                    image = [1,long(naxis1),long(naxis2)]
+                elif instr in ['OSIRIS']:
+                    image = [float(1),float(naxis1),float(naxis2)]
+                # Read image
+                data = hdulist[0].data
+
+                # Write to log (HIRES)
+                if instr == 'HIRES':
+                    log.info(''.join((instr, ': Legacy data')))
+
+                # Add BLANK (HIRES -32768), if missing
+                try:
+                    blank = keys['BLANK']
+                except KeyError:
+                    blank = -32768
+                    text = ' Keyword added by KOA software'
+                    keys.insert('BLANK'  , (blank, text))
+                    log.info(''.join((instr, ': BLANK added to header')))
+            else:
+            #Mosaic Data
+                ext = 0
+                # Define header, nkeywords, size_image arrays
+                header = []
+                image=[]
+                hdr = None
+                nkeywords = []
+                size_image = [0 for i in range(nexten+1)]
+                while ext < nexten:
+                    # Read extension header
+                    try:
+                        hdr = fits.getheader(filename, ext=ext+1)
+                    except Exception as e:
+                        log.error(''.join((instr, ': Error reading extension ', str(ext))))
+                        exit()
+                    try:
+                        blank = hdr['BLANK']
+                    except KeyError:
+                        blank = -32768
+                        text = ' Keyword added by KOA software'
+                        hdr.insert('BLANK', (blank, text))
+                        log.info(''.join((instr, ': BLANK added to image header for extension ', str(ext+1))))
+                    # Determine the number of keywords
+                    try:
+                        # This gets rid of the extra whitespace for some reason
+                        hdr.pop('')
+                    except:
+                        pass
+                    nkeywords.append(len(hdr))
+
+                    # Store extension header in array
+                    header.append(hdr)
+
+                    # Read image
+                    try:
+                        img = hdulist[ext+1].data
+                    except Exception as e:
+                        log.error(instr, ': Error reading image extension ', str(ext))
+                        exit()
+                    # Append the extension image to the list
+                    image.append(img)
+
+                    # Increment Extensions
+                    ext += 1
+                # End While loop
+            # End else
+
+            # First fix the BINNING keyword, if necessary
+            try:
+                binning = header['BINNING']
+                bin2 = binning.replace(' ','')
+                if binning not in bin2:
+                    text = ''.join((' Keyword changed from '. binning))
+                    keys.update('BINNING', (bin2, text))
+            except:
+                pass
+
+            # Get current list of KOAIDs in lev0_dir
+            koaid_found = []
+            for root, dirs, files in os.walk(lev0Dir):
+                for koaid in files:
+                    if '.fits' not in koaid:
+                        continue
+                    elif koaid not in koaid_found:
+                        koaid_found.append(''.join((root,'/',item)))
+                    else:
+                        log.warning(instr, ': KOAID ', koaid,
+                                ' exists for ' + filename)
+                        exit()
+
+            # Call SEMESTER
+            log.info(instr, ': semester')
+            semester(keys)
+
+            # Call IMAGETYP
+            log.info(instr, ': imagetyp')
+            imagetyp_instr(instr, keys)
+    except KeyError:
+        print('Invalid Key')
+        log.error('Invalid Key')
+    except Exception as err:
+        print('Program Crashed - Exiting: ', str(err))
+        log.error('Program Crashed - Exiting: ', str(err))
 
 ''' Old Stuff
     files = glob('*.fits*')
@@ -126,6 +259,44 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
             # Do something
             pass
 '''
+
+#-----------------------END DQA RUN-------------------------------------------
+
+def create_log():
+    # Setup logfile
+    user = os.getlogin()
+    log = lg.getLogger(user)
+    log.setLevel(lg.INFO)
+    fh = lg.FileHandler(__name__ + '.txt')
+    fh.setLevel(lg.INFO)
+    fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+    fh.setFormatter(fmat)
+    log.addHandler(fh)
+    return log
+
+#----------------END CREATE LOG---------------------------------------
+
+def get_keys_meta(instrument, tablesDir):
+    # Get the critical keywords from from keyword.check
+    if instrument in ['DEIMOS', 'ESI', 'LRIS', 'OSIRIS']:
+        key_check = ''.join((tablesDir, '/keywordsMyKOA.check'))
+    elif instrument == 'HIRES':
+        key_check = ''.join((tablesDir, '/keywords.check'))
+    elif instrument == 'NIRC2':
+        key_check = ''.join((tablesDir, '/keywordsNirc2.check'))
+    elif instrument == 'NIRSPEC':
+        key_check = ''.join((tablesDir, '/NIRSPECkeywords.check'))
+    elif instrument == 'NIRES':
+        key_check = ''.join((tablesDir, '/keywords.format.NIRES'))
+
+    # Get the key meta data from the check file
+    keysMeta = []
+    with open(key_check, 'r') as fitskeys:
+        for line in fitskeys:
+            keysMeta.append(line.split(' '))
+    return keysMeta
+
+#-------------------END GET KEYS META-------------------------------
 
 def create_prog(instr, utdate, stageDir, log):
     log.info('create_prog: Getting FITS file information')
@@ -337,8 +508,7 @@ def semester(keys):
     if imonth == 1 or (imonth == 2 and iday == 1):
         year = str(iyear-1)
 
-    seq = (year, sem)
-    semester = ''.join(seq).strip()
+    semester = ''.join((year, sem)).strip()
     keys.update({'SEMESTER':(semester, 'Calculated SEMESTER from DATE-OBS')})
 
 #------------------ END SEMESTER ---------------------------------------------
