@@ -78,7 +78,6 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
 
     # Catch for corrupted files
     try:
-
         for filename in files:
             log.info(''.join((instr, ': Input file ', filename)))
             infile.append(filename.strip())
@@ -234,7 +233,16 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
 
             # Call IMAGETYP
             log.info(instr, ': imagetyp')
-            imagetyp_instr(instr, keys)
+            imgtype = imagetyp_instr(instr, keys)
+            if imgtype == 'object':
+                num_sci += 1
+
+            # Add DQA generated keywords
+            log.info(instr, ': add_metakeywords')
+            pi, sdata, datlevel, progid, progtitl, acct = add_metakeywords(
+                    instr, date, filename, koaid, imtype, keys, image, header,
+                    nexten, obtfile, ancDir)
+
     except KeyError:
         print('Invalid Key')
         log.error('Invalid Key')
@@ -528,3 +536,37 @@ def get_prog_info(ktn):
     return progpi, proginst, progtitl
 
 #--------------- END GET PROG INFO-----------------------------------------
+
+def add_metakeywords(instr, date, ifile, fkoaid, imagetyp, keys,
+        image, iheader, nexten, obtfile, ancDir, log):
+    """
+    """
+    log.info('Starting add_metakeywords')
+
+
+    # Get koaid keyword
+    fkoaid = koaid(keys)
+    if instr not in ['HIRES','NIRC2','NIRSPEC']:
+        keys.update('KOAID', (koaid, ' KOA data file name'))
+        stageDir = ancDir.replace(instr, ''.join(('stage/',instr)))
+        stageDir = stageDir.replace('/anc','')
+
+        # Get ProgID, ProgPI, ProgInst
+        req = ''.join(('https://www.keck.hawaii.edu/software/db_api/',
+                'telSchedule.php?cmd=getSchedule&date=', date, '&instr=',
+                instr, '&column=ProjCode,Principal,Institution'))
+        res = url.urlopen(req).read().decode()
+        dat = json.loads(res)
+
+        progid = dat['ProjCode']
+        progpi = dat['Principal']
+        proginst = dat['Institution']
+
+        # Get ProgTitl
+        req = ''.join(('https://www.keck.hawaii.edu/software/db_api/',
+                'koa.php?cmd=getTitle&semid=', progid))
+        res = url.urlopen(req).read().decode()
+        dat = json.loads(res)
+        progtitl = dat['progtitl']
+
+        # progpi, proginst, progtitl = get_prog_info(progid)
