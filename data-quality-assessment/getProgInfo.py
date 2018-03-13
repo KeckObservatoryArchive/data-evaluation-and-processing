@@ -122,21 +122,30 @@ class ProgSplit:
         This method determines the semester of the observation
         using the date in UTC
         """
+
+        # Split the date into its components
         yr, mo, dy = self.utDate.split('-')
+
+        # convert the strings to ints
         iyr = int(yr)
         imo = int(mo)
         idy = int(dy)
         sem = 'A'
 
+        # Determine which semester the data are from
+        # Anything between August and Feb is semester B
         if imo > 8 or imo < 2:
             sem = 'B'
+        # Aug 1 UT is still part of Jul 31 HST
         elif imo == 8 and idy > 1:
             sem = 'B'
         elif imo == 2 and idy < 1:
             sem = 'B'
+        # Jan through Feb 1 are a part of the previous year's semester
         if imo == 1 or (imo ==2 and idy == 1):
             iyr -= 1
-        return str(iyr) + sem
+        # return the resulting semester
+        return ''.join((str(iyr), sem))
 
     def check_stage_dir(self):
         """
