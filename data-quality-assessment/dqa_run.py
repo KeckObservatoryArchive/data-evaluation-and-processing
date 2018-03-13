@@ -558,15 +558,39 @@ def add_metakeywords(instr, date, ifile, fkoaid, imagetyp, keys,
         res = url.urlopen(req).read().decode()
         dat = json.loads(res)
 
-        progid = dat['ProjCode']
-        progpi = dat['Principal']
-        proginst = dat['Institution']
+        keys['progid'] = (dat['ProjCode'], 'WMKO Program ID')
+        keys['progpi'] = (dat['Principal'], 'Program Institution')
+        keys['proginst'] = (dat['Institution'], 'Program Principal Investigator')
 
         # Get ProgTitl
         req = ''.join(('https://www.keck.hawaii.edu/software/db_api/',
                 'koa.php?cmd=getTitle&semid=', progid))
         res = url.urlopen(req).read().decode()
         dat = json.loads(res)
-        progtitl = dat['progtitl']
+        keys['progtitl '] = (dat['progtitl'], 'Program Title')
 
-        # progpi, proginst, progtitl = get_prog_info(progid)
+        # Find the observing semester
+        log.info('add_metakeywords: semester')
+        sem = semester(keys)
+        keys['semester'] = (sem, 'WMKO Observing Scheudule Semester')
+
+    log.info('add_metakeywords: datlevel')
+    datlevel = data_level('raw')
+
+def data_level(ftype):
+    datalevel = None
+
+    # Raw - level 0
+    if ftype == 'raw':
+        datalevel = 0
+    elif ftype == 'reduced':
+        datalevel = 1
+    return datalevel
+
+def dqa_date(keys):
+    """
+    Determines the date timestamp for when the DQA module was run
+    """
+    dqa_date = dt.now()
+    keys['dqa_date'] = dt.strftime(dqa_date, '%Y-%m-%s %H:%M:%S')
+    return
