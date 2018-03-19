@@ -65,7 +65,34 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 
 		data = urllib.request.urlopen(schedUrl)
 		data = data.read().decode('utf8')	# Convert from byte to ascii
-		data = json.loads(data)			# Convert to Python list
+		if len(data) > 0:
+			data = json.loads(data)			# Convert to Python list
+
+		# Get the telescope number
+
+		sendUrl = url + ('cmd=getTelnr&instr=', instr.upper())
+		sendUrl = ''.join(sendUrl)
+		telGet = urllib.request.urlopen(sendUrl)
+		telGet = telGet.read().decode('utf8')       # Convert from byte to ascii
+		telGet = json.loads(telGet)                 # Convert to Python list
+		telnr = telGet['TelNr']
+
+		# Get OA
+
+		oaUrl = url + ('cmd=getNightStaff', '&date=', hstDate)
+		oaUrl = oaUrl + ('&telnr=', str(telnr), '&type=oa')
+		oaUrl = ''.join(oaUrl)
+		oaGet = urllib.request.urlopen(oaUrl)
+		oaGet = oaGet.read().decode('utf8')
+		oa = 'None'
+		if len(oaGet) > 0:
+			oaGet = json.loads(oaGet)
+			if isinstance(oaGet, dict):
+				oa = oaGet['Alias']
+			else:
+				for entry in oaGet:
+					if entry['Type'] == 'oa':
+						oa = entry['Alias']
 
 		# No entries found
 		# Create stageDir/dep_notschedINSTR.txt and dep_obtainINSTR.txt
@@ -87,18 +114,6 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 			with open(obtainFile, 'w') as fp:
 				num = 0
 				for entry in data:
-
-					# Get OA
-
-					oaUrl = url + ('cmd=getNightStaff', '&date=', hstDate)
-					oaUrl = oaUrl + ('&telnr=', entry['TelNr'], '&type=oa')
-					oaUrl = ''.join(oaUrl)
-					oaGet = urllib.request.urlopen(oaUrl)
-					oaGet = oaGet.read().decode('utf8')
-					oaGet = json.loads(oaGet)
-					oa = 'None'
-					if len(oaGet) > 0:
-						oa = oaGet['Alias']
 
 					# Get observer list from URL
 
