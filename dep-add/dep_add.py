@@ -64,7 +64,7 @@ def dep_add(telNr, utDate, ancDir, log_writer=''):
 				log_writer.info('dep_add.py copying {} to {}'.format(source, destination))
 			shutil.copyfile(source, destination)
 
-def dep_tar(utDate, ancDir):
+def dep_tar(utDate, ancDir, log_writer=''):
 	"""
 	This function will tar the ancillary directory, gzip that
 	tarball and remove the original contents of the directory.
@@ -116,10 +116,11 @@ def dep_tar(utDate, ancDir):
 	
 		# Create md5sum of the tarball
 
+		md5sumFile = gzipTarFile.replace('tar.gz', 'md5sum')
+
 		if log_writer:
 			log_writer.info('dep_tar.py creating {}'.format(md5sumFile))
 
-		md5sumFile = gzipTarFile.replace('tar.gz', 'md5sum')
 		md5 = hashlib.md5(open(gzipTarFile, 'rb').read()).hexdigest()
 
 		with open(md5sumFile, 'w') as f:
@@ -131,6 +132,7 @@ def dep_tar(utDate, ancDir):
 		for dir in dirs:
 			delDir = (ancDir, '/', dir)
 			delDir = ''.join(delDir)
+			if not os.path.isdir(delDir): continue
 			if log_writer:
 				log_writer.info('dep_tar.py removing {}'.format(delDir))
 			shutil.rmtree(delDir)
