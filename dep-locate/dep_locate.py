@@ -21,8 +21,9 @@ import os
 import verification
 import shutil
 from sys import argv
+from datetime import datetime, timedelta
 
-def dep_locate(instr, utDate, rootDir, endHour):
+def dep_locate(instr, utDate, rootDir, endHour, log_writer=''):
     """
     This function will search the data directories for
     data  written in the last howold*24 hours.
@@ -47,22 +48,24 @@ def dep_locate(instr, utDate, rootDir, endHour):
     ancDir = ''.join((rootDir, '/', instr, '/', dateDir, '/anc'))
 
     ### Set up logging ###
-    user = os.getlogin()
-    writerName = ''.join(('dep_locate <', user, '>'))
-    log_writer = lg.getLogger(writerName)
-    log_writer.setLevel(lg.INFO)
 
-    # create a file handler
-    log_file = ''.join((rootDir, '/', instr, '/', instr, '_', dateDir, '.log'))
-    log_handler = lg.FileHandler(log_file)
-    log_handler.setLevel(lg.INFO)
+    if log_writer == '':
+        user = os.getlogin()
+        writerName = ''.join(('dep_locate <', user, '>'))
+        log_writer = lg.getLogger(writerName)
+        log_writer.setLevel(lg.INFO)
 
-    # Create a logging format
-    formatter = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
-    log_handler.setFormatter(formatter)
+        # create a file handler
+        log_file = ''.join((rootDir, '/', instr, '/', instr, '_', dateDir, '.log'))
+        log_handler = lg.FileHandler(log_file)
+        log_handler.setLevel(lg.INFO)
 
-    # add handlers to the logger
-    log_writer.addHandler(log_handler)
+        # Create a logging format
+        formatter = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+        log_handler.setFormatter(formatter)
+
+        # add handlers to the logger
+        log_writer.addHandler(log_handler)
 
     # Verify instrument and date are in the correct format
     verification.verify_instrument(instr)
@@ -445,20 +448,22 @@ def pyfind(usedir, utDate, endHour, outfile, log_writer):
     @param log_writer: The log handler for the script. Writes to the logfile
     """
     # Break utDate into its pieces
-    if '/' in utDate:
-        year, month, day = utDate.split('/')
-    elif '-' in utDate:
-        year, month, day = utDate.split('-')
+    utDate = utDate.replace('/', '-')
+
     # Set up our +/-24 hour boundary
-    dayMin = int(day) - 1
-    dayMax = int(day)
+
+    utDate2 = datetime.strptime(utDate, '%Y-%m-%d')
+    utDate2 -= timedelta(days=1)
+    utDate2 = utDate2.strftime('%Y-%m-%d')
 
     # Create a string date and time to convert to seconds since epoch
+    year, month, day = utDate.split('-')
     utMaxTime = ''.join((str(year), str(month),
-            str(dayMax), ' ', str(endHour), ':00:00'))
+            str(day).zfill(2), ' ', str(endHour), ':00:00'))
 
+    year, month, day = utDate2.split('-')
     utMinTime = ''.join((str(year), str(month),
-            str(dayMin), ' ', str(endHour), ':00:00'))
+            str(day).zfill(2), ' ', str(endHour), ':00:00'))
 
     # st_mtime records the time in seconds of the last file modification since 
     # Jan 1 1970 00:00:00 UTC We need to create a time_construct object 
@@ -498,10 +503,10 @@ def pyfind(usedir, utDate, endHour, outfile, log_writer):
 
 
 
-print(len(argv))
-if len(argv) == 5:
-    print(argv[1])
-    print(argv[2])
-    print(argv[3])
-    print(argv[4])
-    dep_locate(argv[1], argv[2], argv[3], argv[4])
+#print(len(argv))
+#if len(argv) == 5:
+#    print(argv[1])
+#    print(argv[2])
+#    print(argv[3])
+#    print(argv[4])
+#    dep_locate(argv[1], argv[2], argv[3], argv[4])
