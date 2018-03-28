@@ -4,6 +4,7 @@ import os
 import logging as lg
 import numpy as np
 import getProgInfo as gpi
+import math
 from glob import glob
 from common import koaid
 from datetime import datetime as dt
@@ -217,13 +218,13 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
             # Get current list of KOAIDs in lev0_dir
             koaid_found = []
             for root, dirs, files in os.walk(lev0Dir):
-                for koaid in files:
-                    if '.fits' not in koaid:
+                for k_id in files:
+                    if '.fits' not in k_id:
                         continue
-                    elif koaid not in koaid_found:
+                    elif k_id not in koaid_found:
                         koaid_found.append(''.join((root,'/',item)))
                     else:
-                        log.warning(instr, ': KOAID ', koaid,
+                        log.warning(instr, ': KOAID ', k_id,
                                 ' exists for ' + filename)
                         exit()
 
@@ -240,7 +241,7 @@ def dqa_run(instr, date, stageDir, lev0Dir, ancDir, tpxlog):
             # Add DQA generated keywords
             log.info(instr, ': add_metakeywords')
             pi, sdata, datlevel, progid, progtitl, acct = add_metakeywords(
-                    instr, date, filename, koaid, imtype, keys, image, header,
+                    instr, date, filename, keys['KOAID'], imtype, keys, image, header,
                     nexten, obtfile, ancDir)
 
     except KeyError:
@@ -547,7 +548,7 @@ def add_metakeywords(instr, date, ifile, fkoaid, imagetyp, keys,
     # Get koaid keyword
     fkoaid = koaid(keys)
     if instr not in ['HIRES','NIRC2','NIRSPEC']:
-        keys.update('KOAID', (koaid, ' KOA data file name'))
+        keys.update('KOAID', (fkoaid, ' KOA data file name'))
         stageDir = ancDir.replace(instr, ''.join(('stage/',instr)))
         stageDir = stageDir.replace('/anc','')
 
@@ -576,6 +577,45 @@ def add_metakeywords(instr, date, ifile, fkoaid, imagetyp, keys,
 
     log.info('add_metakeywords: datlevel')
     datlevel = data_level('raw')
+    dqa_date(keys)
+    dqa_vers(keys)
+
+    # Instrument Specific Keyword Additions
+    if instr == 'HIRES':
+        # Wavelengths
+        log.info('add_metakeywords: lambda_xd')
+        filname = keys.get('FILNAME')
+        wavecntr, waveblue, wavered = lambda_xd(nexten, keys)
+    elif instr == 'NIRSPEC':
+        # DETGAIN, MODE, & RN
+        if 'NS' in fkoaid:
+            detmode = 'spec'
+            detgain = 5
+            detrn = 10
+        elif 'NC' in fkoaid:
+            detmode = 'scam'
+            detgain = 4
+            detrn = 25
+        else:
+            detmode = 'null'
+            detgain = 'null'
+            detrn = 'null'
+
+        # Dispersion
+        log.info('add_metakeywords: nirspec_disp')
+        dispersion, dispscal = nirspec_disp(keys)
+
+        # Get differential tracking
+        log.info('add_metakeywords: get_dtrack')
+        dra, ddec, dtrack, update = get_dtrack(keys, ancDir)
+
+        # Get image statistics
+        log.info('add_metakeyworsd; nirspec_imagestat')
+        imgmean, imgstdv, imgmed = nirspec_imagestat(keys, image, dispersion)
+
+        # Server Crash?
+        log.info('add_metakeywords: nirspec_crash')
+        crash = nirspec_crash(keys, ifile)
 
 def data_level(ftype):
     datalevel = None
@@ -594,3 +634,335 @@ def dqa_date(keys):
     dqa_date = dt.now()
     keys['dqa_date'] = dt.strftime(dqa_date, '%Y-%m-%s %H:%M:%S')
     return
+
+def dqa_vers(keys):
+    path = '/kroot/archive/dep/dqa/default'
+    keys['dqa_vers'] = (os.readlink(path), 'Live build version')
+    return
+
+def lambda_xd(nexten, keys):
+    # Default to null
+    waveblue = 'null'
+    wavecntr = 'null'
+    wavered = 'null'
+
+    # Set pixel and CCD size
+    psize = 0.015
+    npix = 3072.0
+    if nexten == 0:
+        psize = 0.024
+        npix = 1024.0
+
+    # Make sure stages are homed
+    try:
+        xdispers = keys['XDISPERS'].strip()
+    except KeyError:
+        xdispers = 'RED'
+    try:
+        xdcal = keys['XDCAL'].strip()
+        exhcal = keys['ECHCAL'].strip()
+    except KeyError:
+        return wavecntr, waveblue, wavered
+    if xdcal == 0 or exhcal == 0:
+        return wavecntr, waveblue, wavered
+
+    # Determine XD groove spacing and HIRES angle setting
+    try:
+        xdsigmai = keys['XDSIGMAI']
+        xdangl = keys['XDANGL']
+        echangl = keys['ECHANGL']
+    except KeyError:
+        return wavecntr, waveblue, wavered
+
+    # Specifications camera-collimator, blaze, cal offset angles
+    camcol = 40.*math.pi/180.
+    blaze = -4.38*math.pi/180.
+    offset = 25.0 - 0.63        # 0-order + 5 deg for home
+
+    # Grating Equation
+    alpha = (xdangl+offset)*math.pi/180.
+    d = 10**7/xdsigmai                    # microns
+    wavecntr = d*((1.+math.cos(camcol))*math.sin(alpha)
+            - math.sin(camcol)*math.cos(alpha))
+    ccdangle = math.atan(npix*psize/1.92/762.0)    # f = 762mm, psize u pix, 1.92 amag
+
+    # Blue end
+    alphab = alpha - ccdangle
+    waveblue = d*((1.+math.cos(camcol))*math.sin(alphab)
+            - math.sin(camcol)*math.cos(alphab))
+
+    # Red end
+    alphar = alpha + ccdangle
+    wavered =  d*((1.+math.cos(camcol))*math.sin(alphar)
+            - math.sin(camcol)*math.cos(alphar))
+
+    # Center
+    wavecntr = int(wavecntr)
+    waveblue = int(waveblue)
+    wavered  = int(wavered)
+
+    # Get the correct equation constants
+    if xdispers == 'RED':
+        # Order 62, 5748 A, order*wave= const
+        const = 62.0 * 5748.0
+        a = 1.4088
+        b = -306.6910
+        c = 16744.1946
+        if nexten == 0:
+            a = 1.1986
+            b = -226.6224
+            c = 10472.6948
+    elif xdispers == 'UV':
+        # Order 97, 3677 A, order*wave = const
+        const = 97.0*3677.0
+        a = 0.9496
+        b = -266.2792
+        c = 19943.7496
+        if nexten == 0:
+            a = 0.5020
+            b = -148.3824
+            c = 10743.1746
+    elif xdispers == '':
+        return wavecntr, waveblue, wavered
+
+    # Correct wavelength values
+    i = 1
+    while i <= 3:
+        if i == 1:
+            wave = wavecenter
+        elif i == 2:
+            wave = waveblue
+        elif i == 3:
+            wave = wavered
+        # Find order
+        order = math.floor(const/wave)
+
+        # Find shift in Y: order 62 = npix with XD=ECH=0 (RED)
+        # Find shift in Y: order 97 = npix with XD=ECH=0 (BLUE)
+        tryit = 1
+        while nexten != 0 and try < 100:
+            if i == 1:
+                shift = a*order*order + b*order + c
+                newy = npix - shift
+                newy = -newy
+            else:
+                shift2 = a*order*order + b*order + c
+                if nexten == 0:
+                    if i == 1:
+                        shift2 = shift2 + npix
+                    elif i == 3:
+                        shift2 = shift2 + 2*npix
+                newy2 = shift2 - newy
+                if newy2 < 120:
+                    order = order - 1
+                    tryit += 1
+                    if nexten != 0 and tryit < 100:
+                        continue
+                npix2 = 2*npix
+                if nexten == 0:
+                    npix2 = npix2/2
+                if newy2 > npix2:
+                    order += 1
+                    tryit += 1
+                    if nexten != 0 and tryit < 100:
+                        continue
+
+        # Find delta wave for order
+        dlamb = -0.1407*order + 18.005
+
+        # New wavecntr = central wavelength for this order
+        wave = const/order
+
+        # Correct for echangl
+        wave += (4 * dlamb * echangl)
+
+        # round to nearest 10 angstroms
+        wave2 = wave % 10
+        if wave2 < 5:
+            wave -= wave2
+        else:
+            wave += (10 - wave2)
+
+        # cleanup
+        if wave < 2000 or wave > 20000:
+            wave = 'null'
+        if i == 1:
+            wavecntr =  wave
+        elif i == 2:
+            waveblue = wave
+        elif i == 3:
+            wavered = wave
+        i += 1
+    return wavecntr, waveblue, wavered
+
+def nirspec_disp(keys):
+    dispersion = 'null'
+    dispscal = 'null'
+    k_id = keys['KOAID']
+    if'NC' not in k_id:
+        return dispersion, dispscal
+    dispersion = 'unknown'
+    try:
+        echelle = keys['ECHLPOS']
+    except KeyError:
+        dispersion = 'unknown'
+        return dispersion, dispscal
+    if echelle > 100:
+        dispersion = 'low'
+        dispscal = 0.190
+    elif echelle <= 100:
+        dispersion = 'high'
+        dispscal = 0.144
+    return disperion, dispscal
+
+def get_dtrack(keys, ancDir):
+    # If DTRACK exists in header, return
+    update = 'no'
+    dtrack = keys['DTRACK']
+    if dtrack not None:
+        return dra, ddec, dtrack, update
+    update = 'yes'
+
+    # Get RA, DEC, TARGETNAME
+    ra = keys['RA']              # ra = 49.509
+    dec = keys['DEC']            # dec = 7.466
+    targname = keys['TARGNAME']  # targname = '2001PT13 05UT'
+
+    # Default values
+    dra    = 'null'
+    ddec   = 'null'
+    dtrack = 'null'
+
+    # Read DCSlog
+    if not targname or not ra or not dec or not ancDir:
+        return dra, ddec, dtrack, update
+
+    # Does dcsinfo file exist
+    dcsfile = ''.join((ancDir, '/nightly/dcsinfo'))
+    if not os.path.exists(dcsfile):
+        return 'null', 'null', 'null', 'no'
+
+    # Read the file
+    savevals = {'targname':'', 'targra':'', 'targdec':'', 'dtrack':'', 'dra':'', 'ddec':''}
+    with open(dcsfile, 'r') as dcslog:
+        for line in dcslog:
+            use = 'no'
+            targname = targra = targdec = dtrack = dra= ddec = ''
+            for val in savevals:
+                if val in line:
+                    tmp = line.split('=')
+                    savevals[val] = tmp[1].strip()
+                    use = 'yes'
+            # If target found then...
+            if use == 'yes' and targname == name:
+                hr, mn, sc = targra.split(':')
+                thisRA = (hr + mn/60.0 + sc/3600.0) * 1500
+                dg, mn, sc = targdec.split(':')
+                sign = 1
+                if dg < 0:
+                    deg = -deg
+                    sign = -1
+                thisDEC = dg + mn/60.0 + sc/3600.0
+                thisDEC *= sign
+                dra = abs(thisRA - ra)
+                ddec = abs(thisDEC - dec)
+                if dra < 0.01 and ddec < 0.01:
+                    return dra, ddec, dtrack, update
+    return dra, ddec, dtrack, update
+
+def nirspec_imagestat(keys, image, dispersion):
+    if not keys and not image and not dispersion:
+        log.info('Syntax: nirspec_imagestat: header, image, dispersion')
+        return 'null', 'null', 'null'
+
+    # Defaults
+    imgmean = 'null'
+    imgstdv = 'null'
+    imgmed  = 'null'
+
+    # Determine image format
+    naxis1 = keys['NAXIS1']
+    naxis2 = keys['NAXIS2']
+    x = naxis1/2
+    y = naxis2/2
+
+    # For low dispersion, spectrum is to the right of center
+    # Make sure NOT scam
+    try:
+        outdir2 = keys['OUTDIR2']
+    except KeyError:
+        if dispersion == 'low':
+            x = 715.0
+    if outdir2:
+        y -= 20
+
+    # Sampling Box
+    img = image[0][x-15:x+15,y-15:y+15]
+    imgmean = numpy.mean(img)
+    imgstdv = numpy.std(img)
+    imgmed  = numpy.median(img)
+
+    return imgmean, imgstdv, imgmed
+
+def nirspec_crash(keys, ifile, log):
+    # Add CRASH keyword, default is CRASH = No
+    crash = 'No'
+    keys['CRASH'] = ('No', 'NIRSPEC server crash detected?')
+
+    # Crash if FILNAME is UNKNOWN
+    filname = keys['FILNAME']
+    slitname = keys['SLITNAME']
+    if filname != 'UNKNOWN' and slitname != 'UNKNOWN':
+        return 'No'
+
+    # Crash detected
+    crash = 'Yes'
+    log.warning('nirspec_crash: Crash detected')
+    keys['CRASH'] = 'Yes'
+
+    # Get the file number and root name of this file
+    try:
+        filenum = keys['FILENUM']
+    except KeyError:
+        filenum = keys['FILENUM2']
+    rootname = keys['ROOTNAME'].strip()
+
+    # Starting with the previous file, loop through until
+    # file is found that was written before the crash.
+    filenum -= 1
+    while filenum >= 0:
+        # Construct the filename to previous file
+        num2 = int(filenum.strip())
+        if 100 <= num2 < 1000:
+            num2 = ''.join(('0', string(num2)))
+        if 10 <= num2 < 100:
+            num2 = ''.join(('00', string(num2)))
+        if num2 < 10:
+            num2 = ''.join(('000', string(num2)))
+        prefile = ''.join((rootname, num2.strip(), '.fits'))
+
+        # Directory to look in
+        rdir = ifile.split(rootname)[0]
+
+        # Find the file
+       for root, dirs, files in os.walk(rdir):
+           prevfile = ''.join((root,files))
+
+        # If file found, continue
+        if prevfile == '':
+            filenum -= 1
+            continue
+
+        # Read this header
+        prevhead = fits.getheader(prevfile)
+
+        # Good header if FILNAME not UNKNOWN
+        filname = prevhead['FILNAME'].strip()
+        slitname = prevhead['SLITNAME'].strip()
+        if filname != 'UNKNOWN' and slitname != 'UNKNOWN':
+            # loop through all the keywords and fix those
+            # That are bogus
+            for key in prevhead:
+                if key != 'COMMENT':
+                    comment = prevhead[key].split('/')
+
