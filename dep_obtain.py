@@ -50,6 +50,7 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 	schedUrl = url + ('cmd=getSchedule', '&date=', hstDate, '&instr=', instr.upper())
 	schedUrl = ''.join(schedUrl)
 
+
 	# Output files
 
 	notScheduledFile = (stageDir, '/dep_notsched', instr.upper(), '.txt')
@@ -67,6 +68,8 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 		data = data.read().decode('utf8')	# Convert from byte to ascii
 		if len(data) > 0:
 			data = json.loads(data)			# Convert to Python list
+		if isinstance(data, dict):
+			data = [data]
 
 		# Get the telescope number
 
