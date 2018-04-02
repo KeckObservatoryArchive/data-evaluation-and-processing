@@ -1,12 +1,12 @@
 import logging as lg
 import os
 
-def create_log(processDir, instr, utDate):
+def create_log(rootDir, instr, utDate):
 	"""
 	Creates and returns a log file handler
 
-	@param processDir: directory where processed data will be written
-	@type processDir: string
+	@param rootDir: top directory where processed data will be written
+	@type rootDir: string
 	@param instr: instrument name
 	@type instr: string
 	@param utDate: UT date of observation
@@ -15,6 +15,10 @@ def create_log(processDir, instr, utDate):
 
 	utDate = utDate.replace('/', '-')
 	utDateDir = utDate.replace('-', '')
+
+	# Where to create the log (rootDir/instr)
+
+	processDir = ''.join((rootDir, '/', instr.upper()))
 
 	# Setup logging
 
