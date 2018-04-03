@@ -78,7 +78,7 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 		telGet = urllib.request.urlopen(sendUrl)
 		telGet = telGet.read().decode('utf8')       # Convert from byte to ascii
 		telGet = json.loads(telGet)                 # Convert to Python list
-		telnr = telGet['TelNr']
+		telnr = telGet[0]['TelNr']
 
 		# Get OA
 
@@ -91,7 +91,8 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 		if len(oaGet) > 0:
 			oaGet = json.loads(oaGet)
 			if isinstance(oaGet, dict):
-				oa = oaGet['Alias']
+				if ('Alias' in oaGet):
+					oa = oaGet['Alias']
 			else:
 				for entry in oaGet:
 					if entry['Type'] == 'oa':
