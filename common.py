@@ -1,5 +1,37 @@
 from datetime import datetime
 
+def set_directory(typeDir, rootDir, instr, utDate):
+    """
+    Returns the specified directory
+
+    @param typeDir: type of directory to create
+    @type typeDir: string
+    @param rootDir: root directory for data processing
+    @type rootDir: string
+    @param instr: instrument name
+    @type instr: string
+    @param utDate: UT date (yyyy-mm-dd)
+    @type utDate: string
+    """
+
+    instr = instr.upper()
+    utDate = utDate.replace('-', '')
+    utDate = utDate.replace('/', '')
+
+    dir = {}
+    processDir = ''.join((rootDir, '/', instr))
+    dir['processDir'] = processDir
+    dir['stageDir'] = ''.join((rootDir, '/stage/', instr, '/', utDate))
+    processDir = ''.join((processDir, '/', utDate))
+    dir['lev0Dir'] = ''.join((processDir, '/lev0'))
+    dir['lev1Dir'] = ''.join((processDir, '/lev1'))
+    dir['ancDir'] = ''.join((processDir, '/anc'))
+
+    if typeDir in dir:
+        return dir[typeDir]
+    else:
+        return 'None'
+
 def semester(keywords, utDate):
         """
         Determines the Keck observing semester for the supplied UT date
