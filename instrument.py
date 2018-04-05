@@ -6,12 +6,13 @@ Children will contain the instrument specific values
 12/14/2017 M. Brown - Created initial file
 """
 
-import datetime as dt
-import logging as lg
+#import datetime as dt
+#import logging as lg
 import os
 
 class Instrument:
-    def __init__(self, endTime=dt.datetime.now(), rDir=''):
+#    def __init__(self, endTime=dt.datetime.now(), rootDir):
+    def __init__(self, rootDir):
         """
         Base Instrument class to hold all the values common between
         instruments. Contains default values where possible
@@ -21,31 +22,34 @@ class Instrument:
         @type endTime: string or datetime
         @param endTime: The date is a string if passed or datetime
             object if not passed
-        @type rDir: string
-        @param rDir: Working directory of the instrument
+        @type rootDir: string
+        @param rootDir: Working directory of the instrument
             Defaults to a null string
         """
 
         # Keyword values to be used with a FITS file during runtime
-        self.rootDir = rDir
+        self.rootDir = rootDir
         self.instrume = 'INSTRUME'
-        self.utc = 'UTC'
-        self.dateObs = 'DATE'
+        self.utc = 'UTC'		# May be overwritten in instr_*.py
+        self.dateObs = 'DATE-OBS'
         self.semester = 'SEMESTER'
-        self.ofName = 'OUTFILE'        # Can be DATAFILE or ROOTNAME
-        self.frameno = 'FRAMENO'     # IMGNUM, FRAMENUM, FILENUM1/2
+        self.ofName = 'OUTFILE'		# May be overwritten in instr_*.py
+        self.frameno = 'FRAMENO'	# May be overwritten in instr_*.py
         self.outdir = 'OUTDIR'
-        self.ftype = 'INSTR'         # For instruments with two file types
-        try: # Let's see if endTime was passed as a string
-            endTime = endTime.replace('-','')
-            endTime = endTime.replace('/','')
-            self.utDate = endTime[:8]
-            self.endHour = endTime[9:]
-            if self.endHour == '':
-                self.endHour = '20:00:00'
-        except TypeError: # It wasn't so it's a datetime object
-            self.utDate = endTime.strftime('%Y%m%d')
-            self.endHour = endTime.strftime('%H:%M:%S')
+        self.ftype = 'INSTR'		# For instruments with two file types
+        self.endTime = '20:00:00'	# 24 hour period start/end time (UT)
+                                        # May be overwritten in instr_*.py
+
+#        try: # Let's see if endTime was passed as a string
+#            endTime = endTime.replace('-','')
+#            endTime = endTime.replace('/','')
+#            self.utDate = endTime[:8]
+#            self.endHour = endTime[9:]
+#            if self.endHour == '':
+#                self.endHour = '20:00:00'
+#        except TypeError: # It wasn't so it's a datetime object
+#            self.utDate = endTime.strftime('%Y%m%d')
+#            self.endHour = endTime.strftime('%H:%M:%S')
 
         # Values to be populated by subclass
         self.instr = ''
@@ -59,7 +63,7 @@ class Instrument:
         self.paths = []
 
         # Separate section for log init
-        self.log = set_logger()
+#        self.log = set_logger()
 
     def make_koaid(self, keys):
         """
@@ -121,28 +125,28 @@ class Instrument:
         instr = instr[0].replace(':','')
         return instr
 
-    def set_logger(self):
-        """
-        Method to initialize the logger for each individual instrument. 
-        Log files will be created in their local directories 
-        as <instrument>Log.txt
-        """
-
-        # Get the user currently logged in
-        user = os.getlogin()
-        # Create a logger object with the user name
-        self.log = lg.getLogger(user)
-        self.log.setLevel(lg.INFO)
-        # Give the path to the log file. If directory exists but
-        # log does not, it will create the file. 
-        seq = (self.rootDir, '/', type(self).__name__, 'Log.txt')
-        fh = lg.FileHandler(''.join(seq))
-        fh.setLevel(lg.INFO)
-        # Create the format of the logged messages: 
-        # Time - Name - MessageLevel: Message
-        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
-        fh.setFormatter(fmat)
-        self.log.addHandler(fh)
+#    def set_logger(self):
+#        """
+#        Method to initialize the logger for each individual instrument. 
+#        Log files will be created in their local directories 
+#        as <instrument>Log.txt
+#        """
+#
+#        # Get the user currently logged in
+#        user = os.getlogin()
+#        # Create a logger object with the user name
+#        self.log = lg.getLogger(user)
+#        self.log.setLevel(lg.INFO)
+#        # Give the path to the log file. If directory exists but
+#        # log does not, it will create the file. 
+#        seq = (self.rootDir, '/', type(self).__name__, 'Log.txt')
+#        fh = lg.FileHandler(''.join(seq))
+#        fh.setLevel(lg.INFO)
+#        # Create the format of the logged messages: 
+#        # Time - Name - MessageLevel: Message
+#        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+#        fh.setFormatter(fmat)
+#        self.log.addHandler(fh)
 
     def set_raw_fname(self, keys):
         """
