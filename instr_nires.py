@@ -7,27 +7,38 @@ NIRES specific DR techniques can be added to it in the future
 
 import instrument
 import datetime as dt
+from common import *
 
 class Nires(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now(), rDir=''):
+    def __init__(self, rootDir, utDate, log_writer):
+
+        # Input parameters
+
+        self.rootDir = rootDir
+        self.utDate = utDate
+
         # Call the parent init to get all the shared variables
-        super().__init__(endTime, rDir)
+
+        super().__init__(rootDir)
+
+        # Logging
+
+        self.log_writer = log_writer
+
+        # Set the NIRES specific paths to lev0 and anc
+
+        self.dirs = get_root_dirs(self.rootDir, 'NIRES', self.utDate)
 
         # NIRES uses DATAFILE instead of OUTFILE
+
         self.ofName = 'DATAFILE'
-        # NIRES does not have a frameno keyword
-        self.frameno = ''
-        # Date observed is stored as DATE-OBS for NIRES
-        self.dateObs = 'DATE-OBS'
-        # Set the NIRES specific paths to anc and stage
-        seq = (self.rootDir,'/NIRES/', self.utDate, '/anc')
-        self.ancDir = ''.join(seq)
-        seq = (self.rootDir, '/stage')
-        self.stageDir = ''.join(seq)
+
+#        # NIRES does not have a frameno keyword, use datafile
+#
+#        self.frameno = self.get_frameno()
 
         # Generate the paths to the NIRES datadisk accounts
-        self.paths = self.get_dir_list()
-
+        self.sdataList = self.get_dir_list()
 
     def get_dir_list(self):
         '''
@@ -37,9 +48,12 @@ class Nires(instrument.Instrument):
         dirs = []
         path = '/s/sdata150'
         for i in range(1,4):
-            joinSeq = (path, str(i), '/nireseng')
+            joinSeq = (path, str(i))
             path2 = ''.join(joinSeq)
-            dirs.append(path2)
+            dirs.append(path2 + '/nireseng')
+            for j in range(1, 10):
+                path3 = ''.join((path2, '/nires', str(j)))
+                dirs.append(path3)
         return dirs
 
     def set_prefix(self, keys):
@@ -47,6 +61,9 @@ class Nires(instrument.Instrument):
         Sets the KOAID prefix
         Defaults to nullstr
         '''
+
+        # Will there be a single keyword for this?
+
         instr = self.set_instr(keys)
         if instr == 'nires':
             try:
@@ -81,3 +98,14 @@ class Nires(instrument.Instrument):
             seq = (outfile, '.fits')
             filename = ''.join(seq)
             return filename, True
+
+    def get_frameno(self):
+        """
+        Determines the frame number from the FITS file name stored
+        in the DATAFIILE keyword
+        """
+
+        test = 's180404_0002.fits'
+        test = test.replace('.fits', '')
+        num = test.rfind('_') + 1
+        return int(test[num:])
