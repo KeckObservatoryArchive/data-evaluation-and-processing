@@ -6,7 +6,7 @@ import numpy as np
 #import getProgInfo as gpi
 import math
 from glob import glob
-from common import koaid
+from common import *
 from datetime import datetime as dt
 from astropy.io import fits
 from urllib.request import urlopen
@@ -41,35 +41,43 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log_writer=''):
     dirList = get_root_dirs(rootDir, instr, utDate)
     udfDir = ''.join((dirList['anc'], '/udf/'))
 
-    return
-
     # Error if stageDir does not exist (required input files)
 
-    if not os.path.isdir(stageDir):
-        log_writer
-        email
-        return
+    if not os.path.isdir(dirList['stage']):
+        print('error')
+#        log_writer
+#        email
+#        return
 
     # Create the directories, if they don't already exist
 
-    for dir in [lev0Dir, lev1Dir, udfDir]:
+    for key, dir in dirList.items():
+        if key == 'stage':
+            continue
         if log_writer:
             log_writer.info('dqa_run.py using directory {}'.format(dir))
         if not os.path.isdir(dir):
-            os.mkdir(dir)
+            try:
+                os.makedirs(dir)
+            except:
+                print('Could not create {}'.format(dir))
 
     # Additions for NIRSPEC
 
     if instr == 'NIRSPEC':
-        os.mkdir(lev0Dir + '/scam')
-        os.mkdir(lev0Dir + '/spec')
+        os.mkdir(dirList['lev0'] + '/scam')
+        os.mkdir(dirList['lev0'] + '/spec')
 
     # Create the LOC file
 
-    locFile = lev0Dir + '/dqa.LOC'
+    locFile = ''.join((dirList['lev0'], '/dqa.LOC'))
+    with open(locFile, 'w') as fp:
+        fp.write('DQA started')
+
+    return
 
     udate = date
-    createprog(instr, udate, stageDir, log)
+#    createprog(instr, udate, stageDir, log)
 #    proginfo = gpi.ProgSplit()
 #    proginfo.getProgInfo()
 
@@ -110,7 +118,8 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log_writer=''):
 
     moduleName = ''.join(('instr_', instr.lower()))
     module = importlib.import_module(moduleName)
-    module.go()
+    test = module.Nires(rootDir, utDate, log_writer)
+    print(test.get_frameno())
 
     # Loop through each entry in input_list
     sdata = ''
@@ -132,9 +141,9 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log_writer=''):
 
             # Is this actually an instrument FITS file?
 
-            check = module.check_instr()...
+            check = module.check_instr()
 
-            ...
+#            ...
 
     except Exception as err:
         print('Program Crashed - Exiting: ', str(err))
