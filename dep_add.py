@@ -5,6 +5,7 @@ import tarfile
 import gzip
 import hashlib
 from create_log import create_log
+from common import get_root_dirs
 
 class dep_add:
     """
@@ -35,7 +36,7 @@ class dep_add:
         # Verify telescope
 
         tel = [1, 2]
-        assert telNr not in tel, 'telNr not allowed'
+        assert telNr in tel, 'telNr not allowed'
         self.telNr = telNr
 
         # Set and create log_writer
@@ -45,15 +46,17 @@ class dep_add:
         else:
             self.log_writer = log_writer
 
+        #get root dirs list
+ 
+        assert rootDir != '', 'rootDir value is blank'
+        self.dirs = get_root_dirs(rootDir, instr, utDate)
+
         # Set and create ancillary directory
 
-        assert rootDir != '', 'rootDir value is blank'
-        joinSeq = (rootDir, '/', instr.upper(), '/', self.utDate.replace('-', ''), '/anc')
-        self.ancDir = ''.join(joinSeq)
-        if not os.path.isdir(self.ancDir):
+        if not os.path.isdir(self.dirs['anc']):
             if log_writer:
-                log_writer.info('dep_add.py creating {}'.format(self.ancDir))
-            os.makedirs(self.ancDir)
+                log_writer.info('dep_add.py creating {}'.format(self.dirs['anc']))
+            os.makedirs(self.dirs['anc'])
 
     #-------
 
@@ -74,7 +77,7 @@ class dep_add:
 
         dirs = ['nightly', 'udf']
         for dir in dirs:
-            ancDirNew = (self.ancDir, '/', dir)
+            ancDirNew = (self.dirs['anc'], '/', dir)
             ancDirNew = ''.join(ancDirNew)
             if not os.path.isdir(ancDirNew):
                 if self.log_writer:
@@ -97,7 +100,7 @@ class dep_add:
             source = (nightlyDir, '/', file)
             source = ''.join(source)
             if os.path.exists(source):
-                destination = (self.ancDir, '/nightly/', file)
+                destination = (self.dirs['anc'], '/nightly/', file)
                 destination = ''.join(destination)
                 if self.log_writer:
                     self.log_writer.info('dep_add.py copying {} to {}'.format(source, destination))
@@ -112,9 +115,9 @@ class dep_add:
         """
     
         if self.log_writer:
-            self.log_writer.info('dep_tar.py started for {}'.format(self.ancDir))
+            self.log_writer.info('dep_tar.py started for {}'.format(self.dirs['anc']))
 
-        if os.path.isdir(self.ancDir):
+        if os.path.isdir(self.dirs['anc']):
 
             # Tarball name
     
@@ -125,7 +128,7 @@ class dep_add:
 
             if self.log_writer:
                 self.log_writer.info('dep_tar.py creating {}'.format(tarFileName))
-            os.chdir(self.ancDir)
+            os.chdir(self.dirs['anc'])
             with tarfile.open(tarFileName, 'w:gz') as tar:
                 tar.add('./')
 
@@ -159,7 +162,7 @@ class dep_add:
 
             dirs = ['nightly', 'udf']
             for dir in dirs:
-                delDir = (self.ancDir, '/', dir)
+                delDir = (self.dirs['anc'], '/', dir)
                 delDir = ''.join(delDir)
                 if not os.path.isdir(delDir): continue
                 if self.log_writer:

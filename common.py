@@ -21,6 +21,7 @@ def get_root_dirs(rootDir, instr, utDate):
     dirs = {}
     dirs['stage']   = ''.join((rootDir, '/stage/', instr, '/', ymd))
     dirs['process'] = ''.join((rootDir, '/', instr))
+    dirs['output']  = ''.join((rootDir, '/', instr, '/', ymd))
     dirs['lev0']    = ''.join((rootDir, '/', instr, '/', ymd, '/lev0'))
     dirs['lev1']    = ''.join((rootDir, '/', instr, '/', ymd, '/lev1'))
     dirs['anc']     = ''.join((rootDir, '/', instr, '/', ymd, '/anc'))
