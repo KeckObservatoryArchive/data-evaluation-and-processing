@@ -126,7 +126,6 @@ def dep_locate(instr, utDate, rootDir, endHour, log_writer=''):
                     newFile = ''.join((stageDir, line.strip()))
                     log_writer.info('copying file {} to {}'.format(line.strip(), newFile))
                     copy_file(line.strip(), newFile)
-
                     toFile = ''.join((newFile, '\n'))
                     f.write(toFile)
                     if 'DEIMOS' in instr:
@@ -138,7 +137,6 @@ def dep_locate(instr, utDate, rootDir, endHour, log_writer=''):
                                     fcs = '/s' + fcs
                                 newFile = ''.join((stageDir, fcs))
                                 copy_file(fcs, newFile)
-
                                 toFile = ''.join((newFile, '\n'))
                                 f.write(toFile)
                         except:
@@ -217,7 +215,6 @@ def dep_rawfiles(
     # Loop through the file list and read in
     # the fits files found from within 24 hours
     # of the given date
-    print(fileList)
     with open(fileList, 'r') as ffiles:
         for line in ffiles:
             fitsList.append(line.strip())
@@ -426,8 +423,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log_writer):
        zero = '0'
 
    # Construct the original file name from the previous parts
-   filename = ''.join(outfile.strip(), zero,
-           str(frameno).strip(), '.fits')()
+   filename = ''.join((outfile.strip(), zero, str(frameno).strip(), '.fits'))
    return filename, True
 
 #---------------------End construct_filename-------------------------
