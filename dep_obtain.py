@@ -50,7 +50,6 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 	schedUrl = url + ('cmd=getSchedule', '&date=', hstDate, '&instr=', instr.upper())
 	schedUrl = ''.join(schedUrl)
 
-
 	# Output files
 
 	notScheduledFile = (stageDir, '/dep_notsched', instr.upper(), '.txt')
@@ -128,7 +127,7 @@ def dep_obtain(instr, utDate, stageDir, log_writer=''):
 					observer = json.loads(observer)
 					observers = 'None'
 					if len(observer) > 0:
-						observers = observer['Observers']
+						observers = observer[0]['Observers']
 
 					if num > 0:
 						fp.write('\n')
