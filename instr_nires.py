@@ -97,9 +97,6 @@ class Nires(instrument.Instrument):
         num = test.rfind('_') + 1
         return int(test[num:])
 
-<<<<<<< HEAD
-
-=======
     def get_outdir(self, filename):
         """
         Returns the OUTDIR associated with the filename, else returns None.
@@ -117,4 +114,3 @@ class Nires(instrument.Instrument):
             return filename[start:end]
         except:
             return "None"
->>>>>>> 123c76f450df6237affd2c49c4288878ba707e51
