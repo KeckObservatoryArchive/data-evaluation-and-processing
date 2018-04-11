@@ -9,10 +9,11 @@ Children will contain the instrument specific values
 #import datetime as dt
 #import logging as lg
 import os
+from common import get_root_dirs
 
 class Instrument:
 #    def __init__(self, endTime=dt.datetime.now(), rootDir):
-    def __init__(self, rootDir):
+    def __init__(self, instr, utDate, rootDir, log=None):
         """
         Base Instrument class to hold all the values common between
         instruments. Contains default values where possible
@@ -29,6 +30,10 @@ class Instrument:
 
         # Keyword values to be used with a FITS file during runtime
         self.rootDir = rootDir
+        self.instr = instr
+        self.utDate = utDate
+        self.log = log
+
         self.instrume = 'INSTRUME'
         self.utc = 'UTC'		# May be overwritten in instr_*.py
         self.dateObs = 'DATE-OBS'
@@ -52,15 +57,15 @@ class Instrument:
 #            self.endHour = endTime.strftime('%H:%M:%S')
 
         # Values to be populated by subclass
-        self.instr = ''
         self.prefix = ''
         self.rawfile = ''
-        self.stageDir = ''
-        self.ancDir = ''
-        self.lev0 = ''
-        self.lev1 = ''
         self.koaid = ''
         self.paths = []
+
+
+        # get the various root dirs
+        self.dirs = get_root_dirs(self.rootDir, self.instr, self.utDate)
+
 
         # Separate section for log init
 #        self.log = set_logger()
@@ -181,3 +186,53 @@ class Instrument:
         filename = ''.join(seq)
         return filename, True
 
+
+
+    def check_instr(self):
+        '''
+        Check that value(s) in header indicates this is valid instrument and matches what we expect.
+        (ported to python from check_instr.pro)
+        #todo:  go over idl file again and pull out logic for other instruments
+        '''
+
+        ok = 0
+
+
+        #get val
+        instrume = self.header.get('INSTRUME')
+        if (instrume == None): instrume = self.header.get('CURRINST')
+
+
+        #direct match?
+        if instrume:
+            if (self.instr == instrume.strip()): ok = 1
+
+
+        #mira not ok
+        outdir = self.header.get('OUTDIR')
+        if (outdir and '/mira' in outdir) : ok = 0
+
+
+        #No DCS keywords, check others
+        if (not ok):
+            filname = self.header.get('FILNAME')
+            if (filname and self.instr in filname): ok = 1
+
+            instrVal = self.instr.lower()
+            outdir = self.header.get('OUTDIR')
+            if (outdir and instrVal in outdir): ok = 1
+            outdir2 = self.header.get('OUTDIR2')
+            if (outdir2 and instrVal in outdir2): ok = 1
+
+
+        #log err
+        if (not ok):
+            if self.log: self.log.info('check_instr: Cannot determine if file is from ' + self.instr)
+
+
+        return ok
+
+
+
+    def check_keyword_dateobs(self):
+        pass
