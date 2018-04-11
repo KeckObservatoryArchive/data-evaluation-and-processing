@@ -1,7 +1,8 @@
 import logging as lg
 import os
+import sys
 
-def create_log(rootDir, instr, utDate):
+def create_log(rootDir, instr, utDate, doStdout=None):
 	"""
 	Creates and returns a log file handler
 
@@ -42,6 +43,16 @@ def create_log(rootDir, instr, utDate):
 
 	log_writer.addHandler(log_handler)
 
-	log_writer.info('create_log.py log_writer created')
 
+	#add stdout to output so we don't need both log and print statements(>= warning only)
+	if (doStdout):
+		sh = lg.StreamHandler(sys.stdout)
+		sh.setLevel(lg.WARNING)
+		formatter = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		sh.setFormatter(formatter)
+		log_writer.addHandler(sh)
+	
+
+	#init message and return
+	log_writer.info('create_log.py log_writer created')
 	return log_writer
