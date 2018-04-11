@@ -25,6 +25,7 @@ def get_root_dirs(rootDir, instr, utDate):
     dirs['lev0']    = ''.join((rootDir, '/', instr, '/', ymd, '/lev0'))
     dirs['lev1']    = ''.join((rootDir, '/', instr, '/', ymd, '/lev1'))
     dirs['anc']     = ''.join((rootDir, '/', instr, '/', ymd, '/anc'))
+    dirs['udf']     = ''.join((dirs['anc'], '/udf'))
 
     return dirs
 
