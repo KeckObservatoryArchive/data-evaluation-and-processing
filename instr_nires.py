@@ -10,24 +10,11 @@ import datetime as dt
 from common import *
 
 class Nires(instrument.Instrument):
-    def __init__(self, rootDir, utDate, log_writer):
-
-        # Input parameters
-
-        self.rootDir = rootDir
-        self.utDate = utDate
+    def __init__(self, instr, utDate, rootDir, log):
 
         # Call the parent init to get all the shared variables
 
-        super().__init__(rootDir)
-
-        # Logging
-
-        self.log_writer = log_writer
-
-        # Set the NIRES specific paths to lev0 and anc
-
-        self.dirs = get_root_dirs(self.rootDir, 'NIRES', self.utDate)
+        super().__init__(instr, utDate, rootDir, log)
 
         # NIRES uses DATAFILE instead of OUTFILE
 
@@ -109,3 +96,5 @@ class Nires(instrument.Instrument):
         test = test.replace('.fits', '')
         num = test.rfind('_') + 1
         return int(test[num:])
+
+
