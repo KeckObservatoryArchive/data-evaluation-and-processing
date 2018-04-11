@@ -97,4 +97,24 @@ class Nires(instrument.Instrument):
         num = test.rfind('_') + 1
         return int(test[num:])
 
+<<<<<<< HEAD
 
+=======
+    def get_outdir(self, filename):
+        """
+        Returns the OUTDIR associated with the filename, else returns None.
+        OUTDIR = [/s]/sdata####/account/YYYYmmmDD
+
+        @param filename: the filename to determine OUTDIR from
+        @type filename: string
+        """
+
+        try:
+            # Find the first /s for /s/sdata... or /sdata...
+            start = filename.find('/s')
+            # Find the last / before FITS file name
+            end = filename.rfind('/')
+            return filename[start:end]
+        except:
+            return "None"
+>>>>>>> 123c76f450df6237affd2c49c4288878ba707e51
