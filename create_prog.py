@@ -1,6 +1,7 @@
 from common import fixdatetime
 from imagetyp_instr import imagetyp_instr
 from astropy.io import fits
+from urllib.request import urlopen
 
 
 
@@ -131,3 +132,19 @@ def create_prog(instrObj):
                 else                  : ofile.write(progtitl+'\n')
 
             ofile.write(oa + '\n')
+
+
+
+def get_prog_info(ktn):
+    """
+    Retrives the program PI, allocating institution,
+    and title from the proposals database web API
+
+    @type ktn: string
+    @param ktn: the program ID - consists of semester and progname (ie 2017B_U428)
+    """
+    url = 'http://www.keck.hawaii.edu/software/db_api/proposalsAPI.php?ktn='+ktn+'&cmd='
+    progpi = urlopen(url+'getPI').read().decode('utf8')
+    proginst = urlopen(url+'getAllocInst').read().decode('utf8')
+    progtitl = urlopen(url+'getTitle').read().decode('utf8')
+    return progpi, proginst, progtitl
