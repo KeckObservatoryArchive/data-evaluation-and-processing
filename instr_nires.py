@@ -10,6 +10,7 @@ import datetime as dt
 from common import *
 
 class Nires(instrument.Instrument):
+
     def __init__(self, instr, utDate, rootDir, log):
 
         # Call the parent init to get all the shared variables
@@ -27,6 +28,7 @@ class Nires(instrument.Instrument):
         # Generate the paths to the NIRES datadisk accounts
         self.sdataList = self.get_dir_list()
 
+
     def get_dir_list(self):
         '''
         Function to generate the paths to all the DEIMOS accounts, including engineering
@@ -42,6 +44,7 @@ class Nires(instrument.Instrument):
                 path3 = ''.join((path2, '/nires', str(j)))
                 dirs.append(path3)
         return dirs
+
 
     def set_prefix(self, keys):
         '''
@@ -68,6 +71,7 @@ class Nires(instrument.Instrument):
             prefix = ''
         return prefix
 
+
     def set_raw_fname(self, keys):
         """
         Overloaded method to create the NIRES rawfile name
@@ -86,18 +90,22 @@ class Nires(instrument.Instrument):
             filename = ''.join(seq)
             return filename, True
 
-    def get_frameno(self):
+
+    def get_frameno(self, keys):
         """
         Determines the frame number from the FITS file name stored
-        in the DATAFIILE keyword
+        in the DATAFIILE keyword (eg DATAFILE = 's180404_0002.fits')
         """
+        datafile = keys.get('DATAFILE')
+        if (datafile == None): return None
 
-        test = 's180404_0002.fits'
-        test = test.replace('.fits', '')
-        num = test.rfind('_') + 1
-        return int(test[num:])
+        frameno = datafile.replace('.fits', '')
+        num = frameno.rfind('_') + 1
+        frameno = frameno[num:]
+        return frameno
 
-    def get_outdir(self, filename):
+
+    def get_outdir(self, keys, filename):
         """
         Returns the OUTDIR associated with the filename, else returns None.
         OUTDIR = [/s]/sdata####/account/YYYYmmmDD
@@ -114,3 +122,11 @@ class Nires(instrument.Instrument):
             return filename[start:end]
         except:
             return "None"
+
+
+    def get_fileno(self, keys):
+
+        #todo: determine NIRES fileno
+        fileno = None
+        return fileno
+        
