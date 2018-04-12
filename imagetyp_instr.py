@@ -1,5 +1,8 @@
 def imagetyp_instr(instrument, keys):
     """
+    Gets image type based on header keywords
+    #TODO: add NIRES
+    #TODO: move this to instrument classes?
     """
     imagetyp = 'undefined'
     imtype = ''
