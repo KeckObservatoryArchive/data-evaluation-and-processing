@@ -28,12 +28,13 @@ class Instrument:
             Defaults to a null string
         """
 
-        # Keyword values to be used with a FITS file during runtime
+        #class inputs
         self.rootDir = rootDir
         self.instr = instr
         self.utDate = utDate
         self.log = log
 
+        # Keyword values to be used with a FITS file during runtime
         self.instrume = 'INSTRUME'
         self.utc = 'UTC'		# May be overwritten in instr_*.py
         self.dateObs = 'DATE-OBS'
@@ -186,21 +187,22 @@ class Instrument:
         filename = ''.join(seq)
         return filename, True
 
-
-
-    def check_instr(self):
+ 
+    def check_instr(self, keys):
         '''
         Check that value(s) in header indicates this is valid instrument and matches what we expect.
         (ported to python from check_instr.pro)
         #todo:  go over idl file again and pull out logic for other instruments
+        #todo: use class key vals instead
         '''
 
         ok = 0
 
 
         #get val
-        instrume = self.header.get('INSTRUME')
-        if (instrume == None): instrume = self.header.get('CURRINST')
+        #instrume = keys[self.instrume]
+        instrume = keys.get('INSTRUME')
+        if (instrume == None): instrume = keys.get('CURRINST')
 
 
         #direct match?
@@ -209,19 +211,19 @@ class Instrument:
 
 
         #mira not ok
-        outdir = self.header.get('OUTDIR')
+        outdir = keys.get('OUTDIR')
         if (outdir and '/mira' in outdir) : ok = 0
 
 
         #No DCS keywords, check others
         if (not ok):
-            filname = self.header.get('FILNAME')
+            filname = keys.get('FILNAME')
             if (filname and self.instr in filname): ok = 1
 
             instrVal = self.instr.lower()
-            outdir = self.header.get('OUTDIR')
+            outdir = keys.get('OUTDIR')
             if (outdir and instrVal in outdir): ok = 1
-            outdir2 = self.header.get('OUTDIR2')
+            outdir2 = keys.get('OUTDIR2')
             if (outdir2 and instrVal in outdir2): ok = 1
 
 
@@ -236,3 +238,24 @@ class Instrument:
 
     def check_keyword_dateobs(self):
         pass
+
+
+
+    def get_outdir(self, keys, filename=None):
+
+        outdir = keys.get('OUTDIR')
+        if (outdir == None): outdir = keys.get('OUTDIR2')
+        if (outdir == None): outdir = 'None'
+
+        return outdir
+
+
+    def get_fileno(self, keys):
+
+        fileno = keys.get('FILENUM')
+        if (fileno == None): fileno = keys.get('FILENUM2')
+        if (fileno == None): fileno = keys.get('FRAMENO')
+        if (fileno == None): fileno = keys.get('IMGNUM')
+        if (fileno == None): fileno = keys.get('FRAMENUM')
+
+        return fileno
