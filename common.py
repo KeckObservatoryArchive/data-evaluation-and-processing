@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 
 
 def get_root_dirs(rootDir, instr, utDate):
@@ -30,40 +31,92 @@ def get_root_dirs(rootDir, instr, utDate):
     return dirs
 
 
-def semester(keywords, utDate):
-        """
-        Determines the Keck observing semester for the supplied UT date
+# def semester(keywords, utDate):
+#         """
+#         Determines the Keck observing semester for the supplied UT date
 
-        semester('2017-08-01') --> 2017A
-        semester('2017-08-02') --> 2017B
+#         semester('2017-08-01') --> 2017A
+#         semester('2017-08-02') --> 2017B
 
-        A = Feb. 2 to Aug. 1 (UT)
-        B = Aug. 2 to Feb. 1 (UT)
-        """
+#         A = Feb. 2 to Aug. 1 (UT)
+#         B = Aug. 2 to Feb. 1 (UT)
+#         """
 
-        utDate = utDate.replace('-', '')
-        utDate = utDate.replace('/', '')
+#         utDate = utDate.replace('-', '')
+#         utDate = utDate.replace('/', '')
 
+#         try:
+#                 utDate = datetime.strptime(utDate, '%Y%m%d')
+#         except ValueError:
+#                 raise ValueError("Incorrect date format, should be YYYYMMDD")
+
+#         year = utDate.year
+#         month = utDate.month
+#         day = utDate.day
+
+#         # All of January and February 1 are semester B of previous year
+#         if month == 1 or (month == 2 and day == 1):
+#                 semester = 'B'
+#                 year -= 1
+#         # August 2 onward is semester B
+#         elif month >= 9 or (month == 8 and day >= 2):
+#                 semester = 'B'
+#         else:
+#                 semester = 'A'
+
+#         keywords['SEMESTER'] = semester
+
+
+def semester(keys):
+    """
+    Determines the Keck observing semester from the DATE-OBS keyword in header
+    and updates the SEMESTER keyword in header.
+
+    semester('2017-08-01') --> 2017A
+    semester('2017-08-02') --> 2017B
+
+    A = Feb. 2 to Aug. 1 (UT)
+    B = Aug. 2 to Feb. 1 (UT)
+    """
+
+
+    try:
+        dateobs = keys['DATE-OBS']
+    except KeyError:
         try:
-                utDate = datetime.strptime(utDate, '%Y%m%d')
-        except ValueError:
-                raise ValueError("Incorrect date format, should be YYYYMMDD")
+            dateobs = keys.get('DATE').strip()[0:10]
+        except:
+            dateobs = keys.get('DQA_DATE').strip()[0:10]
+        keys.update({'DATE-OBS':(dateobs, 'Added missing DATE-OBS keyword')})
+    if '-' not in dateobs:
+        day, month, year = dateobs.split('/')
+        if int(year)<50: year = '20' + year
+        else:            year = '19' + year
+        dateval = year + '-' + month + '-' + day
+        note = " DATE-OBS corrected (" + dateobs + ")"
+        keys.update({'DATE-OBS':(dateval, note)})
+    else:
+        year, month, day = dateobs.split('-')
+        iyear = int(year)
+        imonth = int(month)
+        iday = int(day)
 
-        year = utDate.year
-        month = utDate.month
-        day = utDate.day
+    # Determine SEMESTER from DATE-OBS
+    semester = ''
+    sem = 'A'
+    if imonth >8 or imonth < 2:
+        sem = 'B'
+    elif imonth == 8 and iday > 1:
+        sem = 'B'
+    elif imonth == 2 and iday == 1:
+        sem = 'B'
+    if imonth == 1 or (imonth == 2 and iday == 1):
+        year = str(iyear-1)
 
-        # All of January and February 1 are semester B of previous year
-        if month == 1 or (month == 2 and day == 1):
-                semester = 'B'
-                year -= 1
-        # August 2 onward is semester B
-        elif month >= 9 or (month == 8 and day >= 2):
-                semester = 'B'
-        else:
-                semester = 'A'
+    semester = ''.join((year, sem)).strip()
+    keys.update({'SEMESTER':(semester, 'Calculated SEMESTER from DATE-OBS')})
 
-        keywords['SEMESTER'] = semester
+
 
 def koaid(keywords, utDate):
         '''
@@ -171,3 +224,35 @@ def koaid(keywords, utDate):
         koaid = prefix + '.' + dateobs + '.' + totalSeconds.zfill(5) + '.fits'
         keywords['KOAID'] = koaid
         return True
+
+
+
+
+def fixdatetime(utdate, fname, keys):
+
+    utdate = utdate.replace('-','')
+    utdate = utdate.replace('/','')
+
+    datefile = ''.join(('/home/koaadmin/fixdatetime/', utdate, '.txt'))
+    datefile = '/home/koaadmin/fixdatetime/20101128.txt'
+    if os.path.isfile(datefile) is False:
+        return
+
+    fileroot = fname.split('/')
+    fileroot = fileroot[-1]
+    output = ''
+
+    with open(datefile, 'r') as df:
+        for line in df:
+            if fileroot in line:
+                output = line
+                break
+
+    if output != '':
+        dateobs = keys.get('DATE-OBS')
+        if 'Error' not in dateobs and dateobs.strip() != '':
+            return
+        vals = output.split(' ')
+        keys.update({'DATE-OBS':(vals[1], ' Original value missing - added by KOA')})
+        keys.update({'UTC':(vals[2], 'Original value missing - added by KOA')})
+
