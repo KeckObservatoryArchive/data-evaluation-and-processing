@@ -150,22 +150,28 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
         # Loop through each entry in input_list
         for filename in files:
 
-            # Read the FITS header
-            header = fits.getheader(filename)
+            #set current file to work on
+            instrObj.set_fits_file(filename)
 
 
             # do checks.  if any of these steps return false then skip and copy to udf
+            #todo: These checks may be unique per instrument so move this instrument.py function like do_dqa_checks()
+            #todo: error checking, log, asserts?
+            #todo: extensions?
+            #todo: metadata
             ok = True
-            if ok: ok = instrObj.check_instr(header)
-            # if ok: ok = instrObj.check_keyword_dateobs()
-            # if ok: ok = instrObj.check_keyword_utc()
+            if ok: ok = instrObj.check_instr()
+            if ok: ok = instrObj.check_dateObs()
+            if ok: ok = instrObj.check_utc()
             # if ok: ok = instrObj.read_image_data()
-            # if ok: ok = instrObj.set_koa_prefix()
-            # if ok: ok = instrObj.set_koa_id()
-            # if ok: ok = instrObj.copy_utc_to_header()
-            # if ok: ok = instrObj.set_keyword_frameno()
-            # if ok: ok = instrObj.set_keyword_ofname()
-            # if ok: ok = instrObj.write_fits_file()
+            if ok: ok = instrObj.set_koaid()
+            if ok: ok = instrObj.copy_utc_to_ut()
+            if ok: ok = instrObj.set_frameno()
+            if ok: ok = instrObj.set_ofName()
+            if ok: ok = instrObj.write_lev0_fits_file()
+
+
+            print (instrObj.fits_header)
 
 
             # checks failed?  copy to udf
