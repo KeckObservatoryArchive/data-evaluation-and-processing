@@ -53,40 +53,31 @@ def create_prog(instrObj):
                     continue
 
             #get header
-            header = fits.getheader(filename)
+            instrObj.set_fits_file(filename)
+            header = instrObj.fits_header
 
             # Temp fix for bad file times(NIRSPEC legacy)
             fixdatetime(utDate, filename, header)
-            imagetyp = imagetyp_instr(instr, header)
-            udate = header.get('DATE-OBS').strip()
-            if 'Error' in udate or udate == '':
-                lastMod = os.stat(filename).st_mtime
-                udate = dt.fromtimestamp(lastMod).strftime('%Y-%m-%d')
 
-            # Fix yy/mm/dd to yyyy-mm-dd
-            if '-' not in udate:
-                yr, mo, dy = udate.split('/')
-                seq = ('20', yr, '-', mo, '-', dy)
-                udate = ''.join(seq)
+            #get image type
+            imagetyp = imagetyp_instr(instr, header)
+
+            #get date-obs
+            instrObj.check_dateObs()
+            dateObs = header.get(instrObj.dateObs)
 
             #get utc
-            try:
-                utc = header['UT'].strip()
-            except KeyError:
-                try:
-                    utc = header['UTC'].strip()
-                except KeyError:
-                    utc = dt.fromtimestamp(lastMod).strftime('%H:%M:%S')
-
+            instrObj.check_utc()
+            utc = header.get(instrObj.utc)
 
             #get observer
             observer = header.get('OBSERVER').strip()
 
             #get fileno
-            fileno = instrObj.get_fileno(header)
+            fileno = instrObj.get_fileno()
 
             #get outdir
-            outdir = instrObj.get_outdir(header, filename)
+            outdir = instrObj.get_outdir()
 
 
             fileparts = filename.split('/sdata')
@@ -95,7 +86,7 @@ def create_prog(instrObj):
 
             newFile = newFile.replace('//','/')
             ofile.write(newFile+'\n')
-            ofile.write(udate+'\n')
+            ofile.write(dateObs+'\n')
             ofile.write(utc+'\n')
             ofile.write(outdir+'\n')
             ofile.write(observer+'\n')
