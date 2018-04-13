@@ -80,7 +80,10 @@ class Instrument:
         '''
         Sets the current FITS file we are working on.  Clears out temp fits variables.
         '''
-        self.fits_header = fits.getheader(filename)
+
+        self.fits_hdu = fits.open(filename)
+        self.fits_header = self.fits_hdu[0].header
+        #self.fits_header = fits.getheader(filename)
         self.fits_filename = filename
 
         self.koaid = '';
@@ -388,7 +391,6 @@ class Instrument:
 
 
         #TODO: THIS NEEDS TO WRITE OUT NEW FITS WITH ALTERED HEADER INFO
-
-        #copy
-        shutil.copy2(self.fits_filename, outfile)
+        self.fits_hdu.writeto(outfile)
+        # shutil.copy2(self.fits_filename, outfile)
     
