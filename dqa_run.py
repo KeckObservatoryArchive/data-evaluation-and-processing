@@ -82,10 +82,10 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
 
 
     # Create the LOC file
+    #todo: why do we create this?  should we exit if it exists?
     locFile = ''.join((dirs['lev0'], '/dqa.LOC'))
     with open(locFile, 'w') as fp:
         fp.write('DQA started')
-
 
 
     # Instanciate the instrument class
@@ -101,7 +101,6 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
     create_prog(instrObj)
     #proginfo = gpi.ProgSplit()
     #proginfo.getProgInfo()
-
 
 
     # dep_obtain file (list of programs)
@@ -157,21 +156,18 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
             # do checks.  if any of these steps return false then skip and copy to udf
             #todo: These checks may be unique per instrument so move this instrument.py function like do_dqa_checks()
             #todo: error checking, log, asserts?
-            #todo: extensions?
-            #todo: metadata
+            #todo: remaining tasks, extensions, etc?
+            #todo: create jpgs?
             ok = True
             if ok: ok = instrObj.check_instr()
             if ok: ok = instrObj.check_dateObs()
             if ok: ok = instrObj.check_utc()
-            # if ok: ok = instrObj.read_image_data()
             if ok: ok = instrObj.set_koaid()
             if ok: ok = instrObj.copy_utc_to_ut()
             if ok: ok = instrObj.set_frameno()
             if ok: ok = instrObj.set_ofName()
             if ok: ok = instrObj.write_lev0_fits_file()
 
-
-            print (instrObj.fits_header)
 
 
             # checks failed?  copy to udf
@@ -181,8 +177,29 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
                 continue
 
 
+        #todo: package created jpgs
+        #todo: Create yyyymmdd.filelist.table
+        #todo: metadata.py? (yyyymmdd.metadata.table and yyyymmdd.metadata.md5sum) 
+        #todo: Create yyyymmdd.FITS.md5sum.table
+        #todo: Create yyyymmdd.JPEG.md5sum.table
+        #todo: gzip the fits files
+        #todo: update TPX
+
+
+        #Remove the LOC file
+        locFile = ''.join((dirs['lev0'], '/dqa.LOC'))
+        os.remove(locFile)
+
+
+
     except Exception as err:
         log.error('dqa_run.py program crashed, exiting: {}'.format(str(err)))
+
+
+    #log success
+    if log: log.info('dqa_run.py DQA Successful for {}'.format(instr))
+
+
 
 
 
