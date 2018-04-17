@@ -95,7 +95,7 @@ class Nires(instrument.Instrument):
         #todo: did we get new keyword in header?
         """
  
-        keys = self.fits_header
+        keys = self.fitsHeader
         frameno = keys.get(self.frameno)
 
         if (frameno == None):
@@ -120,7 +120,7 @@ class Nires(instrument.Instrument):
         #todo: did we get new keyword in header?
         """
  
-        keys = self.fits_header
+        keys = self.fitsHeader
         ofName = keys.get(self.ofName)
 
         if (ofName == None):
@@ -142,7 +142,7 @@ class Nires(instrument.Instrument):
         #todo: did we get new keyword in header?
         """
 
-        filename = self.fits_filename
+        filename = self.fitsFilepath
 
         try:
             # Find the first /s for /s/sdata... or /sdata...

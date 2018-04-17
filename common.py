@@ -1,5 +1,7 @@
 from datetime import datetime
 import os
+import hashlib
+
 
 
 def get_root_dirs(rootDir, instr, utDate):
@@ -255,4 +257,19 @@ def fixdatetime(utdate, fname, keys):
         vals = output.split(' ')
         keys.update({'DATE-OBS':(vals[1], ' Original value missing - added by KOA')})
         keys.update({'UTC':(vals[2], 'Original value missing - added by KOA')})
+
+
+
+
+def make_dir_md5_table(readDir, endswith, outfile):
+
+    files = []
+    for file in os.listdir(readDir):
+        if (endswith == None or file.endswith(endswith)): 
+            files.append(readDir + '/' + file)
+
+    with open(outfile, 'w') as fp:
+        for file in files:
+            md5 = hashlib.md5(open(file, 'rb').read()).hexdigest()
+            fp.write(md5 + '  ' + os.path.basename(file) + "\n")
 

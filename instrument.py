@@ -13,6 +13,7 @@ from common import get_root_dirs
 from astropy.io import fits
 from datetime import timedelta, datetime as dt
 import shutil
+import makejpg
 
 
 class Instrument:
@@ -81,13 +82,16 @@ class Instrument:
         Sets the current FITS file we are working on.  Clears out temp fits variables.
         '''
 
-        self.fits_hdu = fits.open(filename)
-        self.fits_header = self.fits_hdu[0].header
-        #self.fits_header = fits.getheader(filename)
-        self.fits_filename = filename
+        #todo: should we have option to just read the header for performance if that is all that is needed?
+        self.fitsHdu = fits.open(filename)
+        self.fitsHeader = self.fitsHdu[0].header
+        #self.fitsHeader = fits.getheader(filename)
+        self.fitsFilepath = filename
+
 
         self.koaid = '';
         self.rawfile = ''
+        self.prefix = ''
 
 
 
@@ -97,7 +101,7 @@ class Instrument:
         '''
 
         #see if we already have it
-        keys = self.fits_header
+        keys = self.fitsHeader
         koaid = keys.get('KOAID')
         if koaid != None: return True
 
@@ -236,7 +240,7 @@ class Instrument:
         '''
 
         ok = False
-        keys = self.fits_header
+        keys = self.fitsHeader
 
 
         #get val
@@ -279,8 +283,8 @@ class Instrument:
         Checks to see if we have a date obsv keyword, and if it needs to be fixed or created.
         '''
 
-        keys = self.fits_header
-        filename = self.fits_filename
+        keys = self.fitsHeader
+        filename = self.fitsFilepath
 
 
         #try to get from header
@@ -315,8 +319,8 @@ class Instrument:
         Checks to see if we have a utc time keyword, and if it needs to be fixed or created.
         '''
 
-        keys = self.fits_header
-        filename = self.fits_filename
+        keys = self.fitsHeader
+        filename = self.fitsFilepath
 
 
         #try to get from header
@@ -340,7 +344,7 @@ class Instrument:
     def copy_utc_to_ut(self):
 
         #get utc from header
-        keys = self.fits_header
+        keys = self.fitsHeader
         utc = keys.get(self.utc)
         if (not utc): 
             this.log.error('Could not get UTC value.')
@@ -355,7 +359,7 @@ class Instrument:
     def get_outdir(self):
 
         #todo: do we need this function instead of using keyword index?
-        keys = self.fits_header
+        keys = self.fitsHeader
         return keys.get(self.outdir)
 
 
@@ -363,7 +367,7 @@ class Instrument:
     def get_fileno(self):
 
         #todo: do we need this function instead of using keyword index?
-        keys = self.fits_header
+        keys = self.fitsHeader
 
         fileno = keys.get('FILENUM')
         if (fileno == None): fileno = keys.get('FILENUM2')
@@ -377,10 +381,10 @@ class Instrument:
     def write_lev0_fits_file(self):
 
         #make sure we have a koaid
-        keys = self.fits_header
+        keys = self.fitsHeader
         koaid = keys.get('KOAID')
         if (not koaid):
-            self.log.error('Could not find KOAID for output filename.')
+            self.log.error('write_lev0_fits_file: Could not find KOAID for output filename.')
             return False
 
         #build outfile path
@@ -390,7 +394,29 @@ class Instrument:
         outfile += '/' + koaid
 
 
-        #TODO: THIS NEEDS TO WRITE OUT NEW FITS WITH ALTERED HEADER INFO
-        self.fits_hdu.writeto(outfile)
-        # shutil.copy2(self.fits_filename, outfile)
+        #write out new fits file with altered header
+        self.fitsHdu.writeto(outfile)
+        return True
+
+
+
+    def create_lev0_jpg(self):
     
+        #make sure we have a koaid
+        keys = self.fitsHeader
+        koaid = keys.get('KOAID')
+        if (not koaid):
+            self.log.error('create_lev0_jpg: Could not find KOAID for output filename.')
+            return False
+
+        #build path to final fits file
+        fitsfile = self.dirs['lev0']
+        if   (koaid.startswith('NC')): fitsfile += '/scam'
+        elif (koaid.startswith('NS')): fitsfile += '/spec'
+        fitsfile += '/' + koaid
+
+        #create jpg
+        #todo: why does the old IDL code create jpgs to a tempdir first?
+        makejpg.main(fitsfile, self.instr, self.dirs['lev0'] + '/')
+        return True
+

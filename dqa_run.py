@@ -26,6 +26,7 @@ from urllib.request import urlopen
 from create_log import *
 from verification import *
 from create_prog import *
+import metadata
 
 
 def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
@@ -82,10 +83,10 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
 
 
     # Create the LOC file
+    #todo: why do we create this?  should we exit if it exists?
     locFile = ''.join((dirs['lev0'], '/dqa.LOC'))
     with open(locFile, 'w') as fp:
         fp.write('DQA started')
-
 
 
     # Instanciate the instrument class
@@ -101,7 +102,6 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
     create_prog(instrObj)
     #proginfo = gpi.ProgSplit()
     #proginfo.getProgInfo()
-
 
 
     # dep_obtain file (list of programs)
@@ -125,10 +125,6 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
 #    keysMeta = get_keys_meta(instr, tablesDir)
 #    num_keys = len(keysMeta)
 
-#    # Create containers to hold infile and outfile
-#    infile = []
-#    outfile = []
-
 #    # Store keyword values in the following arrays
 #    kname = []
 #    kvalue = []
@@ -144,6 +140,16 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
 #    num_sci = 0
 
 
+
+    #define vars to use throughout
+    ymd = utDate.replace('-', '')
+
+
+    # Create containers to hold infile and outfile
+    inFiles = []
+    outFiles = []
+
+
     # Catch for corrupted files
     try:
 
@@ -157,21 +163,18 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
             # do checks.  if any of these steps return false then skip and copy to udf
             #todo: These checks may be unique per instrument so move this instrument.py function like do_dqa_checks()
             #todo: error checking, log, asserts?
-            #todo: extensions?
-            #todo: metadata
+            #todo: remaining tasks, extensions, etc?
+            #todo: create jpgs?
             ok = True
             if ok: ok = instrObj.check_instr()
             if ok: ok = instrObj.check_dateObs()
             if ok: ok = instrObj.check_utc()
-            # if ok: ok = instrObj.read_image_data()
             if ok: ok = instrObj.set_koaid()
             if ok: ok = instrObj.copy_utc_to_ut()
             if ok: ok = instrObj.set_frameno()
             if ok: ok = instrObj.set_ofName()
             if ok: ok = instrObj.write_lev0_fits_file()
-
-
-            print (instrObj.fits_header)
+            if ok: ok = instrObj.create_lev0_jpg()
 
 
             # checks failed?  copy to udf
@@ -180,9 +183,62 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
                 shutil.copy2(filename, dirs['udf']);
                 continue
 
+            #keep list of good fits filenames
+            else:
+                inFiles.append(os.path.basename(instrObj.fitsFilepath))
+                outFiles.append(instrObj.fitsHeader.get('KOAID'))
+
+
+
+        #Create yyyymmdd.filelist.table
+        fltFile = dirs['lev0'] + '/' + ymd + '.filelist.table'
+        with open(fltFile, 'w') as fp:
+            for i in range(len(inFiles)):
+                fp.write(inFiles[i] + ' ' + outFiles[i] + "\n")
+            fp.write("    " + str(len(inFiles)) + ' Total FITS files\n')
+
+
+
+        #create metadata file
+        tablesDir = '/kroot/archive/tables'
+        tablesDir = '/home/jriley/test/metadata_tables'
+        metadata.make_metadata(instr, utDate, rootDir, tablesDir, log)
+
+
+        #Create yyyymmdd.FITS.md5sum.table
+        md5Outfile = dirs['lev0'] + '/' + ymd + '.FITS.md5sum.table'
+        if log: log.info('dqa_run.py creating {}'.format(md5Outfile))
+        make_dir_md5_table(dirs['lev0'], ".fits", md5Outfile)
+
+
+
+
+        #todo: Create yyyymmdd.JPEG.md5sum.table
+        md5Outfile = dirs['lev0'] + '/' + ymd + '.JPEG.md5sum.table'
+        if log: log.info('dqa_run.py creating {}'.format(md5Outfile))
+        make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
+
+
+
+        #todo: gzip the fits files
+        #todo: update TPX
+
+
+
+        #Remove the LOC file
+        locFile = ''.join((dirs['lev0'], '/dqa.LOC'))
+        os.remove(locFile)
+
+
 
     except Exception as err:
         log.error('dqa_run.py program crashed, exiting: {}'.format(str(err)))
+
+
+    #log success
+    if log: log.info('dqa_run.py DQA Successful for {}'.format(instr))
+
+
 
 
 

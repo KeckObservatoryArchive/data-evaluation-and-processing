@@ -13,9 +13,9 @@ class dep_add:
     the contents.
     """
 
-    def __init__(self, telNr, instr, utDate, rootDir, log_writer=''):
+    def __init__(self, telNr, instr, utDate, rootDir, log=''):
         """
-        Verify input, create directory and setup log_writer, if needed
+        Verify input, create directory and setup log, if needed
 
         @param telNr: Telescope number
         @type telnr: string
@@ -39,12 +39,10 @@ class dep_add:
         assert telNr in tel, 'telNr not allowed'
         self.telNr = telNr
 
-        # Set and create log_writer
+        # Set and create log
 
-        if not log_writer:
-            self.log_writer = create_log(rootDir, instr, utDate)
-        else:
-            self.log_writer = log_writer
+        if not log: self.log = create_log(rootDir, instr, utDate)
+        else:       self.log = log
 
         #get root dirs list
  
@@ -54,8 +52,7 @@ class dep_add:
         # Set and create ancillary directory
 
         if not os.path.isdir(self.dirs['anc']):
-            if log_writer:
-                log_writer.info('dep_add.py creating {}'.format(self.dirs['anc']))
+            if self.log: self.log.info('dep_add.py creating {}'.format(self.dirs['anc']))
             os.makedirs(self.dirs['anc'])
 
     #-------
@@ -70,8 +67,7 @@ class dep_add:
         year, month, day = self.utDate.split('-')
         year = int(year) - 2000
 
-        if self.log_writer:
-            self.log_writer.info('dep_add.py started for telnr {} {}'.format(self.telNr, self.utDate))
+        if self.log: self.log.info('dep_add.py started for telnr {} {}'.format(self.telNr, self.utDate))
 
         # Make ancDir/[nightly,udf]
 
@@ -80,8 +76,7 @@ class dep_add:
             ancDirNew = (self.dirs['anc'], '/', dir)
             ancDirNew = ''.join(ancDirNew)
             if not os.path.isdir(ancDirNew):
-                if self.log_writer:
-                    self.log_writer.info('dep_add.py creating {}'.format(ancDirNew))
+                if self.log: self.log.info('dep_add.py creating {}'.format(ancDirNew))
                 os.makedirs(ancDirNew)
 
         # Copy nightly data to ancDir/nightly
@@ -91,8 +86,7 @@ class dep_add:
         if not os.path.isdir(nightlyDir):
             nightlyDir.replace('/h/', '/s/')
             if not os.path.isdir(nightlyDir):
-                if self.log_writer:
-                    self.log_writer.info('dep_add.py no nightly directory found')
+                if self.log: self.log.info('dep_add.py no nightly directory found')
                 return
 
         files = ['envMet.arT', 'envFocus.arT']
@@ -102,8 +96,7 @@ class dep_add:
             if os.path.exists(source):
                 destination = (self.dirs['anc'], '/nightly/', file)
                 destination = ''.join(destination)
-                if self.log_writer:
-                    self.log_writer.info('dep_add.py copying {} to {}'.format(source, destination))
+                if self.log: self.log.info('dep_add.py copying {} to {}'.format(source, destination))
                 shutil.copyfile(source, destination)
 
     #-------
@@ -114,8 +107,7 @@ class dep_add:
         tarball and remove the original contents of the directory.
         """
     
-        if self.log_writer:
-            self.log_writer.info('dep_tar.py started for {}'.format(self.dirs['anc']))
+        if self.log: self.log.info('dep_tar.py started for {}'.format(self.dirs['anc']))
 
         if os.path.isdir(self.dirs['anc']):
 
@@ -123,21 +115,18 @@ class dep_add:
     
             tarFileName = ('anc', self.utDateDir, '.tar')
             tarFileName = ''.join(tarFileName)
-    
+
             # Go to directory and create tarball
 
-            if self.log_writer:
-                self.log_writer.info('dep_tar.py creating {}'.format(tarFileName))
+            if self.log: self.log.info('dep_tar.py creating {}'.format(tarFileName))
             os.chdir(self.dirs['anc'])
             with tarfile.open(tarFileName, 'w:gz') as tar:
                 tar.add('./')
 
             # gzip the tarball
 
-            if self.log_writer:
-                self.log_writer.info('dep_tar.py gzipping {}'.format(tarFileName))
-            gzipTarFile = (tarFileName, '.gz')
-            gzipTarFile = ''.join(gzipTarFile)
+            if self.log: self.log.info('dep_tar.py gzipping {}'.format(tarFileName))
+            gzipTarFile = ''.join((tarFileName, '.gz'))
             with open(tarFileName, 'rb') as fIn:
                 with gzip.open(gzipTarFile, 'wb') as fOut:
                     shutil.copyfileobj(fIn, fOut)
@@ -150,23 +139,21 @@ class dep_add:
 
             md5sumFile = gzipTarFile.replace('tar.gz', 'md5sum')
 
-            if self.log_writer:
-                self.log_writer.info('dep_tar.py creating {}'.format(md5sumFile))
+            if self.log: self.log.info('dep_tar.py creating {}'.format(md5sumFile))
 
             md5 = hashlib.md5(open(gzipTarFile, 'rb').read()).hexdigest()
 
             with open(md5sumFile, 'w') as f:
-                md5 = (md5, '  ', gzipTarFile)
-                md5 = ''.join(md5)
+                md5 = ''.join((md5, '  ', gzipTarFile))
                 f.write(md5)
+
+            #remove anc dirs
 
             dirs = ['nightly', 'udf']
             for dir in dirs:
-                delDir = (self.dirs['anc'], '/', dir)
-                delDir = ''.join(delDir)
+                delDir = ''.join((self.dirs['anc'], '/', dir))
                 if not os.path.isdir(delDir): continue
-                if self.log_writer:
-                    self.log_writer.info('dep_tar.py removing {}'.format(delDir))
+                if self.log: self.log.info('dep_tar.py removing {}'.format(delDir))
                 shutil.rmtree(delDir)
 
     #-------
