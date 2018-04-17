@@ -54,7 +54,7 @@ def create_prog(instrObj):
 
             #get header
             instrObj.set_fits_file(filename)
-            header = instrObj.fits_header
+            header = instrObj.fitsHeader
 
             # Temp fix for bad file times(NIRSPEC legacy)
             fixdatetime(utDate, filename, header)
