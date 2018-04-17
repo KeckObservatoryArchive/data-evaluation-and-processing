@@ -26,6 +26,7 @@ from urllib.request import urlopen
 from create_log import *
 from verification import *
 from create_prog import *
+import metadata
 
 
 def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
@@ -124,10 +125,6 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
 #    keysMeta = get_keys_meta(instr, tablesDir)
 #    num_keys = len(keysMeta)
 
-#    # Create containers to hold infile and outfile
-#    infile = []
-#    outfile = []
-
 #    # Store keyword values in the following arrays
 #    kname = []
 #    kvalue = []
@@ -141,6 +138,16 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
 #    i = 0
 #    i2 = 0
 #    num_sci = 0
+
+
+
+    #define vars to use throughout
+    ymd = utDate.replace('-', '')
+
+
+    # Create containers to hold infile and outfile
+    inFiles = []
+    outFiles = []
 
 
     # Catch for corrupted files
@@ -167,7 +174,7 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
             if ok: ok = instrObj.set_frameno()
             if ok: ok = instrObj.set_ofName()
             if ok: ok = instrObj.write_lev0_fits_file()
-
+            if ok: ok = instrObj.create_lev0_jpg()
 
 
             # checks failed?  copy to udf
@@ -176,14 +183,46 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
                 shutil.copy2(filename, dirs['udf']);
                 continue
 
+            #keep list of good fits filenames
+            else:
+                inFiles.append(os.path.basename(instrObj.fitsFilepath))
+                outFiles.append(instrObj.fitsHeader.get('KOAID'))
 
-        #todo: package created jpgs
-        #todo: Create yyyymmdd.filelist.table
-        #todo: metadata.py? (yyyymmdd.metadata.table and yyyymmdd.metadata.md5sum) 
-        #todo: Create yyyymmdd.FITS.md5sum.table
+
+
+        #Create yyyymmdd.filelist.table
+        fltFile = dirs['lev0'] + '/' + ymd + '.filelist.table'
+        with open(fltFile, 'w') as fp:
+            for i in range(len(inFiles)):
+                fp.write(inFiles[i] + ' ' + outFiles[i] + "\n")
+            fp.write("    " + str(len(inFiles)) + ' Total FITS files\n')
+
+
+
+        #create metadata file
+        tablesDir = '/kroot/archive/tables'
+        tablesDir = '/home/jriley/test/metadata_tables'
+        metadata.make_metadata(instr, utDate, rootDir, tablesDir, log)
+
+
+        #Create yyyymmdd.FITS.md5sum.table
+        md5Outfile = dirs['lev0'] + '/' + ymd + '.FITS.md5sum.table'
+        if log: log.info('dqa_run.py creating {}'.format(md5Outfile))
+        make_dir_md5_table(dirs['lev0'], ".fits", md5Outfile)
+
+
+
+
         #todo: Create yyyymmdd.JPEG.md5sum.table
+        md5Outfile = dirs['lev0'] + '/' + ymd + '.JPEG.md5sum.table'
+        if log: log.info('dqa_run.py creating {}'.format(md5Outfile))
+        make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
+
+
+
         #todo: gzip the fits files
         #todo: update TPX
+
 
 
         #Remove the LOC file
