@@ -100,6 +100,7 @@ if tpx:
 	update_koatpx(instr, utDate, 'start_time', now, log)
 
 
+
 # Create the directories
 dirList = [dirs['lev0'], dirs['lev1'], dirs['anc'], dirs['stage']]
 try:
@@ -111,11 +112,11 @@ except:
 	log.info('Error creating directory {}'.format(dir))
 
 
+
 # Create README
 readmeFile = ''.join((dirs['output'], '/README'))
 with open(readmeFile, 'w') as fp:
 	fp.write(dirs['output'])
-
 
 
 
@@ -127,7 +128,6 @@ file = ''.join((dirs['stage'], '/dep_obtain', instr.upper(), '.txt'))
 if not os.path.isfile(file):
 	print('{} file missing'.format(file))
 	exit()
-
 
 
 
@@ -187,7 +187,6 @@ if (telNr == None):
 
 
 
-
 # dep_add
 import dep_add
 log.info('dep.py starting dep_add.py')
@@ -196,18 +195,16 @@ dep_add.dep_add()
 
 
 
-exit()
-
-
 # dqa_run
-##--import dqa_run
-##--dqa_run(instr, utDate, rootDir, tpx=tpx)
-
+import dqa_run
+log.info('dep.py starting dqa_run.py')
+dqa_run(instr, utDate, rootDir, tpx=tpx, log)
 # level 1? (OSIRIS, NIRC2)
 
 
 
 # dep_tar
+log.info('dep.py starting dep_add.dep_tar()')
 dep_add.dep_tar()
 
 
@@ -222,5 +219,5 @@ dep_add.dep_tar()
 
 
 # Temporary tar for PI
-import test_tar
-test_tar.test_tar(dirs['stage'])
+# import test_tar
+# test_tar.test_tar(dirs['stage'])

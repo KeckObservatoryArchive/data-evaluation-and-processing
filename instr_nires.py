@@ -14,16 +14,12 @@ class Nires(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log):
 
         # Call the parent init to get all the shared variables
-
         super().__init__(instr, utDate, rootDir, log)
 
-        # NIRES uses DATAFILE instead of OUTFILE
 
-        self.ofName = 'DATAFILE'
+        # Set any unique keyword index values here
+        self.ofName = 'DATAFILE'        # NIRES uses DATAFILE instead of OUTFILE
 
-#        # NIRES does not have a frameno keyword, use datafile
-#
-#        self.frameno = self.get_frameno()
 
         # Generate the paths to the NIRES datadisk accounts
         self.sdataList = self.get_dir_list()
@@ -51,8 +47,7 @@ class Nires(instrument.Instrument):
         Sets the KOAID prefix
         Defaults to nullstr
         '''
-
-        # Will there be a single keyword for this?
+        #todo: Will there be a single keyword for this?
 
         instr = self.set_instr(keys)
         if instr == 'nires':
@@ -79,7 +74,7 @@ class Nires(instrument.Instrument):
         the FITS extension, so we have to add that back on
 
         @type keys: dictionary
-        @param keys: FITS header keys for th given file
+        @param keys: FITS header keys for the given file
         """
         try:
             outfile = keys[self.ofName]
@@ -91,28 +86,63 @@ class Nires(instrument.Instrument):
             return filename, True
 
 
-    def get_frameno(self, keys):
+    def set_frameno(self):
         """
-        Determines the frame number from the FITS file name stored
-        in the DATAFIILE keyword (eg DATAFILE = 's180404_0002.fits')
+        If FRAMENO doesn't exist, this will determine the frame number from        
+        the DATAFIILE keyword (eg DATAFILE = 's180404_0002.fits') 
+        and update the keyword.
+ 
+        #todo: did we get new keyword in header?
         """
-        datafile = keys.get('DATAFILE')
-        if (datafile == None): return None
+ 
+        keys = self.fitsHeader
+        frameno = keys.get(self.frameno)
 
-        frameno = datafile.replace('.fits', '')
-        num = frameno.rfind('_') + 1
-        frameno = frameno[num:]
-        return frameno
+        if (frameno == None):
+
+            datafile = keys.get('DATAFILE')
+            if (datafile == None): return False
+
+            frameno = datafile.replace('.fits', '')
+            num = frameno.rfind('_') + 1
+            frameno = frameno[num:]
+            keys.update({self.frameno : (frameno, 'KOA: Added missing keyword')})
+
+        return True
 
 
-    def get_outdir(self, keys, filename):
+    def set_ofName(self):
+        """
+        If OUTFILE doesn't exist, this will determine the name from 
+        the DATAFIILE keyword (eg DATAFILE = 's180404_0002.fits') 
+        and update the keyword.
+ 
+        #todo: did we get new keyword in header?
+        """
+ 
+        keys = self.fitsHeader
+        ofName = keys.get(self.ofName)
+
+        if (ofName == None):
+
+            datafile = keys.get('DATAFILE')
+            if (datafile == None): return False
+
+            ofName = datafile.replace('.fits', '')
+            keys.update({self.ofName : (ofName, 'KOA: Added missing keyword')})
+
+        return True
+
+
+    def get_outdir(self):
         """
         Returns the OUTDIR associated with the filename, else returns None.
         OUTDIR = [/s]/sdata####/account/YYYYmmmDD
-
-        @param filename: the filename to determine OUTDIR from
-        @type filename: string
+ 
+        #todo: did we get new keyword in header?
         """
+
+        filename = self.fitsFilepath
 
         try:
             # Find the first /s for /s/sdata... or /sdata...
@@ -121,12 +151,13 @@ class Nires(instrument.Instrument):
             end = filename.rfind('/')
             return filename[start:end]
         except:
+            #todo: really return "None"?
             return "None"
 
 
-    def get_fileno(self, keys):
+    def get_fileno(self):
 
         #todo: determine NIRES fileno
         fileno = None
         return fileno
-        
+    

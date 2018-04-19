@@ -5,7 +5,7 @@
   Ported to python by Josh Riley
 
 #TODO: add more code documentation
-#TODO: move this code into instrument.py
+#TODO: add more asserts/logging
 
 """
 
@@ -16,7 +16,7 @@ import sys
 import os
 from astropy.io import fits
 import pandas
-from common import get_root_dirs
+from common import get_root_dirs, make_dir_md5_table
 
 
 def make_metadata(instr, utDate, rootDir, tablesDir, log=None):
@@ -45,13 +45,11 @@ def make_metadata(instr, utDate, rootDir, tablesDir, log=None):
     #NOTE: changed this file to tab-delimited
     keywordsDefFile = tablesDir + '/keywords.format.' + instr
     keyDefs = pandas.read_csv(keywordsDefFile, sep='\t')
+    if log: log.info('read keywords definition file: {}'.format(keywordsDefFile))
 
 
 
     #create metadata table output file
-    #todo: creating dir if it does not exist, but prob don't need that.
-    #(example: /koadata21/MOSFIRE/20180403/lev0/20180403.metadata.table)
-    if not os.path.exists(dirs['lev0']): os.makedirs(dirs['lev0'])
     ymd = utDate.replace('-', '')
     metaFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
 
@@ -82,16 +80,22 @@ def make_metadata(instr, utDate, rootDir, tablesDir, log=None):
 
 
     #walk lev0Dir to find all final fits files
-    for root, dirs, files in os.walk(dirs['lev0']):
+    for root, directories, files in os.walk(dirs['lev0']):
         for filename in files:
             if filename.endswith('.fits'):
                 fitsFile = os.path.join(root, filename)
-                add_fits_metadata_line(fitsFile, metaFile, keyDefs)
+                add_fits_metadata_line(fitsFile, metaFile, keyDefs, log)
+
+
+    #create md5 sum
+    md5Outfile = metaFile.replace('.table', '.md5sum')
+    if log: log.info('metadata.py creating {}'.format(md5Outfile))
+    make_dir_md5_table(dirs['lev0'], ".metadata.table", md5Outfile)
 
 
 
 
-def add_fits_metadata_line(fitsFile, metaFile, keyDefs):
+def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
     """
     Adds a line to metadata file for one FITS file.
     """
@@ -118,14 +122,13 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs):
 
             #todo: assert/log if non-null not found?
             if not (keyword in header): 
-                if allowNull == 'N':
-                    print ("WARNING: NON-NULL KEYWORD NOT FOUND: ", keyword)
                 val = 'null'
             else:
                 val = header[keyword]
 
 
             #todo: check format using /tables/keywords.check
+            check_keyword(keyword, val, row, log)
 
 
             #write out val padded to size
@@ -135,3 +138,23 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs):
         out.write("\n")
  
 
+
+def check_keyword(keyword, val, fmt, log=None):
+
+    #todo: assert/fail on any of these?
+    #todo: DATE-OBS is listed as 'date' format in keywords.format.NIRES, but is listed as char format in spreadsheet
+
+
+    #check null
+    if (val == 'null'):
+        if (fmt['allowNull'] == 'N'):
+            if log: log.warning('metadata check fail: "null" value found for non-null keyword {}'.format(keyword))
+        return
+
+
+    #todo: check value type
+
+
+
+    #todo: check value range
+    

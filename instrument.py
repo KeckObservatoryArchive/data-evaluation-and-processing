@@ -10,7 +10,12 @@ Children will contain the instrument specific values
 #import logging as lg
 import os
 from common import get_root_dirs
+from astropy.io import fits
+from datetime import timedelta, datetime as dt
+import shutil
+import makejpg
 import create_log as cl
+
 
 class Instrument:
 #    def __init__(self, endTime=dt.datetime.now(), rootDir):
@@ -65,7 +70,7 @@ class Instrument:
         self.prefix = ''
         self.rawfile = ''
         self.koaid = ''
-        self.paths = []
+        self.sdataList = []
 
 
         # get the various root dirs
@@ -74,6 +79,45 @@ class Instrument:
 
         # Separate section for log init
 #        self.log = set_logger()
+
+
+    def set_fits_file(self, filename):
+        '''
+        Sets the current FITS file we are working on.  Clears out temp fits variables.
+        '''
+
+        #todo: should we have option to just read the header for performance if that is all that is needed?
+        self.fitsHdu = fits.open(filename)
+        self.fitsHeader = self.fitsHdu[0].header
+        #self.fitsHeader = fits.getheader(filename)
+        self.fitsFilepath = filename
+
+
+        self.koaid = '';
+        self.rawfile = ''
+        self.prefix = ''
+
+
+
+    def set_koaid(self):
+        '''
+        Create and add KOAID to header if it does not already exist
+        '''
+
+        #see if we already have it
+        keys = self.fitsHeader
+        koaid = keys.get('KOAID')
+        if koaid != None: return True
+
+        #make it
+        koaid, result = self.make_koaid(keys)
+        if not result: return False
+
+        #save it
+        keys.update({'KOAID' : (koaid, 'KOA: Added missing keyword')})
+        return True
+
+
 
     def make_koaid(self, keys):
         """
@@ -84,6 +128,7 @@ class Instrument:
         @type keys: dictionary
         @param keys: The header for the given FITS file
         """
+
         # Get the prefix for the correct instrument and configuration
         # Note: set_prefix() is a subclass method
         self.prefix = self.set_prefix(keys)
@@ -99,7 +144,7 @@ class Instrument:
 
         # Create a timedate object using the string from the header
         try:
-            utc = datetime.strptime(utc, '%H:%M:%S.%f')
+            utc = dt.strptime(utc, '%H:%M:%S.%f')
         except ValueError:
             return '', False
 
@@ -109,16 +154,14 @@ class Instrument:
         second = utc.second
 
         # Calculate the total number of seconds since Midnight
-        seq = (str(hour*3600), str(minute*60), str(second))
-        totalSeconds = ''.join(seq)
+        totalSeconds = ''.join((str(hour*3600), str(minute*60), str(second)))
 
         # Remove any date separators from the date
         dateobs = dateobs.replace('-','')
         dateobs = dateobs.replace('/','')
 
         # Create the KOAID from the parts
-        seq = (self.prefix, '.', dateobs, '.', totalseconds.zfill(5), '.fits')
-        koaid = ''.join(seq)
+        koaid = ''.join((self.prefix, '.', dateobs, '.', totalSeconds.zfill(5), '.fits'))
         return koaid, True
 
     def set_instr(self, keys):
@@ -192,7 +235,7 @@ class Instrument:
         return filename, True
 
  
-    def check_instr(self, keys):
+    def check_instr(self):
         '''
         Check that value(s) in header indicates this is valid instrument and matches what we expect.
         (ported to python from check_instr.pro)
@@ -200,7 +243,8 @@ class Instrument:
         #todo: use class key vals instead
         '''
 
-        ok = 0
+        ok = False
+        keys = self.fitsHeader
 
 
         #get val
@@ -211,24 +255,22 @@ class Instrument:
 
         #direct match?
         if instrume:
-            if (self.instr == instrume.strip()): ok = 1
+            if (self.instr == instrume.strip()): ok = True
 
 
         #mira not ok
         outdir = keys.get('OUTDIR')
-        if (outdir and '/mira' in outdir) : ok = 0
+        if (outdir and '/mira' in outdir) : ok = False
 
 
         #No DCS keywords, check others
         if (not ok):
             filname = keys.get('FILNAME')
-            if (filname and self.instr in filname): ok = 1
+            if (filname and self.instr in filname): ok = True
 
             instrVal = self.instr.lower()
-            outdir = keys.get('OUTDIR')
-            if (outdir and instrVal in outdir): ok = 1
-            outdir2 = keys.get('OUTDIR2')
-            if (outdir2 and instrVal in outdir2): ok = 1
+            outdir = keys.get(self.outdir)
+            if (outdir and instrVal in outdir): ok = True
 
 
         #log err
@@ -240,21 +282,96 @@ class Instrument:
 
 
 
-    def check_keyword_dateobs(self):
-        pass
+    def check_dateObs(self):
+        '''
+        Checks to see if we have a date obsv keyword, and if it needs to be fixed or created.
+        '''
+
+        keys = self.fitsHeader
+        filename = self.fitsFilepath
+
+
+        #try to get from header
+        dateObs = keys.get(self.dateObs)
+        if dateObs: dateObs = dateObs.strip()
+
+
+        #if empty or bad values then build from file last mod time
+        #todo: make sure this is universal time
+        #todo: test the .update stuff
+        if dateObs == None or 'Error' in dateObs or dateObs == '':
+            lastMod = os.stat(filename).st_mtime
+            dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
+            dateObs = dateObs.strftime('%Y-%m-%d')
+            keys.update({self.dateObs : (dateObs, 'KOA: Added missing keyword')})
+
+        # Fix yy/mm/dd to yyyy-mm-dd
+        if '-' not in dateObs:
+            orig = dateObs
+            yr, mo, dy = dateObs.split('/')
+            dateObs = ''.join(('20', yr, '-', mo, '-', dy))
+            keys.update({self.dateObs : (dateObs, 'KOA: value corrected (' + orig + ')')})
+
+
+        #todo: can this check fail?
+        return True
+       
+
+
+    def check_utc(self):
+        '''
+        Checks to see if we have a utc time keyword, and if it needs to be fixed or created.
+        '''
+
+        keys = self.fitsHeader
+        filename = self.fitsFilepath
+
+
+        #try to get from header
+        utc = keys.get(self.utc)
+
+
+        #if empty or bad values then build from file last mod time
+        #todo: make sure this is universal time
+        if utc == None or 'Error' in utc or utc == '':
+            lastMod = os.stat(filename).st_mtime
+            utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
+            utc = utc.strftime('%H:%M:%S')
+            keys.update({self.utc : (utc, 'KOA: Added missing keyword')})
+
+
+        #todo: can this check fail?
+        return True
 
 
 
-    def get_outdir(self, keys, filename=None):
+    def copy_utc_to_ut(self):
 
-        outdir = keys.get('OUTDIR')
-        if (outdir == None): outdir = keys.get('OUTDIR2')
-        if (outdir == None): outdir = 'None'
+        #get utc from header
+        keys = self.fitsHeader
+        utc = keys.get(self.utc)
+        if (not utc): 
+            this.log.error('Could not get UTC value.')
+            return False
 
-        return outdir
+        #copy to UT
+        keys.update({'UT' : (utc, 'KOA: Added missing keyword')})
+        return True
 
 
-    def get_fileno(self, keys):
+
+    def get_outdir(self):
+
+        #todo: do we need this function instead of using keyword index?
+        keys = self.fitsHeader
+        return keys.get(self.outdir)
+
+
+
+    def get_fileno(self):
+
+        #todo: do we need this function instead of using keyword index?
+        keys = self.fitsHeader
 
         fileno = keys.get('FILENUM')
         if (fileno == None): fileno = keys.get('FILENUM2')
@@ -263,3 +380,47 @@ class Instrument:
         if (fileno == None): fileno = keys.get('FRAMENUM')
 
         return fileno
+
+
+    def write_lev0_fits_file(self):
+
+        #make sure we have a koaid
+        keys = self.fitsHeader
+        koaid = keys.get('KOAID')
+        if (not koaid):
+            self.log.error('write_lev0_fits_file: Could not find KOAID for output filename.')
+            return False
+
+        #build outfile path
+        outfile = self.dirs['lev0']
+        if   (koaid.startswith('NC')): outfile += '/scam'
+        elif (koaid.startswith('NS')): outfile += '/spec'
+        outfile += '/' + koaid
+
+
+        #write out new fits file with altered header
+        self.fitsHdu.writeto(outfile)
+        return True
+
+
+
+    def create_lev0_jpg(self):
+    
+        #make sure we have a koaid
+        keys = self.fitsHeader
+        koaid = keys.get('KOAID')
+        if (not koaid):
+            self.log.error('create_lev0_jpg: Could not find KOAID for output filename.')
+            return False
+
+        #build path to final fits file
+        fitsfile = self.dirs['lev0']
+        if   (koaid.startswith('NC')): fitsfile += '/scam'
+        elif (koaid.startswith('NS')): fitsfile += '/spec'
+        fitsfile += '/' + koaid
+
+        #create jpg
+        #todo: why does the old IDL code create jpgs to a tempdir first?
+        makejpg.main(fitsfile, self.instr, self.dirs['lev0'] + '/')
+        return True
+
