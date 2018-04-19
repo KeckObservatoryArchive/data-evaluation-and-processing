@@ -14,6 +14,7 @@ from astropy.io import fits
 from datetime import timedelta, datetime as dt
 import shutil
 import makejpg
+import create_log as cl
 
 
 class Instrument:
@@ -38,6 +39,9 @@ class Instrument:
         self.instr = instr
         self.utDate = utDate
         self.log = log
+        if not self.log:
+            self.log = cl.create_log(self.rootDir, instr, utDate)
+            self.log.info('instrument.py: log created')
 
         # Keyword values to be used with a FITS file during runtime
         self.instrume = 'INSTRUME'

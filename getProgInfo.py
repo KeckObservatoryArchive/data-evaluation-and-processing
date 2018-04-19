@@ -3,12 +3,13 @@
 
 import os
 import json
-import koa_db_conn as kdb
-import mysql_conn as msc
-import metrics_conn as metrics
+#import koa_db_conn as kdb
+#import mysql_conn as msc
+#import metrics_conn as metrics
 import urllib.request as url
-import pymysql as pms
+#import pymysql as pms
 import time
+import create_log as cl
 
 class ProgSplit:
     """
@@ -47,15 +48,13 @@ class ProgSplit:
     @param sunrise: time in decimal hours when 12deg sunrise occured
     @type utDate: string (datetime in db)
     @param utDate: date in UT when observation occured
-    @type log: Logger object
-    @param log: log handler that writes messages to a log
     @type sciFiles: list
     @param sciFiles: stores the valid science files
     @type api: string
     @param api: base url for querying the RESTful API
 
     Methods:
-    __init__(self, ut_date, instr, stage_dir, lg)
+    __init__(self, ut_date, instr, stage_dir)
     get_semester(self)
     check_stage_dir(self)
     check_instrument(self)
@@ -77,7 +76,7 @@ class ProgSplit:
     get_program(self, num, progid, inst, pi)
     split_by_frameno(self)
     """
-    def __init__(self, ut_date, instr, stage_dir, lg):
+    def __init__(self, ut_date, instr, stage_dir, log=None):
         """
         Initialization function for the ProgSplit class
 
@@ -87,8 +86,6 @@ class ProgSplit:
         @param instr: Instrument that is being observed
         @type stage_dir: string
         @param stage_dir: directory we are moving processed files to
-        @type lg: Logger object
-        @param lg: Logger object that handles information, warning, and error logging
         """
         self.engineering = {'kcwieng':'outdir', 'kcwirun':'outdir', 
                 'hireseng':'outdir','nspeceng':'outdir', 
@@ -113,10 +110,12 @@ class ProgSplit:
         self.sunrise = 0.0
         self.utDate = ut_date
         self.semester = self.get_semester()
-        self.log = lg
         self.sciFiles = {}
         self.api = 'https://www.keck.hawaii.edu/software/db_api/'
-
+        self.log = log
+        self.rootDir = self.stageDir.split('/stage')[0]
+        if not self.log:
+            self.log = cl.create_log(self.rootDir, instr, ut_date)
     def get_semester(self):
         """
         This method determines the semester of the observation
@@ -152,7 +151,8 @@ class ProgSplit:
         This method checks whether or not the stage dir exists
         """
         if not os.path.isdir(self.stageDir):
-            self.log.warning("progInfo - stage directory doesn't exist!")
+            print("progInfo - stage directory doesn't exist!")
+            exit()
 
     def check_instrument(self):
         """
@@ -160,7 +160,6 @@ class ProgSplit:
         instruments
         """
         if self.instrument not in self.instrList:
-            self.log.warning('progInfo - unknown instrument!')
             print("Instrument must be one of: ")
             for item in self.instrList:
                 print('\t', item)
@@ -172,7 +171,7 @@ class ProgSplit:
         readfile = ''.join((self.stageDir, '/dep_obtain',
                 self.instrument, '.txt'))
         if not os.path.exists(readfile):
-            self.log.warning('read_dep_obtain - file does not exist!!')
+            print('read_dep_obtain - file does not exist!!')
             exit()
 
         save = ['utdate', 'oa','account', 'proginst',
@@ -200,7 +199,7 @@ class ProgSplit:
         colCount = len(colsToSave)
         fname = ''.join((self.stageDir, '/createprog.txt'))
         if not os.path.isfile(fname):
-            self.log.warning('This file does not exist!!!')
+            print('This file does not exist!!!')
             exit()
         with open(fname, 'r') as flist:
             num = 0
@@ -357,7 +356,7 @@ class ProgSplit:
         req = ''.join((self.api, 'koa.php?cmd=getTitle&semid=', semid))
         req = url.urlopen(req)
         title = req.read().decode()
-        title = json.loads(title)['progtitl']
+        title = json.loads(title)[0]['progtitl']
         return title
 
 #--------------------- END GET PROG TITLE-----------------------------------------------
@@ -433,7 +432,7 @@ class ProgSplit:
                 assign[i] = 5
             else:
                 assign[i] = 1
-            self.log.info(''.join(
+            print(''.join(
                 ('Assigning', self.outdir[i], 'to', assign[i])))
 
         # Split by OUTDIR
@@ -545,10 +544,10 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
-def getProgInfo(utdate, instrument, stageDir, log):
+def getProgInfo(utdate, instrument, stageDir):
     utdate = utdate.replace('/','-')
     instrument = instrument.upper()
-    progSplit = ProgSplit(utdate, instrument, stageDir, log)
+    progSplit = ProgSplit(utdate, instrument, stageDir)
     progSplit.check_stage_dir()
     progSplit.check_instrument()
     progSplit.read_dep_obtain()
@@ -564,34 +563,28 @@ def getProgInfo(utdate, instrument, stageDir, log):
         splitNight = 1
 
     if splitNight == 1: # No split
-        msg = ''.join((utdate, ' is not a split night'))
-        print(msg)
+        msg = ''.join(('getProgInfo: ', utdate, ' is not a split night'))
         progSplit.log.info(msg)
         if len(progSplit.programs) == 1:
-            msg = ''.join(('Assigning to ', progSplit.instrument, ' PI'))
-            print(msg)
+            msg = ''.join(('getProgInfo: Assigning to ', progSplit.instrument, ' PI'))
             progSplit.log.info(msg)
             progSplit.assign_to_pi(1)
         elif instrument == 'NIRSPEC':
             # Check for NIRSPEC backup
-            print('NIRSPEC backup program')
-            progSplit.log.info('NIRSPEC backup program')
+            progSplit.log.info('getProgInfo: NIRSPEC backup program')
             progSplit.backup_program()
         elif instrument == 'NIRC2':
             # check for NIRC2 backup
-            print('NIRC2 backup program')
-            progSplit.log.info('NIRC2 backup program')
+            progSplit.log.info('getProgInfo: NIRC2 backup program')
             progSplit.backup_program()
     elif splitNight > 1: # Split night
-        msg = ''.join((utdate, ' is a split night with ',
+        msg = ''.join(('getProgInfo: ', utdate, ' is a split night with ',
                 str(len(progSplit.programs)), ' programs'))
-        print(msg)
         progSplit.log.info(msg)
         progSplit.sort_by_time(codeStartEnd)
         progSplit.get_sun_times()
         progSplit.get_outdir(codeStartEnd, splitNight)
-        msg = ''.join((len(progSplit.outdir), ' OUTDIRs found'))
-        print(msg)
+        msg = ''.join(('getProgInfo: ', len(progSplit.outdir), ' OUTDIRs found'))
         progSplit.log.info(msg)
 
         # Split the stuff
@@ -614,7 +607,13 @@ def getProgInfo(utdate, instrument, stageDir, log):
     fname = ''.join((stageDir, '/newproginfo.txt'))
     with open(fname, 'w') as ofile:
         for progfile in progSplit.fileList:
-            for key, val in progfile:
-                ofile.writelines(val['file'], ' ', val['outdir'], ' ',
-                        val['proginst'],' ', val['progid'], ' ',
-                        val['progpi'], ' ', val['progtitl'], '\n')
+            line = ''.join((progfile['file'], ' ',
+                            progfile['outdir'], ' ',
+                            progfile['proginst'],' ',
+                            progfile['progid'], ' ',
+                            progfile['progpi'], ' ',
+                            progfile['progtitl'], '\n'))
+            ofile.writelines(line)
+
+    msg = ''.join(('Assigning to ', progSplit.instrument, ' PI'))
+    progSplit.log.info('getProgInfo: finished, {} created'.format(fname))
