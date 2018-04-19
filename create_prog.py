@@ -131,3 +131,4 @@ def create_prog(instrObj):
                 else                  : ofile.write(progtitl+'\n')
 
             ofile.write(oa + '\n')
+    if log: log.info('create_prog: finished, {} created'.format(outfile))
