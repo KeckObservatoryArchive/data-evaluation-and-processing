@@ -10,6 +10,7 @@ Children will contain the instrument specific values
 #import logging as lg
 import os
 from common import get_root_dirs
+import create_log as cl
 
 class Instrument:
 #    def __init__(self, endTime=dt.datetime.now(), rootDir):
@@ -33,6 +34,9 @@ class Instrument:
         self.instr = instr
         self.utDate = utDate
         self.log = log
+        if not self.log:
+            self.log = cl.create_log(self.rootDir, instr, utDate)
+            self.log.info('instrument.py: log created')
 
         # Keyword values to be used with a FITS file during runtime
         self.instrume = 'INSTRUME'
