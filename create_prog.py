@@ -74,10 +74,10 @@ def create_prog(instrObj):
             observer = header.get('OBSERVER').strip()
 
             #get fileno
-            fileno = instrObj.get_fileno()
+            fileno = instrObj.get_fileno(header)
 
             #get outdir
-            outdir = instrObj.get_outdir()
+            outdir = instrObj.get_outdir(header, filename)
 
 
             fileparts = filename.split('/sdata')
