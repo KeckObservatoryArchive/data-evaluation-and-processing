@@ -4,7 +4,7 @@
   process directory with the final FITS files, in some cases adding 
   header keywords where necessary.
 
-  Usage: dqa_run(instr, utDate, rootDir, tpxlog, log)
+  Usage: dqa_run(instr, utDate, rootDir, tpx, log)
 
   Original scripts written by Jeff Mader and Jennifer Holt
   Ported to Python3 by Matthew Brown and Josh Riley
@@ -29,7 +29,7 @@ from create_prog import *
 import metadata
 
 
-def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
+def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
     """
     This function will analyze the FITS file to determine if they will be
     archived and if they need modifications or additions to their headers.
@@ -156,6 +156,9 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
         # Loop through each entry in input_list
         for filename in files:
 
+            if log: log.info('dqa_run.py input file is {}'.format(filename))
+
+
             #set current file to work on
             instrObj.set_fits_file(filename)
 
@@ -164,7 +167,8 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
             #todo: These checks may be unique per instrument so move this instrument.py function like do_dqa_checks()
             #todo: error checking, log, asserts?
             #todo: remaining tasks, extensions, etc?
-            #todo: create jpgs?
+            #todo: see dqa_lite.pro "Add DQA generated keywords" code
+            #todo: check create_lev0_jpg for accuracy?
             ok = True
             if ok: ok = instrObj.check_instr()
             if ok: ok = instrObj.check_dateObs()
@@ -187,6 +191,10 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
             else:
                 inFiles.append(os.path.basename(instrObj.fitsFilepath))
                 outFiles.append(instrObj.fitsHeader.get('KOAID'))
+
+
+        #log num files passed DQA
+        if log: log.info('dqa_run.py: {} files passed DQA'.format(len(inFiles)))
 
 
         #Create yyyymmdd.filelist.table
@@ -227,10 +235,15 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
                         os.remove(in_path)
 
 
-
-
-        #todo: update TPX
-
+        #update TPX: archive ready
+        #todo: how to get pi, sdata, and sci_files
+        if tpx:
+            utc_timestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+            # update_koatpx(instr, utDate, 'pi', '???', log)
+            # update_koatpx(instr, utDate, 'sdata', '???', log)
+            # update_koatpx(instr, utDate, 'sci_files', '???', log)
+            update_koatpx(instr, utDate, 'arch_state', 'DONE', log)
+            update_koatpx(instr, utDate, 'arch_time', utc_timestamp, log)
 
 
         #Remove the LOC file
@@ -239,8 +252,10 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
 
 
 
+    #catch exceptions
     except Exception as err:
         log.error('dqa_run.py program crashed, exiting: {}'.format(str(err)))
+
 
 
     #log success
