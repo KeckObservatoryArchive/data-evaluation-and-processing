@@ -189,14 +189,12 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
                 outFiles.append(instrObj.fitsHeader.get('KOAID'))
 
 
-
         #Create yyyymmdd.filelist.table
         fltFile = dirs['lev0'] + '/' + ymd + '.filelist.table'
         with open(fltFile, 'w') as fp:
             for i in range(len(inFiles)):
                 fp.write(inFiles[i] + ' ' + outFiles[i] + "\n")
             fp.write("    " + str(len(inFiles)) + ' Total FITS files\n')
-
 
 
         #create metadata file
@@ -211,16 +209,26 @@ def dqa_run(instr, utDate, rootDir, tpxlog=0, log=''):
         make_dir_md5_table(dirs['lev0'], ".fits", md5Outfile)
 
 
-
-
-        #todo: Create yyyymmdd.JPEG.md5sum.table
+        #Create yyyymmdd.JPEG.md5sum.table
         md5Outfile = dirs['lev0'] + '/' + ymd + '.JPEG.md5sum.table'
         if log: log.info('dqa_run.py creating {}'.format(md5Outfile))
         make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
 
 
+        #gzip the fits files
+        import gzip
+        for file in os.listdir(dirs['lev0']):
+            if file.endswith('.fits'): 
+                in_path = dirs['lev0'] + '/' + file
+                out_path = in_path + '.gz'
+                with open(in_path, 'rb') as fIn:
+                    with gzip.open(out_path, 'wb') as fOut:
+                        shutil.copyfileobj(fIn, fOut)
+                        os.remove(in_path)
 
-        #todo: gzip the fits files
+
+
+
         #todo: update TPX
 
 
