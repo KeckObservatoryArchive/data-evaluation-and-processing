@@ -39,6 +39,7 @@ utDate  = args.utDate.replace('/', '-')
 rootDir = args.rootDir
 tpx = 1 if (args.tpx == 'tpx') else 0
 
+print ("dep.py starting: ", instr, utDate, rootDir, tpx)
 
 
 
@@ -61,7 +62,7 @@ endHour = 19
 
 # Setup logging
 import create_log
-log = create_log.create_log(rootDir, instr, utDate)
+log = create_log.create_log(rootDir, instr, utDate, True)
 
 log.info('dep.py started for {} {}'.format(instr.upper(), utDate))
 log.info('dep.py process directory is {}'.format(dirs['output']))
@@ -78,18 +79,16 @@ if tpx:
 	data = json.loads(data)                 # Convert to Python list
 
 	if data[0]['num'] != '0':
-		print('Entry already exists in database - remove and start again')
-		log.info('dep.py entry already exists in database - exiting')
+		log.error('dep.py: entry already exists in database. EXITING.')
 		exit()
 
 
 
-# Skip if directories already exist
+# Skip if output directories already exist
 dirList = [dirs['stage'], dirs['output']]
 for dir in dirList:
 	if os.path.isdir(dir):
-		print('Directory exists {} - remove and start again'.format(dir))
-		log.info('dep.py directory ({}) already exists - exiting'.format(dir))
+		log.error('dep.py directory ({}) already exists. Remove and start again. EXITING.'.format(dir))
 		exit()
 
 
@@ -104,12 +103,13 @@ if tpx:
 # Create the directories
 dirList = [dirs['lev0'], dirs['lev1'], dirs['anc'], dirs['stage']]
 try:
-	log.info('dep.py creating directory structure')
+	log.info('dep.py: creating directory structure')
 	for dir in dirList:
+		if os.path.isdir(dir): continue
 		os.makedirs(dir)
 except:
-	print('Error creating directory {}'.format(dir))
-	log.info('Error creating directory {}'.format(dir))
+	log.error('dep.py: Error creating directory {}. EXITING.'.format(dir))
+	exit()
 
 
 
@@ -122,14 +122,14 @@ with open(readmeFile, 'w') as fp:
 
 # dep_obtain
 import dep_obtain
-log.info('dep.py starting dep_obtain.py')
+log.info('dep.py: starting dep_obtain.py')
 dep_obtain.dep_obtain(instr, utDate, dirs['stage'], log)
 file = ''.join((dirs['stage'], '/dep_obtain', instr.upper(), '.txt'))
 if not os.path.isfile(file):
-	print('{} file missing'.format(file))
+	log.error('dep.py: {} file missing. EXITING.'.format(file))
 	exit()
 
-
+exit()
 
 # dep_locate/transfer
 import dep_locate
@@ -146,10 +146,10 @@ if tpx:
 if num == 0:
 
 	#todo: do cleanup?
-	log.info('Cleaning up')
-	print('Removing {}'.format(dirs['output']))
+	log.info('dep.py: No FITS files found.')
 	log.info('Removing {}'.format(dirs['output']))
 
+	#tpx empty entry
 	if tpx:
 		update_koatpx(instr, utDate, 'sci_files', '0', log)
 		update_koatpx(instr, utDate, 'ondisk_stat', 'N/A', log)
@@ -165,6 +165,9 @@ if num == 0:
 
 	exit()
 
+
+
+#tpx
 if tpx:
 	now = datetime.now().strftime('%Y%m%d %H:%M')
 	update_koatpx(instr, utDate, 'ondisk_stat', 'DONE', log)
@@ -182,14 +185,14 @@ data = json.loads(data)                 # Convert to Python list
 telNr = None
 if len(data) > 0: telNr = int(data[0]['TelNr'])
 if (telNr == None): 
-	log.error('Unable to get telNr for instrument: ' + instr)
+	log.error(':Unable to get telNr for instrument: ' + instr + ". EXITING.")
 	exit()
 
 
 
 # dep_add
 import dep_add
-log.info('dep.py starting dep_add.py')
+log.info('dep.py: starting dep_add.py')
 dep_add = dep_add.dep_add(telNr, instr, utDate, rootDir, log)
 dep_add.dep_add()
 
@@ -197,8 +200,8 @@ dep_add.dep_add()
 
 # dqa_run
 import dqa_run
-log.info('dep.py starting dqa_run.py')
-dqa_run(instr, utDate, rootDir, tpx=tpx, log)
+log.info('dep.py: starting dqa_run.py')
+dqa_run(instr, utDate, rootDir, tpx, log)
 # level 1? (OSIRIS, NIRC2)
 
 
