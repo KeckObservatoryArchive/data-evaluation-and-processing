@@ -11,7 +11,7 @@ from common import *
 
 class Nires(instrument.Instrument):
 
-    def __init__(self, instr, utDate, rootDir, log):
+    def __init__(self, instr, utDate, rootDir, log=None):
 
         # Call the parent init to get all the shared variables
         super().__init__(instr, utDate, rootDir, log)

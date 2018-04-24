@@ -10,7 +10,6 @@
   Ported to Python3 by Matthew Brown and Josh Riley
 """
 import get_header
-import importlib
 import os
 import logging as lg
 import numpy as np
@@ -24,62 +23,36 @@ from astropy.io import fits
 from urllib.request import urlopen
 #from imagetyp_instr import imagetyp_instr
 from create_log import *
-from verification import *
 from create_prog import *
 import metadata
 
 
-def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
+def dqa_run(instrObj, tpx=0):
     """
     This function will analyze the FITS file to determine if they will be
     archived and if they need modifications or additions to their headers.
 
-    @type instr: string
-    @param instr: The instrument used to make the fits files being looked at
-    @type utDate: datetime
-    @param utDate: The date in UT of the night that the fits tiles were taken
-    @type rootDir: string
-    @param rootDir: The root directory for a processing run.
+    @type instrObj: instrument
+    @param instr: The instrument object
     """
 
-    # Verify input parameters
-    instr = instr.upper()
-    verify_instrument(instr)
-    verify_date(utDate)
-    assert os.path.isdir(rootDir), 'rootDir does not exist'
+
+    #shorthand
+    instr  = instrObj.instr
+    utDate = instrObj.utDate
+    log    = instrObj.log
+    dirs   = instrObj.dirs
 
 
-    # Setup log, if it doesn't exist already
-    if not log: log = create_log(rootDir, instr, utDate)
-    if log: log.info('dqa_run.py started for {} {}'.format(instr, utDate))
-
-
-    # Set up default directories
-    tablesDir = '/kroot/archive/tables'
-    dirs = get_root_dirs(rootDir, instr, utDate)
+    #Log start
+    log.info('dqa_run.py started for {} {}'.format(instr, utDate))
 
 
     # Error if stageDir does not exist (required input files)
     if not os.path.isdir(dirs['stage']):
-        print('error')
+        print('dqa_run.py: stage dir does not exist.  EXITING.')
+        exit()
         #todo: log, email, and return
-
-
-    # Create the directories, if they don't already exist
-    for key, dir in dirs.items():
-        if key == 'stage': continue
-        if log: log.info('dqa_run.py using directory {}'.format(dir))
-        if not os.path.isdir(dir):
-            try:
-                os.makedirs(dir)
-            except:
-                print('Could not create {}'.format(dir))
-
-
-    # Additions for NIRSPEC
-    if instr == 'NIRSPEC':
-        os.mkdir(dirs['lev0'] + '/scam')
-        os.mkdir(dirs['lev0'] + '/spec')
 
 
     # Create the LOC file
@@ -89,15 +62,6 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
         fp.write('DQA started')
 
 
-    # Instanciate the instrument class
-    moduleName = ''.join(('instr_', instr.lower()))
-    module = importlib.import_module(moduleName)
-
-    className = instr[0].upper() + instr[1:].lower()
-    instrClass = getattr(module, className)
-    instrObj = instrClass(instr, utDate, rootDir, log)
-
-
     #determine program info
     create_prog(instrObj)
     #proginfo = gpi.ProgSplit()
@@ -105,6 +69,7 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
 
 
     # dep_obtain file (list of programs)
+    #todo: what are we doing with this?
     obtfile = ''.join((dirs['stage'], '/dep_obtain', instr, '.txt'))
 
 
@@ -118,7 +83,7 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
 
     # How many files will be processed?
     numFiles = len(files)
-    if log: log.info('dqa_run.py there are {} files to process'.format(numFiles))
+    log.info('dqa_run.py there are {} files to process'.format(numFiles))
 
 
 #    # Get the keys requires for the FITS files
@@ -156,7 +121,7 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
         # Loop through each entry in input_list
         for filename in files:
 
-            if log: log.info('dqa_run.py input file is {}'.format(filename))
+            log.info('dqa_run.py input file is {}'.format(filename))
 
 
             #set current file to work on
@@ -194,7 +159,7 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
 
 
         #log num files passed DQA
-        if log: log.info('dqa_run.py: {} files passed DQA'.format(len(inFiles)))
+        log.info('dqa_run.py: {} files passed DQA'.format(len(inFiles)))
 
 
         #Create yyyymmdd.filelist.table
@@ -213,13 +178,13 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
 
         #Create yyyymmdd.FITS.md5sum.table
         md5Outfile = dirs['lev0'] + '/' + ymd + '.FITS.md5sum.table'
-        if log: log.info('dqa_run.py creating {}'.format(md5Outfile))
+        log.info('dqa_run.py creating {}'.format(md5Outfile))
         make_dir_md5_table(dirs['lev0'], ".fits", md5Outfile)
 
 
         #Create yyyymmdd.JPEG.md5sum.table
         md5Outfile = dirs['lev0'] + '/' + ymd + '.JPEG.md5sum.table'
-        if log: log.info('dqa_run.py creating {}'.format(md5Outfile))
+        log.info('dqa_run.py creating {}'.format(md5Outfile))
         make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
 
 
@@ -236,7 +201,8 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
 
 
         #update TPX: archive ready
-        #todo: how to get pi, sdata, and sci_files
+        #todo: how to get pi, sdata, and sci_files (see commented old port code below)
+        #todo: is arch_time utc or not?
         if tpx:
             utc_timestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
             # update_koatpx(instr, utDate, 'pi', '???', log)
@@ -259,7 +225,7 @@ def dqa_run(instr, utDate, rootDir, tpx=0, log=''):
 
 
     #log success
-    if log: log.info('dqa_run.py DQA Successful for {}'.format(instr))
+    log.info('dqa_run.py DQA Successful for {}'.format(instr))
 
 
 

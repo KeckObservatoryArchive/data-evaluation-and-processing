@@ -7,7 +7,6 @@ Children will contain the instrument specific values
 """
 
 #import datetime as dt
-#import logging as lg
 import os
 from common import get_root_dirs
 from astropy.io import fits
@@ -15,6 +14,7 @@ from datetime import timedelta, datetime as dt
 import shutil
 import makejpg
 import create_log as cl
+from verification import *
 
 
 class Instrument:
@@ -39,11 +39,16 @@ class Instrument:
         self.instr = instr
         self.utDate = utDate
         self.log = log
+
+
+        #create log if it does nto exist
         if not self.log:
-            self.log = cl.create_log(self.rootDir, instr, utDate)
+            self.log = cl.create_log(self.rootDir, instr, utDate, True)
             self.log.info('instrument.py: log created')
 
+
         # Keyword values to be used with a FITS file during runtime
+        #(NOTE: may be overwritten by instr-*.py)
         self.instrume = 'INSTRUME'
         self.utc = 'UTC'		# May be overwritten in instr_*.py
         self.dateObs = 'DATE-OBS'
@@ -52,8 +57,10 @@ class Instrument:
         self.frameno = 'FRAMENO'	# May be overwritten in instr_*.py
         self.outdir = 'OUTDIR'
         self.ftype = 'INSTR'		# For instruments with two file types
+
+        # Other values that be overwritten in instr-*.py
         self.endTime = '20:00:00'	# 24 hour period start/end time (UT)
-                                        # May be overwritten in instr_*.py
+
 
 #        try: # Let's see if endTime was passed as a string
 #            endTime = endTime.replace('-','')
@@ -66,6 +73,7 @@ class Instrument:
 #            self.utDate = endTime.strftime('%Y%m%d')
 #            self.endHour = endTime.strftime('%H:%M:%S')
 
+
         # Values to be populated by subclass
         self.prefix = ''
         self.rawfile = ''
@@ -73,12 +81,39 @@ class Instrument:
         self.sdataList = []
 
 
+        # Verify input parameters
+        verify_instrument(self.instr.upper())
+        verify_date(self.utDate)
+        assert os.path.isdir(self.rootDir), 'rootDir does not exist'
+
+
+        #check and create dirs
+        self.init_dirs()
+
+
+    def init_dirs(self):
+
         # get the various root dirs
         self.dirs = get_root_dirs(self.rootDir, self.instr, self.utDate)
 
 
-        # Separate section for log init
-#        self.log = set_logger()
+        # Create the directories, if they don't already exist
+        for key, dir in self.dirs.items():
+            self.log.info('instrument.py: using directory {}'.format(dir))
+            if not os.path.isdir(dir):
+                try:
+                    os.makedirs(dir)
+                except:
+                    print('instrument.py: Could not create {}'.format(dir))
+
+
+        # Additions for NIRSPEC
+        # TODO: move this to instr_nirspec.py?
+        if self.instr == 'NIRSPEC':
+            os.mkdir(self.dirs['lev0'] + '/scam')
+            os.mkdir(self.dirs['lev0'] + '/spec')
+
+
 
 
     def set_fits_file(self, filename):
