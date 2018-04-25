@@ -13,214 +13,86 @@
 #
 #-------------------------------------------------------------------------------
 
-from sys import argv
-from verification import *
-import argparse
-import logging as lg
-import os
+#import os
+import importlib
 import urllib.request
 import json
-import hashlib
-#from update_koatpx import *
-from datetime import datetime
-from common import get_root_dirs
-
-
-# Input parameters
-parser = argparse.ArgumentParser(description='DEP input parameters')
-parser.add_argument('instr', type=str, help='Instrument name')
-parser.add_argument('utDate', type=str, help='UT date of observation (yyyy-mm-dd)')
-parser.add_argument('rootDir', type=str, help='Directory to use for output (/koadata32)')
-parser.add_argument('tpx', type=str, nargs='?', default='', help='Update koatpx (optional)')
-
-args = parser.parse_args()
-instr   = args.instr.upper()
-utDate  = args.utDate.replace('/', '-')
-rootDir = args.rootDir
-tpx = 1 if (args.tpx == 'tpx') else 0
-
-print ("dep.py starting: ", instr, utDate, rootDir, tpx)
-
-
-
-# Verify input parameters
-verify_instrument(instr)
-verify_date(utDate)
-assert rootDir != '', 'rootDir value is blank'
-
-
-
-# get root dirs
-dirs = get_root_dirs(rootDir, instr, utDate)
-
-
-
-# endHour for NIRES
-endHour = 19
-
-
-
-# Setup logging
-import create_log
-log = create_log.create_log(rootDir, instr, utDate, True)
-
-log.info('dep.py started for {} {}'.format(instr.upper(), utDate))
-log.info('dep.py process directory is {}'.format(dirs['output']))
-log.info('dep.py stage directory is {}'.format(dirs['stage']))
-
-
-
-# Skip if entry in database
-if tpx:
-	koaUrl = 'https://www.keck.hawaii.edu/software/db_api/koa.php?'
-	sendUrl = ''.join((koaUrl, 'cmd=isInKoatpx&instr=', instr.upper(), '&utdate=', utDate))
-	data = urllib.request.urlopen(sendUrl)
-	data = data.read().decode('utf8')       # Convert from byte to ascii
-	data = json.loads(data)                 # Convert to Python list
-
-	if data[0]['num'] != '0':
-		log.error('dep.py: entry already exists in database. EXITING.')
-		exit()
-
-
-
-# Skip if output directories already exist
-dirList = [dirs['stage'], dirs['output']]
-for dir in dirList:
-	if os.path.isdir(dir):
-		log.error('dep.py directory ({}) already exists. Remove and start again. EXITING.'.format(dir))
-		exit()
-
-
-
-# Add entry to database
-now = datetime.now().strftime('%Y%m%d %H:%M')
-if tpx:
-	update_koatpx(instr, utDate, 'start_time', now, log)
-
-
-
-# Create the directories
-dirList = [dirs['lev0'], dirs['lev1'], dirs['anc'], dirs['stage']]
-try:
-	log.info('dep.py: creating directory structure')
-	for dir in dirList:
-		if os.path.isdir(dir): continue
-		os.makedirs(dir)
-except:
-	log.error('dep.py: Error creating directory {}. EXITING.'.format(dir))
-	exit()
-
-
-
-# Create README
-readmeFile = ''.join((dirs['output'], '/README'))
-with open(readmeFile, 'w') as fp:
-	fp.write(dirs['output'])
-
-
-
-# dep_obtain
-import dep_obtain
-log.info('dep.py: starting dep_obtain.py')
-dep_obtain.dep_obtain(instr, utDate, dirs['stage'], log)
-file = ''.join((dirs['stage'], '/dep_obtain', instr.upper(), '.txt'))
-if not os.path.isfile(file):
-	log.error('dep.py: {} file missing. EXITING.'.format(file))
-	exit()
-
-exit()
-
-# dep_locate/transfer
-import dep_locate
-dep_locate.dep_locate(instr, utDate, rootDir, endHour, log)
-
-file = ''.join((dirs['stage'], '/dep_locate', instr.upper(), '.txt'))
-num = sum(1 for line in open(file, 'r'))
-if tpx:
-	update_koatpx(instr, utDate, 'files', str(num), log)
-
-
-
-# No FITS files found
-if num == 0:
-
-	#todo: do cleanup?
-	log.info('dep.py: No FITS files found.')
-	log.info('Removing {}'.format(dirs['output']))
-
-	#tpx empty entry
-	if tpx:
-		update_koatpx(instr, utDate, 'sci_files', '0', log)
-		update_koatpx(instr, utDate, 'ondisk_stat', 'N/A', log)
-		update_koatpx(instr, utDate, 'arch_stat', 'N/A', log)
-		update_koatpx(instr, utDate, 'metadata_stat', 'N/A', log)
-		update_koatpx(instr, utDate, 'dvdwrit_stat', 'N/A', log)
-		update_koatpx(instr, utDate, 'dvdsent_stat', 'N/A', log)
-		update_koatpx(instr, utDate, 'dvdstor_stat', 'N/A', log)
-		update_koatpx(instr, utDate, 'tpx_stat', 'N/A', log)
-
-	#todo: send email?
-	print('Send email')
-
-	exit()
-
-
-
-#tpx
-if tpx:
-	now = datetime.now().strftime('%Y%m%d %H:%M')
-	update_koatpx(instr, utDate, 'ondisk_stat', 'DONE', log)
-	update_koatpx(instr, utDate, 'ondisk_time', now, log)
-
-
-
-#get telescope number
-schedUrl = 'https://www.keck.hawaii.edu/software/db_api/telSchedule.php?'
-sendUrl = ''.join((schedUrl, 'cmd=getTelnr&instr=', instr.upper()))
-data = urllib.request.urlopen(sendUrl)
-data = data.read().decode('utf8')       # Convert from byte to ascii
-data = json.loads(data)                 # Convert to Python list
-
-telNr = None
-if len(data) > 0: telNr = int(data[0]['TelNr'])
-if (telNr == None): 
-	log.error(':Unable to get telNr for instrument: ' + instr + ". EXITING.")
-	exit()
-
-
-
-# dep_add
-import dep_add
-log.info('dep.py: starting dep_add.py')
-dep_add = dep_add.dep_add(telNr, instr, utDate, rootDir, log)
-dep_add.dep_add()
-
-
-
-# dqa_run
-import dqa_run
-log.info('dep.py: starting dqa_run.py')
-dqa_run(instr, utDate, rootDir, tpx, log)
-# level 1? (OSIRIS, NIRC2)
-
-
-
-# dep_tar
-log.info('dep.py starting dep_add.dep_tar()')
-dep_add.dep_tar()
-
-
-
-#todo: cleanup
-
-
-
-#todo: transfer data
-##--koaxfr(instr, utDate, dirs['output'], tpx=tpx)
-
-
-
-# Temporary tar for PI
-# import test_tar
-# test_tar.test_tar(dirs['stage'])
+import configparser
+
+#from create_log import *
+#from dep_obtain import dep_obtain
+
+class Dep:
+	"""
+	This is the backbone class for KOA operations at WMKO.
+
+	@param instr: instrument name
+	@type instr: string
+	@param utDate: UT date of observation
+	@type utDate: string (YYYY-MM-DD)
+	@param rootDir: root directory to write processed files
+	@type rootDir: string
+	"""
+	def __init__(self, instr, utDate, rootDir, tpx=0):
+		"""
+		Setup initial parameters.
+		Create instrument object.
+		"""
+		self.instr = instr.upper()
+		self.utDate = utDate
+		self.rootDir = rootDir
+		self.tpx = tpx
+		if self.tpx != 1: self.tpx = 0
+		
+		config = configparser.ConfigParser()
+		config.read('config.ini')
+
+		# Create instrument object
+		# This will also verify inputs, create the logger and create all directories
+		moduleName = ''.join(('instr_', self.instr.lower()))
+		className = self.instr.capitalize()
+		print(moduleName, className)
+		module = importlib.import_module(moduleName)
+		instrClass = getattr(module, className)
+		self.instrObj = instrClass(self.instr, self.utDate, self.rootDir)
+		self.instrObj.koaUrl = config['API']['KOAAPI']
+		self.instrObj.telUrl = config['API']['TELAPI']
+		
+	def go(self):
+		"""
+		Processing steps for DEP
+		"""
+		if not self.verify_can_proceed(): return
+		import dep_obtain as do
+		do.dep_obtain(self.instrObj)
+		#dep_locate
+		#dep_transfer
+		#dep_add
+		#dqa_run
+		#lev1
+		#dep_tar
+		#koaxfr
+
+	def verify_can_proceed(self):
+		"""
+		Verify whether or not processing can proceed.  Processing cannot
+		proceed if there is already an entry in koa.koatpx.
+		"""
+
+		#return True
+		self.instrObj.log.info('dep: verifying if can proceed')
+		# Verify that there is no entry in koa.koatpx
+		try:
+			url = ''.join((self.instrObj.koaUrl, 'cmd=isInKoatpx&instr=', self.instr, '&utdate=', self.utDate))
+			data = urllib.request.urlopen(url)
+			data = data.read().decode('utf8')
+			data = json.loads(data)
+			if data[0]['num'] != '0':
+				self.instrObj.log.error('dep: entry already exists in database, exiting')
+				return False
+		except:
+			self.instrObj.log.error('dep: could not query koa database')
+			return False
+		return True
+
+#------- End dep class --------
