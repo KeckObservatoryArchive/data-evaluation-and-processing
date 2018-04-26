@@ -47,7 +47,7 @@ class Dep:
 		if self.tpx != 1: self.tpx = 0
 		
 		config = configparser.ConfigParser()
-		config.read('config.ini')
+		config.read('config.live.ini')
 
 		# Create instrument object
 		# This will also verify inputs, create the logger and create all directories

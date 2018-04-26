@@ -7,7 +7,7 @@ import configparser
 # Parse the configuration file
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('config.live.ini')
 
 # Input parameters
 
