@@ -1,0 +1,5 @@
+config.live.ini
+__pycache__/
+*.ipynb
+*~
+*.pyc
