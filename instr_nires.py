@@ -182,7 +182,6 @@ class Nires(instrument.Instrument):
             return False
 
         #update val
-        #todo: check input types and output type (integer)?
         elaptime = itime * coadds
         keys.update({'ELAPTIME' : (elaptime, 'KOA: Added missing keyword')})
         return True
@@ -215,8 +214,12 @@ class Nires(instrument.Instrument):
             keys.update({'WAVECNTR': (16950, 'KOA: Added keyword "WAVECNTR"')})
             keys.update({'WAVEBLUE': (24500, 'KOA: Added keyword "WAVEBLU"')})
 
+        return True
+
 
     def set_specres(self):
 
         keys = self.fitsHeader
         keys.update({'SPECRES' : (2700,  'KOA: Added keyword "SPECRES"')})
+
+        return True
