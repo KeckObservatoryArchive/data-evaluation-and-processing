@@ -91,6 +91,7 @@ class Instrument:
         self.init_dirs()
 
 
+
     def init_dirs(self):
 
         # get the various root dirs
@@ -139,17 +140,15 @@ class Instrument:
         Create and add KOAID to header if it does not already exist
         '''
 
-        #see if we already have it
-        keys = self.fitsHeader
-        koaid = keys.get('KOAID')
-        if koaid != None: return True
+        #skip if it exists
+        if self.fitsHeader.get('KOAID') != None: return True
 
         #make it
-        koaid, result = self.make_koaid(keys)
+        koaid, result = self.make_koaid(self.fitsHeader)
         if not result: return False
 
         #save it
-        keys.update({'KOAID' : (koaid, 'KOA: Added missing keyword')})
+        self.fitsHeader.update({'KOAID' : (koaid, 'KOA: Added missing keyword')})
         return True
 
 
@@ -317,7 +316,7 @@ class Instrument:
 
 
 
-    def check_dateObs(self):
+    def set_dateObs(self):
         '''
         Checks to see if we have a date obsv keyword, and if it needs to be fixed or created.
         '''
@@ -333,7 +332,6 @@ class Instrument:
 
         #if empty or bad values then build from file last mod time
         #todo: make sure this is universal time
-        #todo: test the .update stuff
         if dateObs == None or 'Error' in dateObs or dateObs == '':
             lastMod = os.stat(filename).st_mtime
             dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
@@ -353,7 +351,7 @@ class Instrument:
        
 
 
-    def check_utc(self):
+    def set_utc(self):
         '''
         Checks to see if we have a utc time keyword, and if it needs to be fixed or created.
         '''
@@ -372,7 +370,7 @@ class Instrument:
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S')
-            keys.update({self.utc : (utc, 'KOA: Added missing keyword')})
+            keys.update({self.utc : (utc, 'KOA: Added missing keyword "UTC"')})
 
 
         #todo: can this check fail?
@@ -380,17 +378,21 @@ class Instrument:
 
 
 
-    def copy_utc_to_ut(self):
+    def set_ut(self):
+
+        keys = self.fitsHeader
+
+        #skip if it exists
+        if keys.get('UT') != None: return True
 
         #get utc from header
-        keys = self.fitsHeader
         utc = keys.get(self.utc)
         if (not utc): 
-            this.log.error('Could not get UTC value.')
+            self.log.error('Could not get UTC value.')
             return False
 
         #copy to UT
-        keys.update({'UT' : (utc, 'KOA: Added missing keyword')})
+        keys.update({'UT' : (utc, 'KOA: Added missing keyword "UT"')})
         return True
 
 
@@ -415,6 +417,61 @@ class Instrument:
         if (fileno == None): fileno = keys.get('FRAMENUM')
 
         return fileno
+
+
+    def set_prog_info(self, progData):
+        
+        #note: progData is also stored in newproginfo.txt output from getProgInfo.py
+
+        #find matching filename in array column 0
+        baseFilename = os.path.basename(self.fitsFilepath)
+        data = None
+        for progFile in progData:
+            filepath = progFile['file']
+            if baseFilename in filepath:
+                data = progFile
+                break
+
+        #return false if not found
+        if not data: 
+            return False
+
+        #create keys
+        keys = self.fitsHeader
+        keys.update({'PROGID'  : (data['progid']  , 'KOA: Added keyword PROGID')})
+        keys.update({'PROGINST': (data['proginst'], 'KOA: Added keyword PROGINST')})
+        keys.update({'PROGPI'  : (data['progpi']  , 'KOA: Added keyword PROGPI')})
+        keys.update({'PROGTITL': (data['progtitl'], 'KOA: Added keyword PROGTITL')})
+        return True
+
+
+    def set_semester(self):
+
+        #TODO: move existing common.py semester() to Instrument?
+        keys = self.fitsHeader        
+        semester(keys)
+        return True
+
+
+    def set_propint(self):
+
+        #create semid
+        keys = self.fitsHeader
+        semester = keys.get('SEMESTER')
+        progid   = keys.get('PROGID')
+        assert (semester != None and progid != None), 'set_propint: Could not find either SEMESTER or PROGID keyword.'
+        semid = semester + '_' + progid
+
+
+        #create url and get data
+        url = self.koaUrl + '?cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
+        data = urllib.request.urlopen(url).read().decode('utf8')
+        assert (data and len(data) > 0 and data[0]['propint']), 'set_proprint: Unable to set PROPINT keyword.'
+        propint = data[0]['propint']
+
+        #update
+        keys.update({'PROPINT' : (propint, 'KOA: Added missing keyword "PROPINT"')})
+        return True
 
 
     def write_lev0_fits_file(self):

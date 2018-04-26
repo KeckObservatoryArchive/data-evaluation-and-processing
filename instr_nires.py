@@ -119,18 +119,19 @@ class Nires(instrument.Instrument):
  
         #todo: did we get new keyword in header?
         """
- 
+
         keys = self.fitsHeader
-        ofName = keys.get(self.ofName)
 
-        if (ofName == None):
+        #skip if it exists
+        if keys.get(self.ofName) != None: return True
 
-            datafile = keys.get('DATAFILE')
-            if (datafile == None): return False
+        #get val
+        datafile = keys.get('DATAFILE')
+        if (datafile == None): return False
 
-            ofName = datafile.replace('.fits', '')
-            keys.update({self.ofName : (ofName, 'KOA: Added missing keyword')})
-
+        #update val
+        ofName = datafile.replace('.fits', '')
+        keys.update({self.ofName : (ofName, 'KOA: Added missing keyword')})
         return True
 
 
@@ -161,3 +162,61 @@ class Nires(instrument.Instrument):
         fileno = None
         return fileno
     
+
+
+    def set_elaptime(self):
+        '''
+        Fixes missing ELAPTIME keyword.
+        '''
+
+        keys = self.fitsHeader
+
+        #skip if it exists
+        if keys.get('ELAPTIME') != None: return True
+
+        #get necessary keywords
+        itime  = keys.get('ITIME')
+        coadds = keys.get('COADDS')
+        if (itime == None or coadds == None):
+            self.log.error('ITIME and COADDS values needed to set ELAPTIME')
+            return False
+
+        #update val
+        #todo: check input types and output type (integer)?
+        elaptime = itime * coadds
+        keys.update({'ELAPTIME' : (elaptime, 'KOA: Added missing keyword')})
+        return True
+        
+
+    def set_koaimtyp(self):
+        '''
+        Fixes missing KOAIMTYP keyword.
+        todo: This will come from OBSTYPE keyword.
+        '''
+        return True
+
+
+    def set_wavelengths(self):
+
+        # https://www.keck.hawaii.edu/realpublic/inst/nires/genspecs.html
+        #todo: find out if kfilter is always on
+        keys = self.fitsHeader
+        kfilter = True
+
+        #with K-filter:
+        if kfilter:
+            keys.update({'WAVERED' : (19500, 'KOA: Added keyword "WAVERED"')})
+            keys.update({'WAVECNTR': (21230, 'KOA: Added keyword "WAVECNTR"')})
+            keys.update({'WAVEBLUE': (22950, 'KOA: Added keyword "WAVEBLU"')})
+
+        #no filter:
+        else:
+            keys.update({'WAVERED' : (9400,  'KOA: Added keyword "WAVERED"')})
+            keys.update({'WAVECNTR': (16950, 'KOA: Added keyword "WAVECNTR"')})
+            keys.update({'WAVEBLUE': (24500, 'KOA: Added keyword "WAVEBLU"')})
+
+
+    def set_specres(self):
+
+        keys = self.fitsHeader
+        keys.update({'SPECRES' : (2700,  'KOA: Added keyword "SPECRES"')})
