@@ -8,13 +8,15 @@ Children will contain the instrument specific values
 
 #import datetime as dt
 import os
-from common import get_root_dirs
+from common import get_root_dirs, semester
 from astropy.io import fits
 from datetime import timedelta, datetime as dt
 import shutil
 import makejpg
 import create_log as cl
 from verification import *
+import urllib.request
+import json
 
 
 class Instrument:
@@ -309,7 +311,7 @@ class Instrument:
 
         #log err
         if (not ok):
-            if self.log: self.log.info('check_instr: Cannot determine if file is from ' + self.instr)
+            self.log.info('check_instr: Cannot determine if file is from ' + self.instr)
 
 
         return ok
@@ -358,22 +360,16 @@ class Instrument:
 
         keys = self.fitsHeader
         filename = self.fitsFilepath
-
-
-        #try to get from header
-        utc = keys.get(self.utc)
-
-
+ 
         #if empty or bad values then build from file last mod time
         #todo: make sure this is universal time
+        utc = keys.get(self.utc)
         if utc == None or 'Error' in utc or utc == '':
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S')
             keys.update({self.utc : (utc, 'KOA: Added missing keyword "UTC"')})
 
-
-        #todo: can this check fail?
         return True
 
 
@@ -445,12 +441,14 @@ class Instrument:
         return True
 
 
+
     def set_semester(self):
 
         #TODO: move existing common.py semester() to Instrument?
         keys = self.fitsHeader        
         semester(keys)
         return True
+
 
 
     def set_propint(self):
@@ -464,14 +462,17 @@ class Instrument:
 
 
         #create url and get data
-        url = self.koaUrl + '?cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
+        url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
         data = urllib.request.urlopen(url).read().decode('utf8')
+        data = json.loads(data)
         assert (data and len(data) > 0 and data[0]['propint']), 'set_proprint: Unable to set PROPINT keyword.'
-        propint = data[0]['propint']
+        propint = int(data[0]['propint'])
+
 
         #update
         keys.update({'PROPINT' : (propint, 'KOA: Added missing keyword "PROPINT"')})
         return True
+
 
 
     def write_lev0_fits_file(self):
