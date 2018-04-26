@@ -18,9 +18,11 @@ import importlib
 import urllib.request
 import json
 import configparser
+from dep_obtain import dep_obtain
+from dep_locate import dep_locate
+from dep_add import *
+from dqa_run import dqa_run
 
-#from create_log import *
-#from dep_obtain import dep_obtain
 
 class Dep:
 	"""
@@ -58,20 +60,45 @@ class Dep:
 		self.instrObj.koaUrl = config['API']['KOAAPI']
 		self.instrObj.telUrl = config['API']['TELAPI']
 		
-	def go(self):
+	def go(self, processStart=None, processStop=None):
 		"""
 		Processing steps for DEP
+		@param processStart: name of process to start at.  Default is 'obtain'
+		@type instr: string
+		@param processStop: name of process to stop after.  Default is 'koaxfr'
+		@type instr: string
 		"""
+
+		#verify
 		if not self.verify_can_proceed(): return
-		import dep_obtain as do
-		do.dep_obtain(self.instrObj)
-		#dep_locate
-		#dep_transfer
-		#dep_add
-		#dqa_run
-		#lev1
-		#dep_tar
-		#koaxfr
+
+
+		#process steps control (pair down ordered list if requested)
+		steps = ['obtain', 'locate', 'transfer', 'add', 'dqa', 'lev1', 'tar', 'koaxfr']
+		if (processStart != None and processStart not in steps):
+			self.instrObj.log.error('Incorrect use of processStart')
+			return False
+		if (processStop != None and processStop not in steps):
+			self.instrObj.log.error('Incorrect use of processStop')
+			return False
+		if processStart != None:
+			steps = steps[steps.index(processStart):]
+		if processStop  != None:
+			steps = steps[:(steps.index(processStop)+1)]
+		print ('Running process steps: ', steps)
+
+
+		#run each step in order
+		for step in steps:
+			if   step == 'obtain': dep_obtain(self.instrObj)
+			elif step == 'locate': dep_locate(self.instrObj)
+			elif step == 'add'   : dep_add(self.instrObj)
+			elif step == 'dqa'   : dqa_run(self.instrObj)
+			#lev1
+			#dep_tar
+			#koaxfr
+
+
 
 	def verify_can_proceed(self):
 		"""
