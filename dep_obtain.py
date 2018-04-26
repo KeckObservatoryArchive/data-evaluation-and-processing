@@ -130,3 +130,6 @@ def dep_obtain(instrObj):
 
     except:
         instrObj.log.info('dep_obtain: {} error reading telescope schedule'.format(instrObj.instr))
+        return False
+
+    return True
