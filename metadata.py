@@ -16,29 +16,25 @@ import sys
 import os
 from astropy.io import fits
 import pandas
-from common import get_root_dirs, make_dir_md5_table
+from common import make_dir_md5_table
 
 
-def make_metadata(instr, utDate, rootDir, tablesDir, log=None):
+def make_metadata(instr, utDate, lev0Dir, tablesDir, log=None):
     """
     Creates the archiving metadata file as part of the DQA process.
 
     @param instr: instrument name
     @type instr: string
-    @param rootDir: root directory for data processing
-    @type rootDir: string
+    @param lev0Dir: directory for finding FITS files and writing output files
+    @type lev0Dir: string
     @param utDate: UT date (yyyy-mm-dd)
     @type utDate: string
     @param tablesDir: directory containing metadata keyword definition files
-    @type rootDir: string
+    @type tablesDir: string
     """
 
 
     if log: log.info('make_metadata.py started for {} {} UT'.format(instr.upper(), utDate))
-
-
-    #get various dirs
-    dirs = get_root_dirs(rootDir, instr, utDate)
 
 
     #open keywords format file and read data
@@ -51,7 +47,7 @@ def make_metadata(instr, utDate, rootDir, tablesDir, log=None):
 
     #create metadata table output file
     ymd = utDate.replace('-', '')
-    metaFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
+    metaFile =  lev0Dir + '/' + ymd + '.metadata.table'
 
 
 
@@ -80,7 +76,7 @@ def make_metadata(instr, utDate, rootDir, tablesDir, log=None):
 
 
     #walk lev0Dir to find all final fits files
-    for root, directories, files in os.walk(dirs['lev0']):
+    for root, directories, files in os.walk(lev0Dir):
         for filename in files:
             if filename.endswith('.fits'):
                 fitsFile = os.path.join(root, filename)
@@ -90,7 +86,7 @@ def make_metadata(instr, utDate, rootDir, tablesDir, log=None):
     #create md5 sum
     md5Outfile = metaFile.replace('.table', '.md5sum')
     if log: log.info('metadata.py creating {}'.format(md5Outfile))
-    make_dir_md5_table(dirs['lev0'], ".metadata.table", md5Outfile)
+    make_dir_md5_table(lev0Dir, ".metadata.table", md5Outfile)
 
 
 
@@ -154,7 +150,7 @@ def check_keyword(keyword, val, fmt, log=None):
 
     #todo: check value type
 
-
+    #todo: check value char length
 
     #todo: check value range
     

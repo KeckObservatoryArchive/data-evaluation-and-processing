@@ -617,3 +617,7 @@ def getProgInfo(utdate, instrument, stageDir):
 
     msg = ''.join(('Assigning to ', progSplit.instrument, ' PI'))
     progSplit.log.info('getProgInfo: finished, {} created'.format(fname))
+
+
+    #return data written for convenience
+    return progSplit.fileList

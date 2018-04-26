@@ -63,21 +63,21 @@ def create_prog(instrObj):
             imagetyp = imagetyp_instr(instr, header)
 
             #get date-obs
-            instrObj.check_dateObs()
+            instrObj.set_dateObs()
             dateObs = header.get(instrObj.dateObs)
 
             #get utc
-            instrObj.check_utc()
+            instrObj.set_utc()
             utc = header.get(instrObj.utc)
 
             #get observer
             observer = header.get('OBSERVER').strip()
 
             #get fileno
-            fileno = instrObj.get_fileno(header)
+            fileno = instrObj.get_fileno()
 
             #get outdir
-            outdir = instrObj.get_outdir(header, filename)
+            outdir = instrObj.get_outdir()
 
 
             fileparts = filename.split('/sdata')
