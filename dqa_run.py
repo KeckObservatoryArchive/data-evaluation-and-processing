@@ -4,7 +4,7 @@
   process directory with the final FITS files, in some cases adding 
   header keywords where necessary.
 
-  Usage: dqa_run(instr, utDate, rootDir, tpx, log)
+  Usage: dqa_run(instrObj, tpx)
 
   Original scripts written by Jeff Mader and Jennifer Holt
   Ported to Python3 by Matthew Brown and Josh Riley
@@ -65,7 +65,7 @@ def dqa_run(instrObj, tpx=0):
     #determine program info
     create_prog(instrObj)
     #proginfo = gpi.ProgSplit()
-    #proginfo.getProgInfo()
+    #progData = proginfo.getProgInfo()
 
 
     # dep_obtain file (list of programs)
@@ -73,7 +73,9 @@ def dqa_run(instrObj, tpx=0):
     obtfile = ''.join((dirs['stage'], '/dep_obtain', instr, '.txt'))
 
 
-    # Read the list of FITS files and store it in a something
+    # Read the list of FITS files
+    #todo: NOTE: current process copies 'dqa_locate<instr>.txt' output to 'dqa_<instr>.txt' and uses this
+    #after searching and removing corrupted fits files.
     dqafile = ''.join((dirs['stage'], '/dqa_', instr, '.txt'))
     files = []
     with open(dqafile, 'r') as dqalist:
@@ -84,26 +86,6 @@ def dqa_run(instrObj, tpx=0):
     # How many files will be processed?
     numFiles = len(files)
     log.info('dqa_run.py there are {} files to process'.format(numFiles))
-
-
-#    # Get the keys requires for the FITS files
-#    keysMeta = get_keys_meta(instr, tablesDir)
-#    num_keys = len(keysMeta)
-
-#    # Store keyword values in the following arrays
-#    kname = []
-#    kvalue = []
-#    nkw = []
-
-#    #define vars to use throughout
-#    sdata = ''
-#    pi = ''
-#    progid = ''
-#    acct = ''
-#    i = 0
-#    i2 = 0
-#    num_sci = 0
-
 
 
     #define vars to use throughout
@@ -128,7 +110,7 @@ def dqa_run(instrObj, tpx=0):
             instrObj.set_fits_file(filename)
 
 
-            # do checks.  if any of these steps return false then skip and copy to udf
+            # do keyword checks.  if any of these steps return false then skip and copy to udf
             #todo: These checks may be unique per instrument so move this instrument.py function like do_dqa_checks()
             #todo: error checking, log, asserts?
             #todo: remaining tasks, extensions, etc?
@@ -136,12 +118,18 @@ def dqa_run(instrObj, tpx=0):
             #todo: check create_lev0_jpg for accuracy?
             ok = True
             if ok: ok = instrObj.check_instr()
-            if ok: ok = instrObj.check_dateObs()
-            if ok: ok = instrObj.check_utc()
+            if ok: ok = instrObj.set_dateObs()
+            if ok: ok = instrObj.set_utc()
+            if ok: ok = instrObj.set_elaptime()
+            if ok: ok = instrObj.set_koaimtyp()
             if ok: ok = instrObj.set_koaid()
-            if ok: ok = instrObj.copy_utc_to_ut()
+            if ok: ok = instrObj.set_ut()
             if ok: ok = instrObj.set_frameno()
             if ok: ok = instrObj.set_ofName()
+            if ok: ok = instrObj.set_semester()
+            if ok: ok = instrObj.set_prog_info(progData)
+            if ok: ok = instrObj.set_wavelengths()
+            if ok: ok = instrObj.set_specres()
             if ok: ok = instrObj.write_lev0_fits_file()
             if ok: ok = instrObj.create_lev0_jpg()
 
@@ -173,7 +161,7 @@ def dqa_run(instrObj, tpx=0):
         #create metadata file
         tablesDir = '/kroot/archive/tables'
         tablesDir = '/home/jriley/test/metadata_tables'
-        metadata.make_metadata(instr, utDate, rootDir, tablesDir, log)
+        metadata.make_metadata(instr, utDate, dirs['lev0'], tablesDir, log)
 
 
         #Create yyyymmdd.FITS.md5sum.table
@@ -234,6 +222,25 @@ def dqa_run(instrObj, tpx=0):
 #######################################################
 ######  OLD PORT (keeping for reference for now) ######
 #######################################################
+
+#    # Get the keys requires for the FITS files
+#    keysMeta = get_keys_meta(instr, tablesDir)
+#    num_keys = len(keysMeta)
+
+#    # Store keyword values in the following arrays
+#    kname = []
+#    kvalue = []
+#    nkw = []
+
+#    #define vars to use throughout
+#    sdata = ''
+#    pi = ''
+#    progid = ''
+#    acct = ''
+#    i = 0
+#    i2 = 0
+#    num_sci = 0
+
 #    try:
 #        for filename in files:
 #            if log_writer:
