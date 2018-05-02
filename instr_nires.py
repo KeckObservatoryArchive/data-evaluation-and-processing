@@ -18,11 +18,63 @@ class Nires(instrument.Instrument):
 
 
         # Set any unique keyword index values here
-        self.ofName = 'DATAFILE'        # NIRES uses DATAFILE instead of OUTFILE
+        self.ofName = 'DATAFILE'        
+        self.frameno = 'FRAMENUM'
 
 
         # Generate the paths to the NIRES datadisk accounts
         self.sdataList = self.get_dir_list()
+
+
+    def run_dqa_checks(self, progData):
+        '''
+        Run all DQA checks unique to this instrument.
+        '''
+
+        ok = True
+        if ok: ok = self.check_instr()
+        if ok: ok = self.set_dateObs()
+        if ok: ok = self.set_utc()
+        if ok: ok = self.set_elaptime()
+        if ok: ok = self.set_koaimtyp()
+        if ok: ok = self.set_koaid()
+        if ok: ok = self.set_ut()
+        if ok: ok = self.set_frameno()
+        if ok: ok = self.set_ofName()
+        if ok: ok = self.set_semester()
+        if ok: ok = self.set_prog_info(progData)
+        if ok: ok = self.set_propint()
+        if ok: ok = self.set_wavelengths()
+        if ok: ok = self.set_specres()
+
+        #todo: finish setting remaining non-critical KOA-calculated keywords
+        # DATLEVEL
+        # DISPSCAL
+        # DQA_DATE
+        # DQA_VERS
+        # GUIDFWHM
+        # GUIDTIME
+        # IMAGEMD
+        # IMAGEMN
+        # IMAGESD
+        # NPIXSAT
+        # OA
+        # SLITLEN
+        # SLITWIDT
+        # SPATSCAL
+        # WXDOMHUM
+        # WXDOMTMP
+        # WXDWPT
+        # WXOUTHUM
+        # WXOUTTMP
+        # WXPRESS
+        # WXTIME
+        # WXWNDIR
+        # WXWNDSP
+
+
+        return ok
+
 
 
     def get_dir_list(self):
@@ -88,80 +140,55 @@ class Nires(instrument.Instrument):
 
     def set_frameno(self):
         """
-        If FRAMENO doesn't exist, this will determine the frame number from        
-        the DATAFIILE keyword (eg DATAFILE = 's180404_0002.fits') 
-        and update the keyword.
- 
-        #todo: did we get new keyword in header?
+        Adds FRAMENO keyword to header if it doesn't exist
+        #NOTE: keyword FRAMENUM added in Apr 2018
         """
  
+         #skip if it exists
         keys = self.fitsHeader
-        frameno = keys.get(self.frameno)
+        if keys.get('FRAMENO') != None: return True
 
-        if (frameno == None):
+
+        #get value
+        #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
+        frameno = keys.get(self.frameno)
+        if (frameno == None): 
 
             datafile = keys.get('DATAFILE')
-            if (datafile == None): return False
+            if (datafile == None): 
+                self.log.error('set_frameno: cannot find value for FRAMENO')
+                return False
 
             frameno = datafile.replace('.fits', '')
             num = frameno.rfind('_') + 1
             frameno = frameno[num:]
-            keys.update({self.frameno : (frameno, 'KOA: Added missing keyword')})
+            frameno = int(frameno)
 
+
+        #update
+        keys.update({'FRAMENO' : (frameno, 'KOA: Added keyword')})
         return True
+
 
 
     def set_ofName(self):
         """
-        If OUTFILE doesn't exist, this will determine the name from 
-        the DATAFIILE keyword (eg DATAFILE = 's180404_0002.fits') 
-        and update the keyword.
- 
-        #todo: did we get new keyword in header?
-        """
-
-        keys = self.fitsHeader
+        Adds OFNAME keyword to header if it doesn't exist
+         """
 
         #skip if it exists
-        if keys.get(self.ofName) != None: return True
+        keys = self.fitsHeader
+        if keys.get('OFNAME') != None: return True
 
-        #get val
-        datafile = keys.get('DATAFILE')
-        if (datafile == None): return False
+        #get value
+        ofName = keys.get(self.ofName)
+        if (ofName == None): 
+            self.log.error('set_ofName: cannot find value for OFNAME')
+            return False
 
-        #update val
-        ofName = datafile.replace('.fits', '')
-        keys.update({self.ofName : (ofName, 'KOA: Added missing keyword')})
+        #update
+        keys.update({'OFNAME' : (ofName, 'KOA: Added keyword')})
         return True
-
-
-    def get_outdir(self):
-        """
-        Returns the OUTDIR associated with the filename, else returns None.
-        OUTDIR = [/s]/sdata####/account/YYYYmmmDD
- 
-        #todo: did we get new keyword in header?
-        """
-
-        filename = self.fitsFilepath
-
-        try:
-            # Find the first /s for /s/sdata... or /sdata...
-            start = filename.find('/s')
-            # Find the last / before FITS file name
-            end = filename.rfind('/')
-            return filename[start:end]
-        except:
-            #todo: really return "None"?
-            return "None"
-
-
-    def get_fileno(self):
-
-        #todo: determine NIRES fileno
-        fileno = None
-        return fileno
-    
 
 
     def set_elaptime(self):
@@ -183,9 +210,44 @@ class Nires(instrument.Instrument):
 
         #update val
         elaptime = itime * coadds
-        keys.update({'ELAPTIME' : (elaptime, 'KOA: Added missing keyword')})
+        keys.update({'ELAPTIME' : (elaptime, 'KOA: Added keyword')})
         return True
         
+
+    def set_wavelengths(self):
+        '''
+        Adds wavelength keywords.
+        # https://www.keck.hawaii.edu/realpublic/inst/nires/genspecs.html
+        # NOTE: kfilter is always on
+        '''
+
+        keys = self.fitsHeader
+        kfilter = True
+
+        #with K-filter:
+        if kfilter:
+            keys.update({'WAVERED' : (19500, 'KOA: Added keyword')})
+            keys.update({'WAVECNTR': (21230, 'KOA: Added keyword')})
+            keys.update({'WAVEBLUE': (22950, 'KOA: Added keyword')})
+
+        #no filter:
+        else:
+            keys.update({'WAVERED' : (9400,  'KOA: Added keyword')})
+            keys.update({'WAVECNTR': (16950, 'KOA: Added keyword')})
+            keys.update({'WAVEBLUE': (24500, 'KOA: Added keyword')})
+
+        return True
+
+
+    def set_specres(self):
+        '''
+        Adds nominal spectral resolution keyword
+        '''
+        keys = self.fitsHeader
+        keys.update({'SPECRES' : (2700.0,  'KOA: Added keyword')})
+        return True
+
+
 
     def set_koaimtyp(self):
         '''
@@ -195,31 +257,11 @@ class Nires(instrument.Instrument):
         return True
 
 
-    def set_wavelengths(self):
 
-        # https://www.keck.hawaii.edu/realpublic/inst/nires/genspecs.html
-        #todo: find out if kfilter is always on
-        keys = self.fitsHeader
-        kfilter = True
+    def is_science(self):
+        '''
+        Returns true if header indicates it was a science data was taken.
+        '''
 
-        #with K-filter:
-        if kfilter:
-            keys.update({'WAVERED' : (19500, 'KOA: Added keyword "WAVERED"')})
-            keys.update({'WAVECNTR': (21230, 'KOA: Added keyword "WAVECNTR"')})
-            keys.update({'WAVEBLUE': (22950, 'KOA: Added keyword "WAVEBLU"')})
-
-        #no filter:
-        else:
-            keys.update({'WAVERED' : (9400,  'KOA: Added keyword "WAVERED"')})
-            keys.update({'WAVECNTR': (16950, 'KOA: Added keyword "WAVECNTR"')})
-            keys.update({'WAVEBLUE': (24500, 'KOA: Added keyword "WAVEBLU"')})
-
-        return True
-
-
-    def set_specres(self):
-
-        keys = self.fitsHeader
-        keys.update({'SPECRES' : (2700,  'KOA: Added keyword "SPECRES"')})
-
+        #todo: finish this.  Based on KOAIMTYP='object'?
         return True

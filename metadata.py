@@ -124,7 +124,7 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
 
 
             #todo: check format using /tables/keywords.check
-            check_keyword(keyword, val, row, log)
+            val = check_keyword(keyword, val, row, log)
 
 
             #write out val padded to size
@@ -138,19 +138,50 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
 def check_keyword(keyword, val, fmt, log=None):
 
     #todo: assert/fail on any of these?
-    #todo: DATE-OBS is listed as 'date' format in keywords.format.NIRES, but is listed as char format in spreadsheet
 
 
     #check null
     if (val == 'null'):
         if (fmt['allowNull'] == 'N'):
             if log: log.warning('metadata check fail: "null" value found for non-null keyword {}'.format(keyword))
-        return
+            return val
 
 
-    #todo: check value type
+    #check value type
+    #todo: finish date check
+    vtype = type(val).__name__
+    if (fmt['dataType'] == 'char'):
+        if (vtype != "str"):
+            print (keyword, fmt['dataType'], val, 'type: ', vtype)
+            if log: log.warning('metadata check fail: found var type of {}, expected {}.'.format(vtype, fmt['dataType']))
 
-    #todo: check value char length
+    elif (fmt['dataType'] == 'integer'):
+        if (vtype != "int"):
+            print (keyword, fmt['dataType'], val, 'type: ', vtype)
+            if log: log.warning('metadata check fail: found var type of {}, expected {}.'.format(vtype, fmt['dataType']))
+
+    elif (fmt['dataType'] == 'double'):
+        if (vtype != "float"):
+            print (keyword, fmt['dataType'], val, 'type: ', vtype)
+            if log: log.warning('metadata check fail: found var type of {}, expected {}.'.format(vtype, fmt['dataType']))
+
+    elif (fmt['dataType'] == 'date'):
+        pass
+
+        
+
+    #check char length
+    #TODO: remove truncate?
+    length = len(str(val))
+    if (length > fmt['colSize']):
+            if log: log.warning('metadata check fail: char length of {} greater than column size of {} keyword {}.  TRUNCATING.'.format(length, fmt['colSize'], keyword))
+            val = val[:fmt['colSize']]
+
+
 
     #todo: check value range
     
+
+
+    #return val 
+    return val

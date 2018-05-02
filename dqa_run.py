@@ -63,9 +63,14 @@ def dqa_run(instrObj, tpx=0):
 
 
     #determine program info
+    #todo: test this without test data
     create_prog(instrObj)
     #proginfo = gpi.ProgSplit()
     #progData = proginfo.getProgInfo()
+    progData = [
+        {'file':'/sdata999/xxx/s180305_0101.fits', 'outdir':'sdata999/xxx', 'proginst':'UCSC', 'progid':'Y144', 'progpi':'Riley', 'progtitl':'Near-pristine Galaxies: Confronting the Standard Model'},
+        {'file':'/sdata999/xxx/v180305_0020.fits', 'outdir':'sdata999/xxx', 'proginst':'KECK', 'progid':'Y144', 'progpi':'Mader', 'progtitl':'NON-pristine Galaxies: Confronting the Standard Model'},
+    ]
 
 
     # dep_obtain file (list of programs)
@@ -90,6 +95,7 @@ def dqa_run(instrObj, tpx=0):
 
     #define vars to use throughout
     ymd = utDate.replace('-', '')
+    sciFiles = 0
 
 
     # Create containers to hold infile and outfile
@@ -97,41 +103,33 @@ def dqa_run(instrObj, tpx=0):
     outFiles = []
 
 
-    # Catch for corrupted files
+    # Catch for any asserts in processing
     try:
 
         # Loop through each entry in input_list
         for filename in files:
 
+            #set current file to work on and run dqa checks
             log.info('dqa_run.py input file is {}'.format(filename))
-
-
-            #set current file to work on
             instrObj.set_fits_file(filename)
 
 
             # do keyword checks.  if any of these steps return false then skip and copy to udf
-            #todo: These checks may be unique per instrument so move this instrument.py function like do_dqa_checks()
+            #todo: test fits files: old NIRES, new NIRES, empty file, non-std filename, other instr file
             #todo: error checking, log, asserts?
             #todo: remaining tasks, extensions, etc?
             #todo: see dqa_lite.pro "Add DQA generated keywords" code
             #todo: check create_lev0_jpg for accuracy?
-            ok = True
-            if ok: ok = instrObj.check_instr()
-            if ok: ok = instrObj.set_dateObs()
-            if ok: ok = instrObj.set_utc()
-            if ok: ok = instrObj.set_elaptime()
-            if ok: ok = instrObj.set_koaimtyp()
-            if ok: ok = instrObj.set_koaid()
-            if ok: ok = instrObj.set_ut()
-            if ok: ok = instrObj.set_frameno()
-            if ok: ok = instrObj.set_ofName()
-            if ok: ok = instrObj.set_semester()
-            if ok: ok = instrObj.set_prog_info(progData)
-            if ok: ok = instrObj.set_wavelengths()
-            if ok: ok = instrObj.set_specres()
+            ok = instrObj.run_dqa_checks(progData)
+
+
+            #write out new fits file and jpg
             if ok: ok = instrObj.write_lev0_fits_file()
             if ok: ok = instrObj.create_lev0_jpg()
+
+
+            #stats
+            if instrObj.is_science(): sciFiles += 1
 
 
             # checks failed?  copy to udf
@@ -188,16 +186,21 @@ def dqa_run(instrObj, tpx=0):
                         os.remove(in_path)
 
 
+        #get sdata number lists and PI list strings
+        piList = get_tpx_pi_str(progData)
+        sdataList = get_tpx_sdata_str(progData)
+
+
         #update TPX: archive ready
         #todo: how to get pi, sdata, and sci_files (see commented old port code below)
         #todo: is arch_time utc or not?
         if tpx:
-            utc_timestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
-            # update_koatpx(instr, utDate, 'pi', '???', log)
-            # update_koatpx(instr, utDate, 'sdata', '???', log)
-            # update_koatpx(instr, utDate, 'sci_files', '???', log)
+            utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+            update_koatpx(instr, utDate, 'pi', piList, log)
+            update_koatpx(instr, utDate, 'sdata', sdataList, log)
+            update_koatpx(instr, utDate, 'sci_files', sciFiles, log)
             update_koatpx(instr, utDate, 'arch_state', 'DONE', log)
-            update_koatpx(instr, utDate, 'arch_time', utc_timestamp, log)
+            update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
 
 
         #Remove the LOC file
@@ -214,6 +217,41 @@ def dqa_run(instrObj, tpx=0):
 
     #log success
     log.info('dqa_run.py DQA Successful for {}'.format(instr))
+
+
+
+
+def get_tpx_sdata_str(progData):
+    '''
+    Finds unique sdata directory numbers and creates string for DB
+    ex: "123/456"
+    '''
+    items = []
+    for row in progData:
+        filepath = row['file']
+        match = re.match( r'/sdata(.*?)/', filepath, re.I)
+        if match:
+            item = match.groups(1)[0]
+            if item not in items:
+                items.append(item)
+
+    text = '/'.join(items)
+    return text
+
+
+def get_tpx_pi_str(progData):
+    '''
+    Finds unique PIs and creates string for DB
+    ex: "Smith/Jones"
+    '''
+    items = []
+    for row in progData:
+        pi = row['progpi']
+        if pi not in items:
+            items.append(pi)
+
+    text = '/'.join(items)
+    return text
 
 
 
