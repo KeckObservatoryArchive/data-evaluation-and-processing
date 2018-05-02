@@ -278,6 +278,8 @@ class Instrument:
         #todo:  go over idl file again and pull out logic for other instruments
         #todo: use class key vals instead
         '''
+        self.log.info('dqa: running check_instr for {}')
+
 
         ok = False
         keys = self.fitsHeader
@@ -333,7 +335,7 @@ class Instrument:
 
 
         #if empty or bad values then build from file last mod time
-        #todo: make sure this is universal time
+        #note: converting to universal time (+10 hours)
         if dateObs == None or 'Error' in dateObs or dateObs == '':
             lastMod = os.stat(filename).st_mtime
             dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
@@ -394,10 +396,26 @@ class Instrument:
 
 
     def get_outdir(self):
+        '''
+        Returns outdir if keyword exists, else derive from filename
+        '''
 
-        #todo: do we need this function instead of using keyword index?
+        #return by keyword index if it exists
         keys = self.fitsHeader
-        return keys.get(self.outdir)
+        outdir = keys.get(self.outdir)
+        if (outdir != None) : return outdir
+
+
+        #Returns the OUTDIR associated with the filename, else returns None.
+        #OUTDIR = [/s]/sdata####/account/YYYYmmmDD
+        try:
+            filename = self.fitsFilepath
+            start = filename.find('/s')
+            end = filename.rfind('/')
+            return filename[start:end]
+        except:
+            #todo: really return "None"?
+            return "None"
 
 
 
