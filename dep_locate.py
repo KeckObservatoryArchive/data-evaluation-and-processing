@@ -50,18 +50,25 @@ def dep_locate(instrObj):
 
 
     # Create files to store the valid FITS files
-    presort = ''.join((stageDir, '/dep_locate', instr, 'pre.text'))
-    files   = ''.join((stageDir, '/dep_locate', instr, '.txt'))
+    presortFile = ''.join((stageDir, '/dep_locate', instr, 'pre.text'))
+    locateFile  = ''.join((stageDir, '/dep_locate', instr, '.txt'))
 
 
     # Find the files in the last 24 hours
     log.info('Looking for FITS files')
-    find_24hr_fits(useDirs, utDate, instrObj.endTime, presort, log)
+    filePaths = find_24hr_fits(useDirs, instrObj.utDate, instrObj.endTime)
 
 
-    # We only wants the .fits files
-    with open(files, 'w') as f:
-        with open(presort, 'r') as pre:
+    #write filepaths to outfile
+    with open(presortFile, 'w') as f:
+        for path in filePaths:
+            f.write(path + '\n')
+    log.info('Copied fits file names from {} to {}'.format(useDirs, presortFile))
+
+
+    # Read presortFile list and do some more filtering before we do final copy to staging.
+    with open(locateFile, 'w') as f:
+        with open(presortFile, 'r') as pre:
             fcsConfigs = []
             for line in pre:
                 if ('.fits' in line 
@@ -78,6 +85,8 @@ def dep_locate(instrObj):
                     toFile = ''.join((newFile, '\n'))
                     f.write(toFile)
 
+                    #special DEIMOS step
+                    #todo: move this to instr class?
                     if 'DEIMOS' in instr:
                         try:
                             fcs = fits.getheader(line.strip())['FCSIMGFI']
@@ -95,17 +104,17 @@ def dep_locate(instrObj):
 
 
     # Remove temporary file
-    os.remove(presort)
-    log.info('{}: removed temporary presorted file {}'.format(instr, presort))
+    os.remove(presortFile)
+    log.info('{}: removed temporary presorted file {}'.format(instr, presortFile))
     
 
     # Verify the files are valid - no corrupt headers, valid KOAID
-    dep_rawfiles(instr, utDate, instrObj.endTime, files, stageDir, ancDir, log)
+    dep_rawfiles(instr, utDate, instrObj.endTime, locateFile, stageDir, ancDir, log)
     log.info('{0}: finished rawfiles {0} {1} {2} {3} {4}'.format(instr, utDate, instrObj.endTime, stageDir, ancDir))
 
 
     #log completion
-    num = sum(1 for line in open(files, 'r'))
+    num = sum(1 for line in open(locateFile, 'r'))
     log.info('{}: Using files found in {}'.format(instr, useDirs))
     log.info('{}: dep_locate successful - {} files found'.format(instr, num))
 
@@ -198,8 +207,7 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
         rootfile[i] = root[-1]
 
         # Construct the original file name
-        filename, successful = construct_filename(instr,fitsList[i],
-                ancDir, header0, log)
+        filename, successful = construct_filename(instr,fitsList[i], ancDir, header0, log)
         if not successful:
             move_bad_file(instr, fitsList[i], ancDir, 'Bad Header', log)
             raw[i] = 2
@@ -219,7 +227,11 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
         if filename == rootfile[i]:
             raw[i] = 1
 
-    endtime_ts = float(endTime) * 3600.0
+    #get endtime in seconds
+    #endTimeSec = float(endTime) * 3600.0
+    hours, minutes, seconds = endTime.split(":") 
+    endTimeSec = float(hours) * 3600.0 + float(minutes)*60.0 + float(seconds)
+
 
     for i in range(len(fitsList)-1):
         # Is this a duplicate KOAID?
@@ -228,14 +240,12 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
         elif raw[i] == 0:
             for j in range(i+1,len(fitsList)):
                 if koa[j]==koa[i]: # j will always be greater than i
-                    move_bad_file(
-                            instr, fitsList[i], ancDir,
-                            'Duplicate KOAID', log)
+                    move_bad_file(instr, fitsList[i], ancDir, 'Duplicate KOAID', log)
                     break
 
         # Check the date
         prefix, fdate, ftime, postfix = koa[i].split('.')
-        if fdate != date and float(ftime) < endtime_ts:
+        if fdate != date and float(ftime) < endTimeSec:
             move_bad_file(instr, fitsList[i], ancDir, 'KOADATE', log)
             break
 
@@ -243,6 +253,7 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
     ffiles = open(fileList, 'r')
     lines = ffiles.readlines()
     ffiles.close()
+
     # Recreate the file with only the good lines
     with open(fileList, 'w') as ffiles:
         for line in lines:
@@ -382,7 +393,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
 #---------------------End construct_filename-------------------------
 
 
-def find_24hr_fits(useDirs, utDate, endTime, outfile, log):
+def find_24hr_fits(useDirs, utDate, endTime):
     """
     Uses the os.walk function to recurse through a given directory
     and return all the leaf files which are checked to be
@@ -397,25 +408,21 @@ def find_24hr_fits(useDirs, utDate, endTime, outfile, log):
     @type log: Logger Object
     @param log: The log handler for the script. Writes to the logfile
     """
+
     # Break utDate into its pieces
     utDate = utDate.replace('/', '-')
 
     # Set up our +/-24 hour boundary
-
     utDate2 = datetime.strptime(utDate, '%Y-%m-%d')
     utDate2 -= timedelta(days=1)
     utDate2 = utDate2.strftime('%Y-%m-%d')
 
     # Create a string date and time to convert to seconds since epoch
     year, month, day = utDate.split('-')
-    utMaxTime = ''.join((str(year), str(month),
-            str(day).zfill(2), ' ', str(endTime)))
-
+    utMaxTime = ''.join((str(year), str(month), str(day).zfill(2), ' ', str(endTime)))
     year, month, day = utDate2.split('-')
-    utMinTime = ''.join((str(year), str(month),
-            str(day).zfill(2), ' ', str(endTime)))
+    utMinTime = ''.join((str(year), str(month), str(day).zfill(2), ' ', str(endTime)))
 
-    print (utMaxTime, utMinTime)
     # st_mtime records the time in seconds of the last file modification since 
     # Jan 1 1970 00:00:00 UTC We need to create a time_construct object 
     # (using time.strptime()) to convert to seconds (using calendar.timegm())
@@ -423,31 +430,27 @@ def find_24hr_fits(useDirs, utDate, endTime, outfile, log):
     maxTimeSinceMod = cal.timegm(t.strptime(utMaxTime, '%Y%m%d %H:%M:%S'))
     minTimeSinceMod = cal.timegm(t.strptime(utMinTime, '%Y%m%d %H:%M:%S'))
 
-    # Open the destination file to write to
-    with open(outfile, 'w') as ofile:
-        # Iterate through the list of directories from the locate script
-        for fitsDir in useDirs:
-            # Do a walk through the given directory
-            for root, dirs, files in os.walk(fitsDir):
-                # Iterate through the leaf files in the directory
-                for item in files:
-                    if not '.fits' in item:
-                        continue
-                    # Create the path to the current file we want to check
-                    full_path = ''.join((root, '/', item))
-                    # Check to see if the file is a fits file created/modified
-                    # in the last day. st_mtime needs to be greater than the m
-                    # inTimeSinceMod to be within the past 24 hours
-                    modTime = os.stat(full_path).st_mtime
-                    if ('.fits' in item[-5:] 
-                            and modTime <= maxTimeSinceMod 
-                            and modTime > minTimeSinceMod):
-                        toFile = ''.join((full_path, '\n'))
-                        ofile.write(toFile)
+    # Iterate through the list of directories from the locate script to look for fits files
+    filePaths = []
+    for fitsDir in useDirs:
+        for root, dirs, files in os.walk(fitsDir):
+            for item in files:
+                if not '.fits' in item:
+                    continue
 
-    # Append the action to the log
-    log.info('Copied fits file names from {} to {}'.format(useDirs, outfile))
+                # Create the path to the current file we want to check
+                fullPath = ''.join((root, '/', item))
+
+                # Check to see if the file is a fits file created/modified in the last day. 
+                # st_mtime needs to be greater than the minTimeSinceMod to be within the past 24 hours
+                modTime = os.stat(fullPath).st_mtime
+                if ('.fits' in item[-5:] 
+                  and modTime <= maxTimeSinceMod 
+                  and modTime > minTimeSinceMod):
+                    filePaths.append(fullPath)
+
+    return filePaths
 
 
-#-----------------------End PyFind-----------------------------------
+#-----------------------End find_24hr_fits-----------------------------------
 
