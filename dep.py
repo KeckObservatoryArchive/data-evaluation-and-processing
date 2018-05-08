@@ -60,6 +60,8 @@ class Dep:
 		self.instrObj = instrClass(self.instr, self.utDate, self.rootDir)
 		self.instrObj.koaUrl = config['API']['KOAAPI']
 		self.instrObj.telUrl = config['API']['TELAPI']
+		self.instrObj.dep_init()
+		
 		
 	def go(self, processStart=None, processStop=None):
 		"""

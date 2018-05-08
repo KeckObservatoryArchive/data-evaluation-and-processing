@@ -22,6 +22,11 @@ class Nires(instrument.Instrument):
         self.frameno = 'FRAMENUM'
 
 
+        # Other vars that subclass can overwrite
+        self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
+
+
+
         # Generate the paths to the NIRES datadisk accounts
         self.sdataList = self.get_dir_list()
 
@@ -79,7 +84,7 @@ class Nires(instrument.Instrument):
 
     def get_dir_list(self):
         '''
-        Function to generate the paths to all the DEIMOS accounts, including engineering
+        Function to generate generates all the storage locations including engineering
         Returns the list of paths
         '''
         dirs = []
@@ -174,7 +179,9 @@ class Nires(instrument.Instrument):
     def set_ofName(self):
         """
         Adds OFNAME keyword to header if it doesn't exist
-         """
+        #todo: Percy still needs to add ".fits" to end of DATAFILE keyword
+        #todo: add *.fits to output if it does not exist? (to fix old files?)
+        """
 
         #skip if it exists
         keys = self.fitsHeader
