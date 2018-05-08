@@ -2,22 +2,22 @@
   This script consolidates all the pieces of the KOA archival dep-locate
   function into one place. It mainly consists of dep_locate.csh,
   dep_locfiles.c, dep_rawfiles.csh, and deimos_find_fcs.csh.
-  Upon completion, it should return a list of the fits files for a 
-  given instrument within 24 hours of the supplied date.
+  Finds all valid FITS files for a given instrument within 24 hours of 
+  the supplied date.  Upon completion, it should have created a file 
+  with the list of valid FITS files found, copied those FITS files to staging, 
+  and put any bad files in the /anc/udf/ folder.
 
-  Usage dep_locate INSTRUMENT howhold
+  Usage dep_locate(instrObj)
 
   Original scripts written by Jeff Mader and Jennifer Holt
-  Ported to Python3 by Matthew Brown
+  Ported to Python3 by Matthew Brown, Josh Riley
 """
 
-import logging as lg                 ## Used for all the logging
 import calendar as cal               ## Used to convert a time object into a number of seconds
 import time as t                     ## Used to convert a string date into a time object
 from astropy.io import fits          ## Used for everything with fits
 from common import koaid             ## Used to determine the KOAID of a file for transport
 import os
-import verification
 import shutil
 from sys import argv
 from datetime import datetime, timedelta
@@ -25,12 +25,13 @@ from datetime import datetime, timedelta
 
 def dep_locate(instrObj):
     """
-    This function will search the data directories for
-    data  written in the last howold*24 hours.
-    Pre-condition: Requires an instrument, a date to check in UTC time,
-        and a staging directory
-    Post-condition: Returns all the fits files
-        within 24 hours of the date given
+    This function will search the data directories for FITS data written in the last 24hours.
+    Copies FITS file to staging area. Creates the following files in stageDir:
+
+      dep_locate<INSTR>.txt
+
+    @param instrObj: the instrument object
+    @type instrObj: instrument class
     """
 
 
