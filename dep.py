@@ -20,8 +20,9 @@ import json
 import configparser
 from dep_obtain import dep_obtain
 from dep_locate import dep_locate
-from dep_add import *
+from dep_add import dep_add
 from dqa_run import dqa_run
+from dep_tar import dep_tar
 
 
 class Dep:
@@ -70,7 +71,8 @@ class Dep:
 		"""
 
 		#verify
-		if not self.verify_can_proceed(): return
+		if self.tpx:
+			if not self.verify_can_proceed(): return
 
 
 		#process steps control (pair down ordered list if requested)
@@ -95,7 +97,7 @@ class Dep:
 			elif step == 'add'   : dep_add(self.instrObj)
 			elif step == 'dqa'   : dqa_run(self.instrObj)
 			#lev1
-			#dep_tar
+			elif step == 'tar'   : dep_tar(self.instrObj)
 			#koaxfr
 
 
