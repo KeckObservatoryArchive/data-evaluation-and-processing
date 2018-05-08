@@ -43,12 +43,6 @@ class Instrument:
         self.log = log
 
 
-        #create log if it does nto exist
-        if not self.log:
-            self.log = cl.create_log(self.rootDir, instr, utDate, True)
-            self.log.info('instrument.py: log created')
-
-
         # Keyword values to be used with a FITS file during runtime
         #(NOTE: may be overwritten by instr-*.py)
         self.instrume = 'INSTRUME'
@@ -83,20 +77,32 @@ class Instrument:
         self.sdataList = []
 
 
+        #other helpful vars
+        self.utDateDir = self.utDate.replace('/', '-').replace('-', '')
+
+
         # Verify input parameters
         verify_instrument(self.instr.upper())
         verify_date(self.utDate)
         assert os.path.isdir(self.rootDir), 'rootDir does not exist'
 
 
-        #other helpful vars
-        self.utDateDir = self.utDate.replace('/', '-')replace('-', '')
+
+    def dep_init(self):
+        '''
+        Perform specific initialization tasks for DEP processing.
+        '''
+
+        #create log if it does nto exist
+        if not self.log:
+            self.log = cl.create_log(self.rootDir, self.instr, self.utDate, True)
+            self.log.info('instrument.py: log created')
 
 
         #check and create dirs
         self.init_dirs()
 
-
+       
 
     def init_dirs(self):
 
