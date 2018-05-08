@@ -89,6 +89,10 @@ class Instrument:
         assert os.path.isdir(self.rootDir), 'rootDir does not exist'
 
 
+        #other helpful vars
+        self.utDateDir = self.utDate.replace('/', '-')replace('-', '')
+
+
         #check and create dirs
         self.init_dirs()
 
