@@ -1,6 +1,8 @@
 from datetime import datetime
 import os
 import hashlib
+import urllib
+import json
 
 
 
@@ -273,3 +275,18 @@ def make_dir_md5_table(readDir, endswith, outfile):
             md5 = hashlib.md5(open(file, 'rb').read()).hexdigest()
             fp.write(md5 + '  ' + os.path.basename(file) + "\n")
 
+
+def url_get(url):
+    '''
+    Gets data for common calls to url API requests.
+
+    #todo: add some better validation checks and maybe some options (ie getOne, typeCast)
+    '''
+    
+    data = urllib.request.urlopen(url)
+
+    data = data.read().decode('utf8')
+    if (not data or data == ''): return None
+
+    data = json.loads(data)
+    return data
