@@ -20,7 +20,6 @@ import json
 
 
 class Instrument:
-#    def __init__(self, endTime=dt.datetime.now(), rootDir):
     def __init__(self, instr, utDate, rootDir, log=None):
         """
         Base Instrument class to hold all the values common between
@@ -28,12 +27,14 @@ class Instrument:
         but null values should be replaced in the init of the 
         subclasses.
 
-        @type endTime: string or datetime
-        @param endTime: The date is a string if passed or datetime
-            object if not passed
+        @param instr: instrument name
+        @type instr: string
+        @param utDate: UT date of observation
+        @type utDate: string (YYYY-MM-DD)
+        @param rootDir: root directory to write processed files
         @type rootDir: string
-        @param rootDir: Working directory of the instrument
-            Defaults to a null string
+        @type log: Logger Object
+        @param log: The log handler for the script. Writes to the logfile
         """
 
         #class inputs
@@ -54,20 +55,8 @@ class Instrument:
         self.outdir = 'OUTDIR'
         self.ftype = 'INSTR'		# For instruments with two file types
 
-        # Other values that be overwritten in instr-*.py
-        self.endTime = '20:00:00'	# 24 hour period start/end time (UT)
-
-
-#        try: # Let's see if endTime was passed as a string
-#            endTime = endTime.replace('-','')
-#            endTime = endTime.replace('/','')
-#            self.utDate = endTime[:8]
-#            self.endHour = endTime[9:]
-#            if self.endHour == '':
-#                self.endHour = '20:00:00'
-#        except TypeError: # It wasn't so it's a datetime object
-#            self.utDate = endTime.strftime('%Y%m%d')
-#            self.endHour = endTime.strftime('%H:%M:%S')
+        # Other values that can be overwritten in instr-*.py
+        self.endHour = '20:00:00'	# 24 hour period start/end time (UT)
 
 
         # Values to be populated by subclass
