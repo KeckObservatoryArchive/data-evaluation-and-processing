@@ -132,6 +132,10 @@ def koaid(keywords, utDate):
            - ###### = number of seconds into UT date
          '''
 
+
+        #TODO: move this to instrument.py, instr_*.py
+
+
         # Get UTC or default to DATE
         try:
                 utc = keywords['UTC']
