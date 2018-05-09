@@ -25,6 +25,7 @@ from urllib.request import urlopen
 from create_log import *
 from create_prog import *
 import metadata
+import re
 
 
 def dqa_run(instrObj, tpx=0):
@@ -62,6 +63,13 @@ def dqa_run(instrObj, tpx=0):
         fp.write('DQA started')
 
 
+    #copy locate output file to 'dqa_<instr>.txt'
+    #todo: should this be done in dep_locate?  remove dep_locate.txt?
+    locateFile = ''.join((dirs['stage'], '/dep_locate', instr, '.txt'))
+    dqaFile    = ''.join((dirs['stage'], '/dqa_', instr, '.txt'))
+    shutil.copyfile(locateFile, dqaFile);
+
+
     #determine program info
     #todo: test this without test data
     create_prog(instrObj)
@@ -81,9 +89,9 @@ def dqa_run(instrObj, tpx=0):
     # Read the list of FITS files
     #todo: NOTE: current process copies 'dqa_locate<instr>.txt' output to 'dqa_<instr>.txt' and uses this
     #after searching and removing corrupted fits files.
-    dqafile = ''.join((dirs['stage'], '/dqa_', instr, '.txt'))
     files = []
-    with open(dqafile, 'r') as dqalist:
+    dqaFile = ''.join((dirs['stage'], '/dqa_', instr, '.txt'))
+    with open(dqaFile, 'r') as dqalist:
         for line in dqalist:
             files.append(line.strip())
 
@@ -192,8 +200,6 @@ def dqa_run(instrObj, tpx=0):
 
 
         #update TPX: archive ready
-        #todo: how to get pi, sdata, and sci_files (see commented old port code below)
-        #todo: is arch_time utc or not?
         if tpx:
             utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
             update_koatpx(instr, utDate, 'pi', piList, log)
