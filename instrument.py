@@ -164,6 +164,9 @@ class Instrument:
         @param keys: The header for the given FITS file
         """
 
+        #TODO: see common.koaid() and make sure all logic is moved here or to instr_*.py
+
+
         # Get the prefix for the correct instrument and configuration
         # Note: set_prefix() is a subclass method
         self.prefix = self.set_prefix(keys)
@@ -189,7 +192,7 @@ class Instrument:
         second = utc.second
 
         # Calculate the total number of seconds since Midnight
-        totalSeconds = ''.join((str(hour*3600), str(minute*60), str(second)))
+        totalSeconds = str((hour * 3600) + (minute * 60) + second)
 
         # Remove any date separators from the date
         dateobs = dateobs.replace('-','')

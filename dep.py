@@ -78,7 +78,7 @@ class Dep:
 
 
 		#process steps control (pair down ordered list if requested)
-		steps = ['obtain', 'locate', 'transfer', 'add', 'dqa', 'lev1', 'tar', 'koaxfr']
+		steps = ['obtain', 'locate', 'add', 'dqa', 'lev1', 'tar', 'koaxfr']
 		if (processStart != None and processStart not in steps):
 			self.instrObj.log.error('Incorrect use of processStart')
 			return False
