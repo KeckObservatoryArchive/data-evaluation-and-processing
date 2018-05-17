@@ -44,7 +44,8 @@ def koaxfr(instrObj):
     import subprocess as sp
     xfrCmd = sp.Popen(["rsync -avz " + fromDir + ' ' + toLocation],
                       stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
-    if xfrCmd.communicate()[0]:
+    output, error = xfrCmd.communicate()
+    if not error:
         # Send email verifying transfer complete
         emailTo = config['KOAXFR']['emailto']
         instrObj.log.info('koaxfr.py sending email to {}'.format(emailTo))
@@ -55,7 +56,7 @@ def koaxfr(instrObj):
     else:
         # Send email notifying of error
         emailError = config['KOAXFR']['emailerror']
-        instrObj.log.error('koaxfr.py error transferring directory ({}) to {}'.format(fromDir, toDir))
+        instrObj.log.error('koaxfr.py error transferring directory ({}) to {}'.format(fromDir, toLocation))
         instrObj.log.error('koaxfr.py sending email to {}'.format(emailError))
         message = ''.join(('Error transferring directory', fromDir, ' to ', toDir, '\n\n'))
         send_email(emailError, emailFrom, 'Error - koaxfr transfer', message)
