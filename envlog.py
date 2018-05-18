@@ -1,41 +1,43 @@
 import pandas as pd
 
-def envlog(log_type, telnr, date_obs, utc):
-	""" Retrieve nearest env log data from envMet.arT or envFocus.arT 
-	    file that is closest to and within +-interval seconds of the input
-	    date and time """
+def envlog(logFile, logType, telnr, dateObs, utc):
+	""" 
+	Retrieve nearest env log data from envMet.arT or envFocus.arT 
+	file that is closest to and within +-interval seconds of the input
+	date and time.
+	"""
 	#
 	# Defaults
 	#
 	telnr = str(telnr)
 	#
-	# Allowed log files
+	# Setup defaults and config based on logType
 	#
-	if log_type == 'envMet':
-		log_file = 'envMet.arT'
+	if logType == 'envMet':
 		interval = 30
-		values = {'time' : 'null',
-				'wx_domtmp' : 'null',
-				'wx_outtmp' : 'null',
-				'wx_domhum' : 'null',
-				'wx_outhum' : 'null',
-				'wx_pressure' : 'null',
-				'wx_windspeed' : 'null',
-				'wx_winddir' : 'null',
-				'wx_dewpoint' : 'null'}
-		output = ['wx_dewpoint', 
-				'wx_outhum', 
-				'wx_outtmp', 
-				'wx_domtmp', 
-				'wx_domhum', 
-				'wx_pressure', 
-				'wx_windspeed', 
-				'wx_winddir']
-	elif log_type == 'envFocus':
-		log_file = 'envFocus.arT'
+		values = {	'time'         : 'null',
+					'wx_domtmp'    : 'null',
+					'wx_outtmp'    : 'null',
+					'wx_domhum'    : 'null',
+					'wx_outhum'    : 'null',
+					'wx_pressure'  : 'null',
+					'wx_windspeed' : 'null',
+					'wx_winddir'   : 'null',
+					'wx_dewpoint'  : 'null'}
+		output = [  'wx_dewpoint', 
+					'wx_outhum', 
+					'wx_outtmp', 
+					'wx_domtmp', 
+					'wx_domhum', 
+					'wx_pressure', 
+					'wx_windspeed', 
+					'wx_winddir']
+	elif logType == 'envFocus':
 		interval = 2.5
-		values = {'time' : 'null', 'guidfwhm' : 'null'}
-		output = ['guidfwhm']
+		values = {	'time'     : 'null', 
+					'guidfwhm' : 'null'}
+		output = [	'time',
+					'guidfwhm']
 	else:
 		return
 	#
@@ -44,56 +46,59 @@ def envlog(log_type, telnr, date_obs, utc):
 	# Second line is header
 	#
 	try:
-		data = pd.read_csv(log_file, skiprows=[0,2])
+		data = pd.read_csv(logFile, skiprows=[0,2])
 	except IOError as e:
-		print('Unable to open', log_file)
+		print('Unable to open', logFile)
 	#
 	# Setup if using header or index numbers
 	#
 	if 'UNIXDate' in data.keys():
-		hst_keys = ['HSTdate', 'HSTtime']
+		hstKeys = ['HSTdate', 'HSTtime']
 		keys = [' "k0:met:dewpointRaw"', ' "k0:met:humidityRaw"', ' "k0:met:tempRaw"', ' "k'+telnr+':met:tempRaw"', ' "k'+telnr+':met:humidityRaw"', ' "k0:met:pressureRaw"', ' "k'+telnr+':met:windSpeedRaw"', ' "k'+telnr+':met:windAzRaw"']
-		if log_type == 'envFocus':
+		if logType == 'envFocus':
 			keys = [' "k'+telnr+':dcs:pnt:cam0:fwhm"']
 	else:
-		hst_keys = [2, 3]
+		hstKeys = [2, 3]
 		keys = [5, 8, 10, 18, 20, 22, 24, 27]
-		if log_type == 'envFocus':
+		if logType == 'envFocus':
 			keys = [26]
-		data = pd.read_csv(log_file, skiprows=[0,1,2], header=None)
+		data = pd.read_csv(logFile, skiprows=[0,1,2], header=None)
 	#
 	# Convert DATE-OBS/UT to HST
 	#
 	from datetime import datetime, timedelta
-	ut_datetime = datetime.strptime(date_obs + ' ' + utc, '%Y-%m-%d %H:%M:%S.%f')
-	ut_datetime += timedelta(hours=-10)
-	print(ut_datetime.strftime('%Y-%m-%d %H:%M:%S.%f'))
+	utDatetime = datetime.strptime(dateObs + ' ' + utc, '%Y-%m-%d %H:%M:%S.%f')
+	utDatetime += timedelta(hours=-10)
 	#
 	# Find envMet entry within +-interval seconds of this time
 	#
-	dt1 = ut_datetime + timedelta(seconds=-interval)
+	dt1 = utDatetime + timedelta(seconds=-interval)
 	dt1 = dt1.strftime('%Y-%m-%d %H:%M:%S.%f')
-	dt2 = ut_datetime + timedelta(seconds=interval)
+	dt2 = utDatetime + timedelta(seconds=interval)
 	dt2 = dt2.strftime('%Y-%m-%d %H:%M:%S.%f')
-	env_datetime = data[hst_keys[0]][0:] + ' ' + data[hst_keys[1]][0:]
-	env_entries = pd.to_datetime(env_datetime, format=' %d-%b-%Y %H:%M:%S.%f').between(dt1, dt2)
-	env_index = env_entries.index[env_entries]
+	envDatetime = data[hstKeys[0]][0:] + ' ' + data[hstKeys[1]][0:]
+	envEntries = pd.to_datetime(envDatetime, format=' %d-%b-%Y %H:%M:%S.%f').between(dt1, dt2)
+	envIndex = envEntries.index[envEntries]
 	#
 	# Timestamp of this entry in UT
 	#
-	m_time = data[hst_keys[0]][env_index[0]] + ' ' + data[hst_keys[1]][env_index[0]]
-	m_time = datetime.strptime(m_time, ' %d-%b-%Y %H:%M:%S.%f')
-	m_time += timedelta(hours=10)
-	m_time = m_time.strftime('%H:%M:%S.%f')
-	values['time'] = m_time
+	mTime = data[hstKeys[0]][envIndex[0]] + ' ' + data[hstKeys[1]][envIndex[0]]
+	mTime = datetime.strptime(mTime, ' %d-%b-%Y %H:%M:%S.%f')
+	mTime += timedelta(hours=10)
+	#todo: truncating microseconds b/c strftime does not support rounding overflow
+	mTime = mTime.strftime('%H:%M:%S.%f')[:-4]
+
+
+	values['time'] = mTime
 	#
 	# Set individual values for this entry
 	#
 	for index, key in enumerate(keys):
 		try:
-#			value = float(round(data[key][env_index[0]], 2))
-			value = float(data[key][env_index[0]])
+#			value = float(round(data[key][envIndex[0]], 2))
+			value = float(data[key][envIndex[0]])
 		except ValueError:
 			value = 'null'
 		values[output[index]] = value
-	print(values)
+
+	return values

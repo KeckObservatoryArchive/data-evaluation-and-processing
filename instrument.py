@@ -8,9 +8,10 @@ Children will contain the instrument specific values
 
 #import datetime as dt
 import os
-from common import get_root_dirs, semester
+from common import *
 from astropy.io import fits
 from datetime import timedelta, datetime as dt
+from envlog import *
 import shutil
 import makejpg
 import create_log as cl
@@ -493,6 +494,58 @@ class Instrument:
         keys.update({'PROPINT' : (propint, 'KOA: Added missing keyword "PROPINT"')})
         return True
 
+
+
+    def set_weather_keywords(self):
+        '''
+        Adds all weather related keywords to header.
+        '''
+
+        #get input vars
+        keys = self.fitsHeader
+        utc = keys.get('UTC')
+        telnr = self.get_telnr()
+
+
+        #read envMet.arT and write to header
+        logFile = self.dirs['anc'] + '/nightly/envMet.arT'
+        data = envlog(logFile, 'envMet',   telnr, self.utDate, utc)
+        assert type(data) is dict, "Could not read envMet.arT data"
+
+        keys.update({'WXDOMHUM' : (data['wx_domhum'],    'KOA: Added keyword')})
+        keys.update({'WXDOMTMP' : (data['wx_domtmp'],    'KOA: Added keyword')})
+        keys.update({'WXDWPT'   : (data['wx_dewpoint'],  'KOA: Added keyword')})
+        keys.update({'WXOUTHUM' : (data['wx_outhum'],    'KOA: Added keyword')})
+        keys.update({'WXOUTTMP' : (data['wx_outtmp'],    'KOA: Added keyword')})
+        keys.update({'WXPRESS'  : (data['wx_pressure'],  'KOA: Added keyword')})
+        keys.update({'WXTIME'   : (data['time'],         'KOA: Added keyword')})
+        keys.update({'WXWNDIR'  : (data['wx_winddir'],   'KOA: Added keyword')})
+        keys.update({'WXWNDSP'  : (data['wx_windspeed'], 'KOA: Added keyword')})
+
+
+        #read envFocus.arT and write to header
+        logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
+        data = envlog(logFile, 'envFocus', telnr, self.utDate, utc)
+        assert type(data) is dict, "Could not read envFocus.arT data"
+
+        keys.update({'GUIDFWHM' : (data['guidfwhm'],     'KOA: Added keyword')})
+        keys.update({'GUIDTIME' : (data['time'],         'KOA: Added keyword')})
+
+        return True
+
+
+    def get_telnr(self):
+        '''
+        Gets telescope number for instrument via API
+        #todo: store this and skip api call if exists?  Would need to clear var on fits reload.
+        #todo: Replace API call with hard-coded?
+        '''
+
+        url = self.telUrl + 'cmd=getTelnr&instr=' + self.instr.upper()
+        data = url_get(url)
+        telNr = int(data[0]['TelNr'])
+        assert telNr in [1, 2], 'telNr "' + telNr + '"" not allowed'
+        return telNr
 
 
     def write_lev0_fits_file(self):
