@@ -6,6 +6,29 @@ from urllib.request import urlopen
 
 
 def create_prog(instrObj):
+    '''
+    Creates a temporary staging data file "createprog.txt' listing all 
+    program information for each file.  This file is input to getProgInfo.py.
+    The following data are written out one value per line per fits file:
+
+        file
+        utdate
+        utc
+        outdir
+        observer
+        frameno
+        imagetyp
+        progid
+        progpi
+        proginst
+        progtitl
+        oa
+        <repeats here>
+
+    @type instrObj: instrument
+    @param instr: The instrument object
+    '''
+
 
     #short vars
     instr = instrObj.instr
@@ -26,7 +49,6 @@ def create_prog(instrObj):
             items = line.strip().split(' ')
             if len(items)>1:
                 oa.append(items[1])
-
     if len(oa) >= 1: oa = oa[0]
 
 
@@ -53,6 +75,7 @@ def create_prog(instrObj):
                     continue
 
             #get header
+            #todo: Move all keyword fixes as standard steps done upfront?
             instrObj.set_fits_file(filename)
             header = instrObj.fitsHeader
 
@@ -79,11 +102,12 @@ def create_prog(instrObj):
             #get outdir
             outdir = instrObj.get_outdir()
 
-
+            #lop off everything before /sdata
             fileparts = filename.split('/sdata')
             if len(fileparts) > 1: newFile = '/sdata' + fileparts[-1]
             else                 : newFile = filename
 
+            #write out vars to file, one line each var
             newFile = newFile.replace('//','/')
             ofile.write(newFile+'\n')
             ofile.write(dateObs+'\n')
@@ -93,6 +117,7 @@ def create_prog(instrObj):
             ofile.write(str(fileno)+'\n')
             ofile.write(imagetyp+'\n')
 
+            #if PROGNAME exists, use that to populate the following
             try:
                 progname = header.get('PROGNAME')
                 if progname == None:
@@ -107,7 +132,7 @@ def create_prog(instrObj):
                 ofile.write(progname + '\n')
 
                 # Get the viewing semester from obs-date
-                semester(header)
+                instrObj.set_semester()
                 sem = header['SEMESTER'].strip()
 
                 # Get the program ID
@@ -122,7 +147,9 @@ def create_prog(instrObj):
                 if 'Usage' in progtitl: ofile.write('PROGTITL\n')
                 else                  : ofile.write(progtitl+'\n')
 
+            #write OA last
             ofile.write(oa + '\n')
+
     if log: log.info('create_prog: finished, {} created'.format(outfile))
 
 
@@ -135,7 +162,13 @@ def get_prog_info(ktn):
     @param ktn: the program ID - consists of semester and progname (ie 2017B_U428)
     """
     url = 'http://www.keck.hawaii.edu/software/db_api/proposalsAPI.php?ktn='+ktn+'&cmd='
-    progpi = urlopen(url+'getPI').read().decode('utf8')
+    progpi   = urlopen(url+'getPI').read().decode('utf8')
     proginst = urlopen(url+'getAllocInst').read().decode('utf8')
     progtitl = urlopen(url+'getTitle').read().decode('utf8')
+
+    #remove whitespace from progpi str (this would mess up newproginfo.txt columns)
+    progpi = progpi.replace(' ','')
+    if (',' in progpi): 
+        progpi = progpi.split(',')[0]
+
     return progpi, proginst, progtitl
