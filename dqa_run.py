@@ -13,7 +13,7 @@ import get_header
 import os
 import logging as lg
 import numpy as np
-#import getProgInfo as gpi
+import getProgInfo as gpi
 import math
 import shutil
 from glob import glob
@@ -71,14 +71,9 @@ def dqa_run(instrObj, tpx=0):
 
 
     #determine program info
-    #todo: test this without test data
+    #todo: review getProginfo
     create_prog(instrObj)
-    #proginfo = gpi.ProgSplit()
-    #progData = proginfo.getProgInfo()
-    progData = [
-        {'file':'/sdata999/xxx/s180305_0101.fits', 'outdir':'sdata999/xxx', 'proginst':'UCSC', 'progid':'Y144', 'progpi':'Riley', 'progtitl':'Near-pristine Galaxies: Confronting the Standard Model'},
-        {'file':'/sdata999/xxx/v180305_0020.fits', 'outdir':'sdata999/xxx', 'proginst':'KECK', 'progid':'Y144', 'progpi':'Mader', 'progtitl':'NON-pristine Galaxies: Confronting the Standard Model'},
-    ]
+    progData = gpi.getProgInfo(utDate, instr, dirs['stage'], log)
 
 
     # dep_obtain file (list of programs)
