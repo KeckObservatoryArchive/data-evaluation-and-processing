@@ -544,10 +544,10 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
-def getProgInfo(utdate, instrument, stageDir):
+def getProgInfo(utdate, instrument, stageDir, log=None):
     utdate = utdate.replace('/','-')
     instrument = instrument.upper()
-    progSplit = ProgSplit(utdate, instrument, stageDir)
+    progSplit = ProgSplit(utdate, instrument, stageDir, log)
     progSplit.check_stage_dir()
     progSplit.check_instrument()
     progSplit.read_dep_obtain()
