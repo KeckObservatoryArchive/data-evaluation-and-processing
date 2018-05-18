@@ -63,12 +63,7 @@ def dep_obtain(instrObj):
 
         # Get the telescope number
 
-        sendUrl = (instrObj.telUrl, 'cmd=getTelnr&instr=', instrObj.instr)
-        sendUrl = ''.join(sendUrl)
-        telGet = urllib.request.urlopen(sendUrl)
-        telGet = telGet.read().decode('utf8')       # Convert from byte to ascii
-        telGet = json.loads(telGet)                 # Convert to Python list
-        telnr = telGet[0]['TelNr']
+        telnr = instrObj.get_telnr()
 
         # Get OA
 
