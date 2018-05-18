@@ -57,8 +57,6 @@ class Nires(instrument.Instrument):
         # DISPSCAL
         # DQA_DATE
         # DQA_VERS
-        # GUIDFWHM
-        # GUIDTIME
         # IMAGEMD
         # IMAGEMN
         # IMAGESD
@@ -67,15 +65,7 @@ class Nires(instrument.Instrument):
         # SLITLEN
         # SLITWIDT
         # SPATSCAL
-        # WXDOMHUM
-        # WXDOMTMP
-        # WXDWPT
-        # WXOUTHUM
-        # WXOUTTMP
-        # WXPRESS
-        # WXTIME
-        # WXWNDIR
-        # WXWNDSP
+        if ok: ok = self.set_weather_keywords()
 
 
         return ok
@@ -262,7 +252,6 @@ class Nires(instrument.Instrument):
         todo: This will come from OBSTYPE keyword.
         '''
         return True
-
 
 
     def is_science(self):

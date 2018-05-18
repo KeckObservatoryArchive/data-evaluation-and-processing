@@ -23,14 +23,11 @@ def dep_add(instrObj):
 
 
     #get telescope number and validate 
-    url = instrObj.telUrl + 'cmd=getTelnr&instr=' + instrObj.instr.upper()
-    data = common.url_get(url)
-    telNr = int(data[0]['TelNr'])
-    assert telNr in [1, 2], 'telNr "' + telNr + '"" not allowed'
+    telnr = instrObj.get_telnr()
 
 
     #log start
-    instrObj.log.info('dep_add.py started for telnr {} {}'.format(telNr, instrObj.utDate))
+    instrObj.log.info('dep_add.py started for telnr {} {}'.format(telnr, instrObj.utDate))
 
 
     #get date vars
@@ -49,7 +46,7 @@ def dep_add(instrObj):
 
 
     #check for valid nightly dir
-    joinSeq = ('/h/nightly', str(telNr), '/', str(year), '/', month, '/', day)
+    joinSeq = ('/h/nightly', str(telnr), '/', str(year), '/', month, '/', day)
     nightlyDir = ''.join(joinSeq)
     if not os.path.isdir(nightlyDir):
         nightlyDir.replace('/h/', '/s/')
