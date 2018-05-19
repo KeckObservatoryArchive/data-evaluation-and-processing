@@ -51,21 +51,17 @@ class Nires(instrument.Instrument):
         if ok: ok = self.set_propint()
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_specres()
-
-        #todo: finish setting remaining non-critical KOA-calculated keywords
-        # DATLEVEL
-        # DISPSCAL
-        # DQA_DATE
-        # DQA_VERS
-        # IMAGEMD
-        # IMAGEMN
-        # IMAGESD
-        # NPIXSAT
-        # OA
-        # SLITLEN
-        # SLITWIDT
-        # SPATSCAL
         if ok: ok = self.set_weather_keywords()
+        if ok: ok = self.set_datlevel(0)
+        if ok: ok = self.set_filter()
+        if ok: ok = self.set_slit_dims()
+        if ok: ok = self.set_spatscal()
+        if ok: ok = self.set_dispscal()
+        if ok: ok = self.set_image_stats_keywords()
+        if ok: ok = self.set_npixsat()
+        if ok: ok = self.set_oa()
+        if ok: ok = self.set_dqa_date()
+        if ok: ok = self.set_dqa_vers()
 
 
         return ok
@@ -215,20 +211,20 @@ class Nires(instrument.Instrument):
         '''
         Adds wavelength keywords.
         # https://www.keck.hawaii.edu/realpublic/inst/nires/genspecs.html
-        # NOTE: kfilter is always on
+        # NOTE: kfilter is always on for imag
         '''
 
         keys = self.fitsHeader
-        kfilter = True
+        instr = keys.get('INSTR')
 
-        #with K-filter:
-        if kfilter:
+        #imaging (K-filter always on):
+        if (instr == 'imag'):
             keys.update({'WAVERED' : (19500, 'KOA: Added keyword')})
             keys.update({'WAVECNTR': (21230, 'KOA: Added keyword')})
             keys.update({'WAVEBLUE': (22950, 'KOA: Added keyword')})
 
-        #no filter:
-        else:
+        #spec:
+        elif (instr == 'spec'):
             keys.update({'WAVERED' : (9400,  'KOA: Added keyword')})
             keys.update({'WAVECNTR': (16950, 'KOA: Added keyword')})
             keys.update({'WAVEBLUE': (24500, 'KOA: Added keyword')})
@@ -240,10 +236,66 @@ class Nires(instrument.Instrument):
         '''
         Adds nominal spectral resolution keyword
         '''
+
         keys = self.fitsHeader
-        keys.update({'SPECRES' : (2700.0,  'KOA: Added keyword')})
+        if (keys.get('INSTR') == 'spec'):
+            specres = 2700.0
+            keys.update({'SPECRES' : (specres,  'KOA: Added keyword')})
         return True
 
+
+    def set_dispscal(self):
+        '''
+        Adds display scale keyword to header.
+        '''
+
+        keys = self.fitsHeader
+        instr = keys.get('INSTR')
+        if   (instr == 'imag'): dispscal = 0.12
+        elif (instr == 'spec'): dispscal = 0.15
+        keys.update({'DISPSCAL' : (dispscal, 'KOA: Added keyword')})
+        return True
+
+
+    def set_spatscal(self):
+        '''
+        Adds spatial scale keyword to header.
+        '''
+
+        keys = self.fitsHeader
+        instr = keys.get('INSTR')
+        if   (instr == 'imag'): spatscal = 0.12
+        elif (instr == 'spec'): spatscal = 0.15
+        keys.update({'SPATSCAL' : (spatscal, 'KOA: Added keyword')})
+        return True
+
+
+    def set_filter(self):
+        '''
+        Adds FILTER keyword to header.
+        '''
+
+        #add keyword for 'imag' only
+        keys = self.fitsHeader
+        if (keys.get('INSTR') == 'imag'):
+            filt = 'Kp'
+            keys.update({'FILTER' : (filt, 'KOA: Added keyword')})
+        return True
+
+
+    def set_slit_dims(self):
+        '''
+        Adds slit length and width keywords to header.
+        '''
+
+        #add keywords for 'spec' only
+        keys = self.fitsHeader
+        if (keys.get('INSTR') == 'spec'):
+            slitlen  = 18.1
+            slitwidt = 0.5
+            keys.update({'SLITLEN'  : (slitlen,  'KOA: Added keyword')})
+            keys.update({'SLITWIDT' : (slitwidt, 'KOA: Added keyword')})
+        return True
 
 
     def set_koaimtyp(self):
