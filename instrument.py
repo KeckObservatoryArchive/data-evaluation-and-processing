@@ -18,6 +18,7 @@ import create_log as cl
 from verification import *
 import urllib.request
 import json
+import numpy as np
 
 
 class Instrument:
@@ -281,8 +282,6 @@ class Instrument:
         #todo:  go over idl file again and pull out logic for other instruments
         #todo: use class key vals instead
         '''
-        self.log.info('dqa: running check_instr for {}')
-
 
         ok = False
         keys = self.fitsHeader
@@ -495,6 +494,97 @@ class Instrument:
         return True
 
 
+    def set_datlevel(self, datlevel):
+        '''
+        Adds "DATLEVEL" keyword to header
+        '''
+        keys = self.fitsHeader
+        keys.update({'DATLEVEL' : (datlevel, 'KOA: Added keyword')})
+        return True
+
+
+    def set_dqa_date(self):
+        """
+        Adds date timestamp for when the DQA module was run
+        """
+        keys = self.fitsHeader
+        dqa_date = dt.strftime(dt.now(), '%Y-%m-%dT%H:%M:%S')
+        keys.update({'DQA_DATE' : (dqa_date, 'KOA: Data Quality Assessment run time.')})
+        return True
+
+
+    def set_dqa_vers(self):
+        '''
+        Adds DQA version keyword to header
+        '''
+        keys = self.fitsHeader
+
+        import configparser
+        config = configparser.ConfigParser()
+        config.read('config.live.ini')
+
+        version = config['INFO']['DQA_VERSION']
+        keys.update({'DQA_VERS' : (version, 'KOA: Data Quality Assessment version.')})
+        return True
+
+
+    def set_image_stats_keywords(self):
+        '''
+        Adds mean, median, std keywords to header
+        '''
+        keys = self.fitsHeader
+
+        image = self.fitsHdu[0].data     
+
+        imageMean   = np.mean(image)
+        imageStd    = np.std(image)
+        imageMedian = np.median(image)
+
+        keys.update({'IMAGEMN' : (imageMean,   'KOA: Image mean.')})
+        keys.update({'IMAGESD' : (imageStd,    'KOA: Image standard deviation.')})
+        keys.update({'IMAGEMD' : (imageMedian, 'KOA: Image median.')})
+
+        return True
+
+
+    def set_npixsat(self):
+        '''
+        Determines number of saturated pixels and adds NPIXSAT to header
+        '''
+        keys = self.fitsHeader
+        satVal = keys.get('SATURATE')
+
+        image = self.fitsHdu[0].data     
+        pixSat = image[np.where(image >= satVal)]
+        nPixSat = len(image[np.where(image >= satVal)])
+        keys.update({'NPIXSAT' : (nPixSat, 'KOA: Saturated pixels count')})
+
+        return True
+
+
+    def set_oa(self):
+        '''
+        Adds observing assistant name to header
+        '''
+
+        # Get OA from dep_obtain file
+        dep_obtain = self.dirs['stage'] + '/dep_obtain' + self.instr + '.txt'
+        oas = []
+        oa = None
+        with open(dep_obtain, 'r') as dob:
+            for line in dob:
+                items = line.strip().split(' ')
+                if len(items)>1:
+                    oas.append(items[1])
+        if (len(oas) >= 1): oa = oas[0]
+
+        keys = self.fitsHeader
+        keys.update({'OA' : (oa, 'KOA: Observing Assistant')})
+
+        return True
+
+
+
 
     def set_weather_keywords(self):
         '''
@@ -524,6 +614,7 @@ class Instrument:
 
 
         #read envFocus.arT and write to header
+        #todo: check that this is working
         logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
         data = envlog(logFile, 'envFocus', telnr, self.utDate, utc)
         assert type(data) is dict, "Could not read envFocus.arT data"
