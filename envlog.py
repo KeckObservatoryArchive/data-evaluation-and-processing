@@ -44,9 +44,11 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 	# Second line is header
 	#
 	try:
-		data = pd.read_csv(logFile, skiprows=[0,2])
+		#TODO: NOTE: added 'dtype=object' to skip low memory warning due to
+		#column mixed data types. We should define dtypes for columns to speed up.
+		data = pd.read_csv(logFile, skiprows=[0,2], dtype=object)
 	except IOError as e:
-		print('Unable to open', logFile)
+		raise Exception('Unable to open {}!'.format(logFile))
 	#
 	# Setup if using header or index numbers
 	#
@@ -60,7 +62,7 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 		keys = [5, 8, 10, 18, 20, 22, 24, 27]
 		if logType == 'envFocus':
 			keys = [26]
-		data = pd.read_csv(logFile, skiprows=[0,1,2], header=None)
+		data = pd.read_csv(logFile, skiprows=[0,1,2], header=None, dtype=object)
 	#
 	# Convert DATE-OBS/UT to HST
 	#
