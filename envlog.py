@@ -34,10 +34,8 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 					'wx_winddir']
 	elif logType == 'envFocus':
 		interval = 2.5
-		values = {	'time'     : 'null', 
-					'guidfwhm' : 'null'}
-		output = [	'time',
-					'guidfwhm']
+		values = {'time' : 'null', 'guidfwhm' : 'null'}
+		output = ['guidfwhm']
 	else:
 		return
 	#
