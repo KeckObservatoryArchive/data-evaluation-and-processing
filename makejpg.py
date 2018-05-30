@@ -26,7 +26,9 @@ def main(filename, instr, outdir="."):
 
     if instr=='ESI': esdata=np.rot90(esdata) 
               
-    # take log of data, scales better  
+    # take log of data, scales better
+    #todo: replace zero or less with small number to avoid log10 warning message?
+    esdata[esdata <= 0] = 1e-30
     esdata=np.log10(esdata)
     a=np.min(esdata)
     b=np.max(esdata)
