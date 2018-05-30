@@ -54,12 +54,12 @@ class Dep:
 		# This will also verify inputs, create the logger and create all directories
 		moduleName = ''.join(('instr_', self.instr.lower()))
 		className = self.instr.capitalize()
-		print(moduleName, className)
 		module = importlib.import_module(moduleName)
 		instrClass = getattr(module, className)
 		self.instrObj = instrClass(self.instr, self.utDate, self.rootDir)
 		self.instrObj.koaUrl = config['API']['KOAAPI']
 		self.instrObj.telUrl = config['API']['TELAPI']
+		self.instrObj.metadataTablesDir = config['MISC']['METADATA_TABLES_DIR']
 		self.instrObj.dep_init()
 		
 		

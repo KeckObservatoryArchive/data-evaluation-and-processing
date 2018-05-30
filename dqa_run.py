@@ -159,7 +159,8 @@ def dqa_run(instrObj, tpx=0):
 
         #create metadata file
         log.info('make_metadata.py started for {} {} UT'.format(instr.upper(), utDate))
-        make_metadata(instr, utDate, dirs['lev0'], progData, log)
+        tablesDir = instrObj.metadataTablesDir
+        make_metadata(instr, utDate, dirs['lev0'], progData, tablesDir, log)
 
 
         #Create yyyymmdd.FITS.md5sum.table
@@ -216,15 +217,11 @@ def dqa_run(instrObj, tpx=0):
 
 
 
-def make_metadata(instr, utDate, lev0Dir, progData, log):
+def make_metadata(instr, utDate, lev0Dir, progData, tablesDir, log):
 
     #create various file/dir paths
-    #todo: move tablesDir to config so we can config with test folder?
     ymd = utDate.replace('-', '')
     metaOutFile =  lev0Dir + '/' + ymd + '.metadata.table'
-
-    tablesDir = '/kroot/archive/tables'
-    tablesDir = '/home/jriley/test/metadata_tables'
     keywordsDefFile = tablesDir + '/keywords.format.' + instr
 
     #Handle special case of PROGTITL that is not in header, but does go in in metadata
