@@ -19,40 +19,31 @@ import pandas
 from common import make_dir_md5_table
 import datetime
 
-def make_metadata(instr, utDate, lev0Dir, tablesDir, log=None):
+def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=None):
     """
     Creates the archiving metadata file as part of the DQA process.
 
-    @param instr: instrument name
-    @type instr: string
+    @param keywordsDefFile: keywords format definition input file path
+    @type keywordsDefFile: string
+    @param metaOutFile: metadata output file path
+    @type metaOutFile: string
     @param lev0Dir: directory for finding FITS files and writing output files
     @type lev0Dir: string
-    @param utDate: UT date (yyyy-mm-dd)
-    @type utDate: string
-    @param tablesDir: directory containing metadata keyword definition files
-    @type tablesDir: string
+    @param lev0Dir: dictionary of any extra key val pairs not in header
+    @type lev0Dir: dictionary
     """
-
-
-    if log: log.info('make_metadata.py started for {} {} UT'.format(instr.upper(), utDate))
 
 
     #open keywords format file and read data
     #NOTE: changed this file to tab-delimited
-    keywordsDefFile = tablesDir + '/keywords.format.' + instr
     if log: log.info('metadata.py reading keywords definition file: {}'.format(keywordsDefFile))
     keyDefs = pandas.read_csv(keywordsDefFile, sep='\t')
 
 
-    #create metadata table output file
-    ymd = utDate.replace('-', '')
-    metaFile =  lev0Dir + '/' + ymd + '.metadata.table'
-    if log: log.info('metadata.py writing to metadata table file: {}'.format(metaFile))
-
-
     #add header to output file
     #NOTE: alignment assumes the col width is at least as big is the keyword name
-    with open(metaFile, 'w+') as out:
+    if log: log.info('metadata.py writing to metadata table file: {}'.format(metaOutFile))
+    with open(metaOutFile, 'w+') as out:
 
         for index, row in keyDefs.iterrows():
             out.write('|' + row['keyword'].ljust(row['colSize']))
@@ -74,21 +65,26 @@ def make_metadata(instr, utDate, lev0Dir, tablesDir, log=None):
 
 
     #walk lev0Dir to find all final fits files
+    if log: log.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
     for root, directories, files in os.walk(lev0Dir):
         for filename in files:
             if filename.endswith('.fits'):
                 fitsFile = os.path.join(root, filename)
-                add_fits_metadata_line(fitsFile, metaFile, keyDefs, log)
+
+                extra = {}
+                if filename in extraData: extra = extraData[filename]
+
+                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log)
 
 
     #create md5 sum
-    md5Outfile = metaFile.replace('.table', '.md5sum')
+    md5Outfile = metaOutFile.replace('.table', '.md5sum')
     if log: log.info('metadata.py creating {}'.format(md5Outfile))
     make_dir_md5_table(lev0Dir, ".metadata.table", md5Outfile)
 
 
 
-def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
+def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log):
     """
     Adds a line to metadata file for one FITS file.
     """
@@ -98,7 +94,7 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
 
 
     #write all keywords vals for image to a line
-    with open(metaFile, 'a') as out:
+    with open(metaOutFile, 'a') as out:
 
         for index, row in keyDefs.iterrows():
 
@@ -109,8 +105,9 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
 
 
             #get value from header, set to null if not found
-            if not (keyword in header): val = 'null'
-            else:                       val = header[keyword]
+            if   (keyword in header) : val = header[keyword]
+            elif (keyword in extra)  : val = extra[keyword]
+            else                     : val = 'null';
 
 
             #check keyword val and format
@@ -126,6 +123,9 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
 
 
 def check_keyword_val(keyword, val, fmt, log=None):
+    '''
+    Checks keyword for correct type and proper value.
+    '''
 
     #todo: assert/fail on any of these?
 
