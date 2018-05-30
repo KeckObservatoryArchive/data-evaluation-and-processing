@@ -17,7 +17,7 @@ import os
 from astropy.io import fits
 import pandas
 from common import make_dir_md5_table
-
+import datetime
 
 def make_metadata(instr, utDate, lev0Dir, tablesDir, log=None):
     """
@@ -40,15 +40,14 @@ def make_metadata(instr, utDate, lev0Dir, tablesDir, log=None):
     #open keywords format file and read data
     #NOTE: changed this file to tab-delimited
     keywordsDefFile = tablesDir + '/keywords.format.' + instr
+    if log: log.info('metadata.py reading keywords definition file: {}'.format(keywordsDefFile))
     keyDefs = pandas.read_csv(keywordsDefFile, sep='\t')
-    if log: log.info('read keywords definition file: {}'.format(keywordsDefFile))
-
 
 
     #create metadata table output file
     ymd = utDate.replace('-', '')
     metaFile =  lev0Dir + '/' + ymd + '.metadata.table'
-
+    if log: log.info('metadata.py writing to metadata table file: {}'.format(metaFile))
 
 
     #add header to output file
@@ -74,7 +73,6 @@ def make_metadata(instr, utDate, lev0Dir, tablesDir, log=None):
         out.write("|\n")
 
 
-
     #walk lev0Dir to find all final fits files
     for root, directories, files in os.walk(lev0Dir):
         for filename in files:
@@ -90,16 +88,10 @@ def make_metadata(instr, utDate, lev0Dir, tablesDir, log=None):
 
 
 
-
 def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
     """
     Adds a line to metadata file for one FITS file.
     """
-
-
-    #put all keyword vals in a dictionary as we calculate them
-    keywordVals = {}
-
 
     #get header object using astropy
     header = fits.getheader(fitsFile)
@@ -116,15 +108,13 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
             allowNull = row['allowNull']
 
 
-            #todo: assert/log if non-null not found?
-            if not (keyword in header): 
-                val = 'null'
-            else:
-                val = header[keyword]
+            #get value from header, set to null if not found
+            if not (keyword in header): val = 'null'
+            else:                       val = header[keyword]
 
 
-            #todo: check format using /tables/keywords.check
-            val = check_keyword(keyword, val, row, log)
+            #check keyword val and format
+            val = check_keyword_val(keyword, val, row, log)
 
 
             #write out val padded to size
@@ -135,7 +125,7 @@ def add_fits_metadata_line(fitsFile, metaFile, keyDefs, log):
  
 
 
-def check_keyword(keyword, val, fmt, log=None):
+def check_keyword_val(keyword, val, fmt, log=None):
 
     #todo: assert/fail on any of these?
 
@@ -143,45 +133,49 @@ def check_keyword(keyword, val, fmt, log=None):
     #check null
     if (val == 'null'):
         if (fmt['allowNull'] == 'N'):
-            if log: log.warning('metadata check fail: "null" value found for non-null keyword {}'.format(keyword))
-            return val
+            if log: log.error('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))
+        return val
 
 
     #check value type
-    #todo: finish date check
     vtype = type(val).__name__
     if (fmt['dataType'] == 'char'):
-        if (vtype != "str"):
-            print (keyword, fmt['dataType'], val, 'type: ', vtype)
-            if log: log.warning('metadata check fail: found var type of {}, expected {}.'.format(vtype, fmt['dataType']))
+        if (vtype == 'bool'):
+            if   (val == True):  val = 'T'
+            elif (val == False): val = 'F'
+        elif (vtype != "str"):
+            if log: log.warning('metadata check: var type {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
 
     elif (fmt['dataType'] == 'integer'):
         if (vtype != "int"):
-            print (keyword, fmt['dataType'], val, 'type: ', vtype)
-            if log: log.warning('metadata check fail: found var type of {}, expected {}.'.format(vtype, fmt['dataType']))
+            if log: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
 
     elif (fmt['dataType'] == 'double'):
         if (vtype != "float"):
-            print (keyword, fmt['dataType'], val, 'type: ', vtype)
-            if log: log.warning('metadata check fail: found var type of {}, expected {}.'.format(vtype, fmt['dataType']))
+            if log: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
 
     elif (fmt['dataType'] == 'date'):
-        pass
+        try:
+            datetime.datetime.strptime(val, '%Y-%m-%d')
+        except ValueError:
+            if log: log.warning('metadata check: expected date format YYYY-mm-dd ({}={}).'.format(keyword, val))
 
-        
+    elif (fmt['dataType'] == 'datetime'):
+        try:
+            datetime.datetime.strptime(val, '%Y-%m-%d %H:%i:%s')
+        except ValueError:
+            if log: log.warning('metadata check: expected date format YYYY-mm-dd HH:ii:ss ({}={}).'.format(keyword, val))
+     
 
     #check char length
-    #TODO: remove truncate?
+    #TODO: round instead of truncate for type double?
     length = len(str(val))
     if (length > fmt['colSize']):
-            if log: log.warning('metadata check fail: char length of {} greater than column size of {} keyword {}.  TRUNCATING.'.format(length, fmt['colSize'], keyword))
-            val = val[:fmt['colSize']]
+            if log: log.warning('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
+            val = str(val)[:fmt['colSize']]
 
 
-
-    #todo: check value range
-    
+    #todo: check value range, discrete values?
 
 
-    #return val 
     return val
