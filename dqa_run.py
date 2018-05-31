@@ -120,13 +120,11 @@ def dqa_run(instrObj, tpx=0):
             # do keyword checks.  if any of these steps return false then skip and copy to udf
             #todo: test fits files: old NIRES, new NIRES, empty file, non-std filename, other instr file
             #todo: error checking, log, asserts?
-            #todo: remaining tasks, extensions, etc?
-            #todo: see dqa_lite.pro "Add DQA generated keywords" code
-            #todo: check create_lev0_jpg for accuracy?
             ok = instrObj.run_dqa_checks(progData)
 
 
             #write out new fits file and jpg
+            #todo: check create_lev0_jpg for accuracy?
             if ok: ok = instrObj.write_lev0_fits_file()
             if ok: ok = instrObj.create_lev0_jpg()
 
@@ -160,9 +158,9 @@ def dqa_run(instrObj, tpx=0):
 
 
         #create metadata file
-        tablesDir = '/kroot/archive/tables'
-        tablesDir = '/home/jriley/test/metadata_tables'
-        metadata.make_metadata(instr, utDate, dirs['lev0'], tablesDir, log)
+        log.info('make_metadata.py started for {} {} UT'.format(instr.upper(), utDate))
+        tablesDir = instrObj.metadataTablesDir
+        make_metadata(instr, utDate, dirs['lev0'], progData, tablesDir, log)
 
 
         #Create yyyymmdd.FITS.md5sum.table
@@ -209,16 +207,33 @@ def dqa_run(instrObj, tpx=0):
         os.remove(locFile)
 
 
-
     #catch exceptions
     except Exception as err:
         log.error('dqa_run.py program crashed, exiting: {}'.format(str(err)))
 
 
-
     #log success
     log.info('dqa_run.py DQA Successful for {}'.format(instr))
 
+
+
+def make_metadata(instr, utDate, lev0Dir, progData, tablesDir, log):
+
+    #create various file/dir paths
+    ymd = utDate.replace('-', '')
+    metaOutFile =  lev0Dir + '/' + ymd + '.metadata.table'
+    keywordsDefFile = tablesDir + '/keywords.format.' + instr
+
+    #Handle special case of PROGTITL that is not in header, but does go in in metadata
+    #NOTE: This relies on instrObj adding 'koaid' to progdata.  This is annoying but
+    #necessary based on how metadata.py works (assuming all keywords were in header).
+    extraData = {}
+    for row in progData:
+        filekey = os.path.basename(row['koaid'])
+        extraData[filekey] = {'PROGTITL': row['progtitl']}
+
+    #call the metadata module
+    metadata.make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData, log)    
 
 
 

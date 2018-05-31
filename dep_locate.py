@@ -21,6 +21,7 @@ import os
 import shutil
 from sys import argv
 from datetime import datetime, timedelta
+import configparser
 
 
 def dep_locate(instrObj):
@@ -43,8 +44,14 @@ def dep_locate(instrObj):
     stageDir = instrObj.dirs['stage']
 
 
+    ##config for CIT
+    config = configparser.ConfigParser()
+    config.read('config.live.ini')
+
+
     #Find sdata dirs list. Return if none found.
-    useDirs = instrObj.get_dir_list()
+    if ('CIT_LOCATE_DIR' in config['CIT']): useDirs = [config['CIT']['CIT_LOCATE_DIR']]
+    else                                  : useDirs = instrObj.get_dir_list()
     if len(useDirs) == 0:
         log.warning('Did not find any sdata directories')
         return
@@ -56,7 +63,7 @@ def dep_locate(instrObj):
 
 
     # Find the files in the last 24 hours
-    log.info('Looking for FITS files')
+    log.info('Looking for FITS files in {}'.format(useDirs))
     filePaths = find_24hr_fits(useDirs, instrObj.utDate, instrObj.endTime)
 
 
@@ -116,7 +123,6 @@ def dep_locate(instrObj):
 
     #log completion
     num = sum(1 for line in open(locateFile, 'r'))
-    log.info('{}: Using files found in {}'.format(instr, useDirs))
     log.info('{}: dep_locate successful - {} files found'.format(instr, num))
 
 #-----------------------END DEP LOCATE----------------------------------

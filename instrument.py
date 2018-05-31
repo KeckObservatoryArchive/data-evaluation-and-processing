@@ -439,25 +439,38 @@ class Instrument:
         
         #note: progData is also stored in newproginfo.txt output from getProgInfo.py
 
-        #find matching filename in array column 0
+        #find matching filename in array 
         baseFilename = os.path.basename(self.fitsFilepath)
+        dataKey = None
         data = None
-        for progFile in progData:
+        for key, progFile in enumerate(progData):
             filepath = progFile['file']
             if baseFilename in filepath:
+                dataKey = key
                 data = progFile
                 break
-
-        #return false if not found
-        if not data: 
-            return False
+        if data == None: return False
 
         #create keys
         keys = self.fitsHeader
         keys.update({'PROGID'  : (data['progid']  , 'KOA: Added keyword PROGID')})
         keys.update({'PROGINST': (data['proginst'], 'KOA: Added keyword PROGINST')})
         keys.update({'PROGPI'  : (data['progpi']  , 'KOA: Added keyword PROGPI')})
-        keys.update({'PROGTITL': (data['progtitl'], 'KOA: Added keyword PROGTITL')})
+
+        #divide PROGTITL into length 70 chunks PROGTL1/2/3
+        progtl1 = data['progtitl'][0:70]
+        progtl2 = data['progtitl'][70:140]
+        progtl3 = data['progtitl'][140:210]
+        keys.update({'PROGTL1': (progtl1, '')})
+        keys.update({'PROGTL2': (progtl2, '')})
+        keys.update({'PROGTL3': (progtl3, '')})
+
+
+        #NOTE: PROGTITL in full does not go in header, but does go in metadata
+        #This is problematic for metadata.py, so we add some data to progData 
+        #so we can find it later.
+        progData[dataKey]['koaid'] = keys.get('KOAID')
+
         return True
 
 
@@ -614,7 +627,6 @@ class Instrument:
 
 
         #read envFocus.arT and write to header
-        #todo: check that this is working
         logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
         data = envlog(logFile, 'envFocus', telnr, self.utDate, utc)
         assert type(data) is dict, "Could not read envFocus.arT data"
