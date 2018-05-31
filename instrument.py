@@ -19,6 +19,7 @@ from verification import *
 import urllib.request
 import json
 import numpy as np
+import re
 
 
 class Instrument:
@@ -93,7 +94,16 @@ class Instrument:
         #check and create dirs
         self.init_dirs()
 
-       
+
+        #create README (output dir with everything before /koadata##/... stripped off)
+        readmeFile = self.dirs['output'] + '/README';
+        with open(readmeFile, 'w') as f:
+            path = self.dirs['output']
+            match = re.search( r'.*(/.*/.*/\d\d\d\d\d\d\d\d)$', path, re.M)
+            if match:
+                path = match.groups(0)[0]
+            f.write(path + '\n')
+
 
     def init_dirs(self):
 
