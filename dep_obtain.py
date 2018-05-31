@@ -1,8 +1,5 @@
-from datetime import datetime, timedelta
-from verification import *
 import os
-import json
-import urllib.request
+from datetime import datetime, timedelta
 from common import url_get
 
 def dep_obtain(instrObj):
@@ -20,7 +17,7 @@ def dep_obtain(instrObj):
     log.info('dep_obtain: started for {} {} UT'.format(instrObj.instr, instrObj.utDate))
 
     # Get HST from utDate
-    
+
     utDateObj = datetime.strptime(instrObj.utDate, '%Y-%m-%d')
     hstDateObj = utDateObj - timedelta(days=1)
     hstDate = hstDateObj.strftime('%Y-%m-%d')
@@ -76,13 +73,11 @@ def dep_obtain(instrObj):
                     obsUrl = ''.join((instrObj.telUrl, 'cmd=getObservers', '&schedid=', entry['SchedId']))
                     log.info('dep_obtain: retrieving observers info: {}'.format(obsUrl))
                     obsData = url_get(obsUrl)
-
                     if obsData and len(obsData) > 0: observers = obsData[0]['Observers']
                     else                           : observers = 'None'
 
                     if num > 0: fp.write('\n')
                     fp.write('{} {} {} {} {} {} {}'.format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
-
                     log.info('dep_obtain: {} {} {} {} {} {} {}'.format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
 
                     num += 1
