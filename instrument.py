@@ -85,6 +85,9 @@ class Instrument:
         Perform specific initialization tasks for DEP processing.
         '''
 
+        #TODO: exit if existence of output/stage dirs? Maybe put override in config?
+        
+
         #create log if it does nto exist
         if not self.log:
             self.log = cl.create_log(self.rootDir, self.instr, self.utDate, True)
@@ -100,8 +103,7 @@ class Instrument:
         with open(readmeFile, 'w') as f:
             path = self.dirs['output']
             match = re.search( r'.*(/.*/.*/\d\d\d\d\d\d\d\d)$', path, re.M)
-            if match:
-                path = match.groups(0)[0]
+            if match: path = match.groups(0)[0]
             f.write(path + '\n')
 
 
@@ -136,6 +138,7 @@ class Instrument:
         '''
 
         #todo: should we have option to just read the header for performance if that is all that is needed?
+        #todo: check for empty/corrupted and return false
         self.fitsHdu = fits.open(filename)
         self.fitsHeader = self.fitsHdu[0].header
         #self.fitsHeader = fits.getheader(filename)
@@ -146,6 +149,7 @@ class Instrument:
         self.rawfile = ''
         self.prefix = ''
 
+        return True
 
 
     def set_koaid(self):
@@ -158,7 +162,9 @@ class Instrument:
 
         #make it
         koaid, result = self.make_koaid(self.fitsHeader)
-        if not result: return False
+        if not result: 
+            self.log.error('set_koaid: Could not create KOAID')
+            return False
 
         #save it
         self.fitsHeader.update({'KOAID' : (koaid, 'KOA: Added missing keyword')})
@@ -228,29 +234,6 @@ class Instrument:
         instr = instr[0].replace(':','')
         return instr
 
-#    def set_logger(self):
-#        """
-#        Method to initialize the logger for each individual instrument. 
-#        Log files will be created in their local directories 
-#        as <instrument>Log.txt
-#        """
-#
-#        # Get the user currently logged in
-#        user = os.getlogin()
-#        # Create a logger object with the user name
-#        self.log = lg.getLogger(user)
-#        self.log.setLevel(lg.INFO)
-#        # Give the path to the log file. If directory exists but
-#        # log does not, it will create the file. 
-#        seq = (self.rootDir, '/', type(self).__name__, 'Log.txt')
-#        fh = lg.FileHandler(''.join(seq))
-#        fh.setLevel(lg.INFO)
-#        # Create the format of the logged messages: 
-#        # Time - Name - MessageLevel: Message
-#        fmat = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
-#        fh.setFormatter(fmat)
-#        self.log.addHandler(fh)
-
     def set_raw_fname(self, keys):
         """
         Determines the original filename from the keywords given
@@ -289,29 +272,25 @@ class Instrument:
         '''
         Check that value(s) in header indicates this is valid instrument and matches what we expect.
         (ported to python from check_instr.pro)
+        '''
         #todo:  go over idl file again and pull out logic for other instruments
         #todo: use class key vals instead
-        '''
 
         ok = False
         keys = self.fitsHeader
-
 
         #get val
         #instrume = keys[self.instrume]
         instrume = keys.get('INSTRUME')
         if (instrume == None): instrume = keys.get('CURRINST')
 
-
         #direct match?
         if instrume:
             if (self.instr == instrume.strip()): ok = True
 
-
         #mira not ok
         outdir = keys.get('OUTDIR')
         if (outdir and '/mira' in outdir) : ok = False
-
 
         #No DCS keywords, check others
         if (not ok):
@@ -322,11 +301,9 @@ class Instrument:
             outdir = keys.get(self.outdir)
             if (outdir and instrVal in outdir): ok = True
 
-
         #log err
         if (not ok):
-            self.log.info('check_instr: Cannot determine if file is from ' + self.instr)
-
+            self.log.error('check_instr: Cannot determine if file is from ' + self.instr)
 
         return ok
 
@@ -340,11 +317,9 @@ class Instrument:
         keys = self.fitsHeader
         filename = self.fitsFilepath
 
-
         #try to get from header
         dateObs = keys.get(self.dateObs)
         if dateObs: dateObs = dateObs.strip()
-
 
         #if empty or bad values then build from file last mod time
         #note: converting to universal time (+10 hours)
@@ -360,7 +335,6 @@ class Instrument:
             yr, mo, dy = dateObs.split('/')
             dateObs = ''.join(('20', yr, '-', mo, '-', dy))
             keys.update({self.dateObs : (dateObs, 'KOA: value corrected (' + orig + ')')})
-
 
         #todo: can this check fail?
         return True
@@ -382,7 +356,7 @@ class Instrument:
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S')
-            keys.update({self.utc : (utc, 'KOA: Added missing keyword "UTC"')})
+            keys.update({self.utc : (utc, 'KOA: Added missing keyword')})
 
         return True
 
@@ -398,11 +372,11 @@ class Instrument:
         #get utc from header
         utc = keys.get(self.utc)
         if (not utc): 
-            self.log.error('Could not get UTC value.')
+            self.log.error('set_ut: Could not get UTC value.')
             return False
 
         #copy to UT
-        keys.update({'UT' : (utc, 'KOA: Added missing keyword "UT"')})
+        keys.update({'UT' : (utc, 'KOA: Added missing keyword')})
         return True
 
 
@@ -459,13 +433,15 @@ class Instrument:
                 dataKey = key
                 data = progFile
                 break
-        if data == None: return False
+        if data == None: 
+            self.log.error('set_prog_info: Could not get program info.')
+            return False
 
         #create keys
         keys = self.fitsHeader
-        keys.update({'PROGID'  : (data['progid']  , 'KOA: Added keyword PROGID')})
-        keys.update({'PROGINST': (data['proginst'], 'KOA: Added keyword PROGINST')})
-        keys.update({'PROGPI'  : (data['progpi']  , 'KOA: Added keyword PROGPI')})
+        keys.update({'PROGID'  : (data['progid']  , 'KOA: Added keyword')})
+        keys.update({'PROGINST': (data['proginst'], 'KOA: Added keyword')})
+        keys.update({'PROGPI'  : (data['progpi']  , 'KOA: Added keyword')})
 
         #divide PROGTITL into length 70 chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:70]
@@ -513,7 +489,7 @@ class Instrument:
 
 
         #update
-        keys.update({'PROPINT' : (propint, 'KOA: Added missing keyword "PROPINT"')})
+        keys.update({'PROPINT' : (propint, 'KOA: Added keyword')})
         return True
 
 
@@ -532,7 +508,7 @@ class Instrument:
         """
         keys = self.fitsHeader
         dqa_date = dt.strftime(dt.now(), '%Y-%m-%dT%H:%M:%S')
-        keys.update({'DQA_DATE' : (dqa_date, 'KOA: Data Quality Assessment run time.')})
+        keys.update({'DQA_DATE' : (dqa_date, 'KOA: Added keyword')})
         return True
 
 
@@ -547,7 +523,7 @@ class Instrument:
         config.read('config.live.ini')
 
         version = config['INFO']['DQA_VERSION']
-        keys.update({'DQA_VERS' : (version, 'KOA: Data Quality Assessment version.')})
+        keys.update({'DQA_VERS' : (version, 'KOA: Added keyword')})
         return True
 
 
@@ -563,9 +539,9 @@ class Instrument:
         imageStd    = np.std(image)
         imageMedian = np.median(image)
 
-        keys.update({'IMAGEMN' : (imageMean,   'KOA: Image mean.')})
-        keys.update({'IMAGESD' : (imageStd,    'KOA: Image standard deviation.')})
-        keys.update({'IMAGEMD' : (imageMedian, 'KOA: Image median.')})
+        keys.update({'IMAGEMN' : (imageMean,   'KOA: Added keyword')})
+        keys.update({'IMAGESD' : (imageStd,    'KOA: Added keyword')})
+        keys.update({'IMAGEMD' : (imageMedian, 'KOA: Added keyword')})
 
         return True
 
@@ -580,7 +556,7 @@ class Instrument:
         image = self.fitsHdu[0].data     
         pixSat = image[np.where(image >= satVal)]
         nPixSat = len(image[np.where(image >= satVal)])
-        keys.update({'NPIXSAT' : (nPixSat, 'KOA: Saturated pixels count')})
+        keys.update({'NPIXSAT' : (nPixSat, 'KOA: Added keyword')})
 
         return True
 
@@ -602,7 +578,7 @@ class Instrument:
         if (len(oas) >= 1): oa = oas[0]
 
         keys = self.fitsHeader
-        keys.update({'OA' : (oa, 'KOA: Observing Assistant')})
+        keys.update({'OA' : (oa, 'KOA: Added keyword')})
 
         return True
 
