@@ -26,7 +26,6 @@ class Nires(instrument.Instrument):
         self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
 
 
-
         # Generate the paths to the NIRES datadisk accounts
         self.sdataList = self.get_dir_list()
 
@@ -62,8 +61,6 @@ class Nires(instrument.Instrument):
         if ok: ok = self.set_oa()
         if ok: ok = self.set_dqa_date()
         if ok: ok = self.set_dqa_vers()
-
-
         return ok
 
 
@@ -88,9 +85,9 @@ class Nires(instrument.Instrument):
     def set_prefix(self, keys):
         '''
         Sets the KOAID prefix
-        Defaults to nullstr
+        Defaults to empty string
         '''
-        #todo: Will there be a single keyword for this?
+        #todo: why is this named 'set'?  It is not setting anything
 
         instr = self.set_instr(keys)
         if instr == 'nires':
@@ -119,13 +116,15 @@ class Nires(instrument.Instrument):
         @type keys: dictionary
         @param keys: FITS header keys for the given file
         """
+        #todo: why is this named 'set'?  It is not setting anything
+
         try:
             outfile = keys[self.ofName]
         except KeyError:
             return '', False
         else:
-            seq = (outfile, '.fits')
-            filename = ''.join(seq)
+            filename = outfile
+            if (filename.endsWith('.fits') == False) : filename += '.fits'
             return filename, True
 
 
@@ -164,20 +163,18 @@ class Nires(instrument.Instrument):
 
     def set_ofName(self):
         """
-        Adds OFNAME keyword to header if it doesn't exist
-        #todo: Percy still needs to add ".fits" to end of DATAFILE keyword
-        #todo: add *.fits to output if it does not exist? (to fix old files?)
+        Adds OFNAME keyword to header (copy of DATAFILE)
         """
 
-        #skip if it exists
-        keys = self.fitsHeader
-        if keys.get('OFNAME') != None: return True
-
         #get value
+        keys = self.fitsHeader
         ofName = keys.get(self.ofName)
         if (ofName == None): 
             self.log.error('set_ofName: cannot find value for OFNAME')
             return False
+
+        #add *.fits to output if it does not exist (to fix old files)
+        if (ofName.endswith('.fits') == False) : ofName += '.fits'
 
         #update
         keys.update({'OFNAME' : (ofName, 'KOA: Added keyword')})
@@ -301,15 +298,43 @@ class Nires(instrument.Instrument):
     def set_koaimtyp(self):
         '''
         Fixes missing KOAIMTYP keyword.
-        todo: This will come from OBSTYPE keyword.
+        This is derived from OBSTYPE keyword.
         '''
+
+        #get obstype value
+        keys = self.fitsHeader
+        obstype = keys.get('OBSTYPE')
+
+        #map to KOAIMTYP value
+        koaimtyp = 'undefined'
+        validValsMap = {
+            'object'  : None,
+            'standard': 'object',
+            'bias'    : None, 
+            'dark'    : None, 
+            'domeflat': None, 
+            'domearc' : None, 
+            'astro'   : 'object',   #NOTE: old val
+            'star'    : 'object',   #NOTE: old val
+            'calib'   : 'undefined' #NOTE: old val
+        }
+        if (obstype != None and obstype in validValsMap): 
+            koaimtyp = obstype
+            if (validValsMap[obstype] != None): koaimtyp = validValsMap[obstype]
+
+        #update keyword
+        keys.update({'KOAIMTYP' : (koaimtyp,  'KOA: Added keyword')})
         return True
 
 
     def is_science(self):
         '''
-        Returns true if header indicates it was a science data was taken.
+        Returns true if header indicates science data was taken.
+        (KOAIMTYP='object')
         '''
 
-        #todo: finish this.  Based on KOAIMTYP='object'?
-        return True
+        keys = self.fitsHeader
+        koaimtyp = keys.get('KOAIMTYP')
+        if koaimtyp == 'object' : return True
+        else                    : return False
+    

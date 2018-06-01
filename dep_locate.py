@@ -50,8 +50,8 @@ def dep_locate(instrObj):
 
 
     #Find sdata dirs list. Return if none found.
-    if ('CIT_LOCATE_DIR' in config['CIT']): useDirs = [config['CIT']['CIT_LOCATE_DIR']]
-    else                                  : useDirs = instrObj.get_dir_list()
+    if ('LOCATE_DIR' in config['CIT']): useDirs = [config['CIT']['LOCATE_DIR']]
+    else                              : useDirs = instrObj.get_dir_list()
     if len(useDirs) == 0:
         log.warning('Did not find any sdata directories')
         return
@@ -64,7 +64,9 @@ def dep_locate(instrObj):
 
     # Find the files in the last 24 hours
     log.info('Looking for FITS files in {}'.format(useDirs))
-    filePaths = find_24hr_fits(useDirs, instrObj.utDate, instrObj.endTime)
+    modtimeOverride = 0
+    if ('LOCATE_MODTIME_OVERRIDE' in config['CIT']): modtimeOverride = int(config['CIT']['LOCATE_MODTIME_OVERRIDE'])
+    filePaths = find_24hr_fits(useDirs, instrObj.utDate, instrObj.endTime, modtimeOverride)
 
 
     #write filepaths to outfile
@@ -111,19 +113,19 @@ def dep_locate(instrObj):
             del fcsConfigs
 
 
-    # Remove temporary file
-    os.remove(presortFile)
-    log.info('{}: removed temporary presorted file {}'.format(instr, presortFile))
-    
+    #log completion with count
+    num = sum(1 for line in open(locateFile, 'r'))
+    log.info('dep_locate: {} raw {} FITS files found.'.format(num, instr))
+
 
     # Verify the files are valid - no corrupt headers, valid KOAID
-    dep_rawfiles(instr, utDate, instrObj.endTime, locateFile, stageDir, ancDir, log)
-    log.info('{0}: finished rawfiles {0} {1} {2} {3} {4}'.format(instr, utDate, instrObj.endTime, stageDir, ancDir))
+    dqaFile = stageDir +'/dqa_' + instr + '.txt'
+    dep_rawfiles(instr, utDate, instrObj.endTime, locateFile, dqaFile, stageDir, ancDir, log)
 
 
-    #log completion
-    num = sum(1 for line in open(locateFile, 'r'))
-    log.info('{}: dep_locate successful - {} files found'.format(instr, num))
+    #log completion with count
+    num = sum(1 for line in open(dqaFile, 'r'))
+    log.info('dep_locate: {} {} FITS files passed final checks.'.format(num, instr))
 
 #-----------------------END DEP LOCATE----------------------------------
 
@@ -146,7 +148,7 @@ def copy_file(source, destination):
         shutil.copy2(source, destination)
 
 
-def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
+def dep_rawfiles(instr, utDate, endTime, locateFile, dqaFile, stageDir, ancDir, log):
     """
     This function will look for non-raw images, duplicate KOAIDs,
     or bad dates for each fits file.
@@ -161,9 +163,10 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
     @param utDate: The date in UT of the night that the fits tiles were taken
     @type endTime: datetime
     @param endTime: The hour that the observations ended
-    @type fileList: string
-    @param fileList: Text file that contains the fits filenames
-            that occured within 24 hours of the given date
+    @type locateFile: string
+    @param locateFile: Filepath of text file with list of all FITS files within 24 hours of the given date
+    @type dqaFile: string
+    @param dqaFile: Filepath for final output file for all valid FITS passing checks.
     @type stageDir: string
     @param stageDir: The staging area to store the files for transport to KOA
     @type ancDir: string
@@ -171,6 +174,8 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
     @type log: Logger Object
     @param log: The log handler for the script. Writes to the logfile
     """
+    log.info('dep_locate: starting rawfiles check: {0} {1} {2} {3} {4}'.format(instr, utDate, endTime, stageDir, ancDir))
+
     # Change yyyy/mm/dd to yyyymmdd
     if   '/' in utDate: year, month, day = utDate.split('/')
     elif '-' in utDate: year, month, day = utDate.split('-')
@@ -182,7 +187,7 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
     # Loop through the file list and read in
     # the fits files found from within 24 hours
     # of the given date
-    with open(fileList, 'r') as ffiles:
+    with open(locateFile, 'r') as ffiles:
         for line in ffiles:
             fitsList.append(line.strip())
 
@@ -216,13 +221,13 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
         # Construct the original file name
         filename, successful = construct_filename(instr,fitsList[i], ancDir, header0, log)
         if not successful:
-            move_bad_file(instr, fitsList[i], ancDir, 'Bad Header', log)
+            copy_bad_file(instr, fitsList[i], ancDir, 'Bad Header', log)
             raw[i] = 2
             continue
 
         # Get KOAID
         if not koaid(header0, utDate):
-            move_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log)
+            copy_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log)
             raw[i] = 2
             continue
         try:
@@ -240,45 +245,44 @@ def dep_rawfiles(instr, utDate, endTime, fileList, stageDir, ancDir, log):
     endTimeSec = float(hours) * 3600.0 + float(minutes)*60.0 + float(seconds)
 
 
+    #check for duplicate KOA ID
     for i in range(len(fitsList)-1):
-        # Is this a duplicate KOAID?
-        if raw[i] == 2:
-            continue
+        if   raw[i] == 2: continue
         elif raw[i] == 0:
             for j in range(i+1,len(fitsList)):
                 if koa[j]==koa[i]: # j will always be greater than i
-                    move_bad_file(instr, fitsList[i], ancDir, 'Duplicate KOAID', log)
+                    copy_bad_file(instr, fitsList[i], ancDir, 'Duplicate KOAID', log)
+                    raw[i] = 2
                     break
 
-        # Check the date
+    # Check for bad date
+    for i in range(len(fitsList)):
+        if raw[i] == 2: continue
         prefix, fdate, ftime, postfix = koa[i].split('.')
         if fdate != date and float(ftime) < endTimeSec:
-            move_bad_file(instr, fitsList[i], ancDir, 'KOADATE', log)
-            break
+            copy_bad_file(instr, fitsList[i], ancDir, 'KOADATE', log)
+            raw[i] = 2
 
-    # Need to remove "bad" files from dep_locateINSTR.txt in stageDir
-    ffiles = open(fileList, 'r')
+
+    # Create final dqa_<instr>.txt file with only the good lines from dep_locateINSTR.txt
+    ffiles = open(locateFile, 'r')
     lines = ffiles.readlines()
     ffiles.close()
-
-    # Recreate the file with only the good lines
-    with open(fileList, 'w') as ffiles:
+    with open(dqaFile, 'w') as ffiles:
         for line in lines:
             if line.strip() in fitsList:
                 num = fitsList.index(line.strip())
                 if raw[num] == 1:
                     ffiles.write(line)
 
+
 #------------------END RAWFILES-----------------------------
 
 
-def move_bad_file(instr, fitsFile, ancDir, errorCode, log):
+def copy_bad_file(instr, fitsFile, ancDir, errorCode, log):
     """
-    Log the error where the fits file failed
-    and copy the fits file to the anc directory
-
     This function logs the type of error encountered
-    and moves the bad fits file to anc_dir/udf
+    and copies the bad fits file to anc_dir/udf
 
     @type instr: string
     @param instr: The keyword for the instrument being searched
@@ -303,7 +307,7 @@ def move_bad_file(instr, fitsFile, ancDir, errorCode, log):
     except:
         log.error('{}: {} file was not copied!'.format(instr, fitsFile))
 
-#-------------End move-bad-file()---------------------------
+#-------------End copy-bad-file()---------------------------
 
 
 def construct_filename(instr, fitsFile, ancDir, keywords, log):
@@ -315,7 +319,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
     @type fitsFile: string
     @param fitsFile: The current fits file being observed
     @type ancDir: str
-    @param ancDir: The anc directory to move bad files
+    @param ancDir: The anc directory to copy bad files
     @type keywords: dictionary
     @param keywords: The pairing of all the fits keywords with their values
     @type log: Logger Object
@@ -337,7 +341,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
                outfile = ''.join((outfile, '.fits'))
            return outfile, True
        except KeyError:
-           move_bad_file(
+           copy_bad_file(
                    instr, fitsFile, ancDir, 'Bad Outfile', log)
            return '', False
    elif instr == 'KCWI':
@@ -345,7 +349,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
            outfile = keywords['OFNAME']
            return outfile, True
        except KeyError:
-           move_bad_file(
+           copy_bad_file(
                    instr, fitsFile, ancDir, 'Bad Outfile', log)
            return '', False
    else:
@@ -358,7 +362,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
                try:
                    outfile = keywords['FILENAME']
                except KeyError:
-                   move_bad_file(
+                   copy_bad_file(
                            instr, fitsFile, ancDir, 'Bad Outfile', log)
                    return '', False
 
@@ -380,7 +384,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
                try:
                    frameno = keywords['FILENUM2']
                except KeyError:
-                   move_bad_file(
+                   copy_bad_file(
                            instr, fitsFile, ancDir, 'Bad Frameno', log)
                    return '', False
 
@@ -400,7 +404,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
 #---------------------End construct_filename-------------------------
 
 
-def find_24hr_fits(useDirs, utDate, endTime):
+def find_24hr_fits(useDirs, utDate, endTime, modtimeOverride=0):
     """
     Uses the os.walk function to recurse through a given directory
     and return all the leaf files which are checked to be
@@ -442,8 +446,8 @@ def find_24hr_fits(useDirs, utDate, endTime):
     for fitsDir in useDirs:
         for root, dirs, files in os.walk(fitsDir):
             for item in files:
-                if not '.fits' in item:
-                    continue
+
+                if not '.fits' in item: continue
 
                 # Create the path to the current file we want to check
                 fullPath = ''.join((root, '/', item))
@@ -451,9 +455,8 @@ def find_24hr_fits(useDirs, utDate, endTime):
                 # Check to see if the file is a fits file created/modified in the last day. 
                 # st_mtime needs to be greater than the minTimeSinceMod to be within the past 24 hours
                 modTime = os.stat(fullPath).st_mtime
-                if ('.fits' in item[-5:] 
-                  and modTime <= maxTimeSinceMod 
-                  and modTime > minTimeSinceMod):
+                if ( (modTime <= maxTimeSinceMod and modTime > minTimeSinceMod)
+                     or modtimeOverride == 1):
                     filePaths.append(fullPath)
 
     return filePaths

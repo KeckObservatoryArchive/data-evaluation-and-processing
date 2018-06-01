@@ -11,22 +11,14 @@
 """
 import get_header
 import os
-import logging as lg
-import numpy as np
+import sys
 import getProgInfo as gpi
-import math
+from create_prog import *
 import shutil
-from glob import glob
 from common import *
 from datetime import datetime as dt
-from astropy.io import fits
-from urllib.request import urlopen
-#from imagetyp_instr import imagetyp_instr
-from create_log import *
-from create_prog import *
 import metadata
 import re
-
 
 def dqa_run(instrObj, tpx=0):
     """
@@ -37,103 +29,62 @@ def dqa_run(instrObj, tpx=0):
     @param instr: The instrument object
     """
 
-
-    #shorthand
+    #define vars to use throughout
     instr  = instrObj.instr
     utDate = instrObj.utDate
     log    = instrObj.log
     dirs   = instrObj.dirs
+    utDateDir = instrObj.utDateDir
+    sciFiles = 0
+    inFiles = []
+    outFiles = []
 
 
     #Log start
     log.info('dqa_run.py started for {} {}'.format(instr, utDate))
 
 
-    # Error if stageDir does not exist (required input files)
-    if not os.path.isdir(dirs['stage']):
-        print('dqa_run.py: stage dir does not exist.  EXITING.')
-        exit()
-        #todo: log, email, and return
+    #todo: check for existing output files and error out with warning?
+    
 
-
-    # Create the LOC file
-    #todo: why do we create this?  should we exit if it exists?
-    locFile = ''.join((dirs['lev0'], '/dqa.LOC'))
-    with open(locFile, 'w') as fp:
-        fp.write('DQA started')
-
-
-    #copy locate output file to 'dqa_<instr>.txt'
-    #todo: should this be done in dep_locate?  remove dep_locate.txt?
-    locateFile = ''.join((dirs['stage'], '/dep_locate', instr, '.txt'))
-    dqaFile    = ''.join((dirs['stage'], '/dqa_', instr, '.txt'))
-    shutil.copyfile(locateFile, dqaFile);
-
-
-    #determine program info
-    #todo: review getProginfo
-    create_prog(instrObj)
-    progData = gpi.getProgInfo(utDate, instr, dirs['stage'], log)
-
-
-    # dep_obtain file (list of programs)
-    #todo: what are we doing with this?
-    obtfile = ''.join((dirs['stage'], '/dep_obtain', instr, '.txt'))
+    # Error if dqa file (required input files)
+    dqaFile = ''.join((dirs['stage'], '/dqa_', instr, '.txt'))
+    if not os.path.exists(dqaFile):
+        log.error('dqa_run.py: DQA input file does not exist.  EXITING.')
+        sys.exit()
 
 
     # Read the list of FITS files
-    #todo: NOTE: current process copies 'dqa_locate<instr>.txt' output to 'dqa_<instr>.txt' and uses this
-    #after searching and removing corrupted fits files.
     files = []
-    dqaFile = ''.join((dirs['stage'], '/dqa_', instr, '.txt'))
     with open(dqaFile, 'r') as dqalist:
         for line in dqalist:
             files.append(line.strip())
 
 
-    # How many files will be processed?
-    numFiles = len(files)
-    log.info('dqa_run.py there are {} files to process'.format(numFiles))
-
-
-    #define vars to use throughout
-    ymd = utDate.replace('-', '')
-    sciFiles = 0
-
-
-    # Create containers to hold infile and outfile
-    inFiles = []
-    outFiles = []
+    #determine program info
+    create_prog(instrObj)
+    progData = gpi.getProgInfo(utDate, instr, dirs['stage'], log)
 
 
     # Catch for any asserts in processing
     try:
 
+        log.info('dqa_run.py: Processing {} files'.format(len(files)))
+
         # Loop through each entry in input_list
         for filename in files:
 
-            #set current file to work on and run dqa checks
             log.info('dqa_run.py input file is {}'.format(filename))
-            instrObj.set_fits_file(filename)
 
-
-            # do keyword checks.  if any of these steps return false then skip and copy to udf
-            #todo: test fits files: old NIRES, new NIRES, empty file, non-std filename, other instr file
-            #todo: error checking, log, asserts?
-            ok = instrObj.run_dqa_checks(progData)
-
-
-            #write out new fits file and jpg
-            #todo: check create_lev0_jpg for accuracy?
+            #Set current file to work on and run dqa checks, etc
+            #todo: check for bad/corrupted/empty/no-card/ image data
+            ok = True
+            if ok: ok = instrObj.set_fits_file(filename)
+            if ok: ok = instrObj.run_dqa_checks(progData)
             if ok: ok = instrObj.write_lev0_fits_file()
             if ok: ok = instrObj.create_lev0_jpg()
 
-
-            #stats
-            if instrObj.is_science(): sciFiles += 1
-
-
-            # checks failed?  copy to udf
+            #If any of these steps return false then copy to udf and skip
             if (not ok): 
                 log.info('copying {} to {}'.format(filename, dirs['udf']))
                 shutil.copy2(filename, dirs['udf']);
@@ -145,12 +96,16 @@ def dqa_run(instrObj, tpx=0):
                 outFiles.append(instrObj.fitsHeader.get('KOAID'))
 
 
+            #stats
+            if instrObj.is_science(): sciFiles += 1
+
+
         #log num files passed DQA
         log.info('dqa_run.py: {} files passed DQA'.format(len(inFiles)))
 
 
         #Create yyyymmdd.filelist.table
-        fltFile = dirs['lev0'] + '/' + ymd + '.filelist.table'
+        fltFile = dirs['lev0'] + '/' + utDateDir + '.filelist.table'
         with open(fltFile, 'w') as fp:
             for i in range(len(inFiles)):
                 fp.write(inFiles[i] + ' ' + outFiles[i] + "\n")
@@ -164,13 +119,13 @@ def dqa_run(instrObj, tpx=0):
 
 
         #Create yyyymmdd.FITS.md5sum.table
-        md5Outfile = dirs['lev0'] + '/' + ymd + '.FITS.md5sum.table'
+        md5Outfile = dirs['lev0'] + '/' + utDateDir + '.FITS.md5sum.table'
         log.info('dqa_run.py creating {}'.format(md5Outfile))
         make_dir_md5_table(dirs['lev0'], ".fits", md5Outfile)
 
 
         #Create yyyymmdd.JPEG.md5sum.table
-        md5Outfile = dirs['lev0'] + '/' + ymd + '.JPEG.md5sum.table'
+        md5Outfile = dirs['lev0'] + '/' + utDateDir + '.JPEG.md5sum.table'
         log.info('dqa_run.py creating {}'.format(md5Outfile))
         make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
 
@@ -200,11 +155,6 @@ def dqa_run(instrObj, tpx=0):
             update_koatpx(instr, utDate, 'sci_files', sciFiles, log)
             update_koatpx(instr, utDate, 'arch_state', 'DONE', log)
             update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
-
-
-        #Remove the LOC file
-        locFile = ''.join((dirs['lev0'], '/dqa.LOC'))
-        os.remove(locFile)
 
 
     #catch exceptions
