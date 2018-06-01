@@ -22,8 +22,7 @@ def dep_tar(instrObj):
         
 
     # Tarball name
-    tarFileName = ('anc', instrObj.utDateDir, '.tar')
-    tarFileName = ''.join(tarFileName)
+    tarFileName = 'anc' + instrObj.utDateDir + '.tar'
 
 
     # Go to directory and create tarball
@@ -35,7 +34,7 @@ def dep_tar(instrObj):
 
     # gzip the tarball
     instrObj.log.info('dep_tar.py gzipping {}'.format(tarFileName))
-    gzipTarFile = ''.join((tarFileName, '.gz'))
+    gzipTarFile = tarFileName + '.gz'
     with open(tarFileName, 'rb') as fIn:
         with gzip.open(gzipTarFile, 'wb') as fOut:
             shutil.copyfileobj(fIn, fOut)
@@ -58,7 +57,7 @@ def dep_tar(instrObj):
     #remove anc dirs
     dirs = ['nightly', 'udf']
     for dir in dirs:
-        delDir = ''.join((instrObj.dirs['anc'], '/', dir))
+        delDir = instrObj.dirs['anc'] + '/' + dir
         if not os.path.isdir(delDir): continue
         instrObj.log.info('dep_tar.py removing {}'.format(delDir))
         shutil.rmtree(delDir)
