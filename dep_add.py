@@ -17,17 +17,22 @@ def dep_add(instrObj):
     @param instr: The instrument object
     """
 
+    #todo: make dep_add smarter about finding misplaced files and deal with corrupted files
 
-    #Check anc dir exists
-    assert os.path.isdir(instrObj.dirs['anc']), 'Ancillary dir does not exist.'
+    #shorthand
+    instr  = instrObj.instr
+    utDate = instrObj.utDate
+    log    = instrObj.log
+    dirs   = instrObj.dirs
 
 
-    #get telescope number and validate 
+    #Log start
+    log.info('dqa_run.py started for {} {}'.format(instr, utDate))
+
+
+    #get telescope number
     telnr = instrObj.get_telnr()
-
-
-    #log start
-    instrObj.log.info('dep_add.py started for telnr {} {}'.format(telnr, instrObj.utDate))
+    instrObj.log.info('dep_add.py: using telnr {}'.format(telnr))
 
 
     #get date vars
@@ -38,16 +43,14 @@ def dep_add(instrObj):
     # Make ancDir/[nightly,udf]
     dirs = ['nightly', 'udf']
     for dir in dirs:
-        ancDirNew = (instrObj.dirs['anc'], '/', dir)
-        ancDirNew = ''.join(ancDirNew)
+        ancDirNew = ''.join((instrObj.dirs['anc'], '/', dir))
         if not os.path.isdir(ancDirNew):
             instrObj.log.info('dep_add.py creating {}'.format(ancDirNew))
             os.makedirs(ancDirNew)
 
 
     #check for valid nightly dir
-    joinSeq = ('/h/nightly', str(telnr), '/', str(year), '/', month, '/', day)
-    nightlyDir = ''.join(joinSeq)
+    nightlyDir = ''.join(('/h/nightly', str(telnr), '/', str(year), '/', month, '/', day))
     if not os.path.isdir(nightlyDir):
         nightlyDir.replace('/h/', '/s/')
         if not os.path.isdir(nightlyDir):
