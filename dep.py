@@ -185,6 +185,7 @@ class Dep:
         self.instrObj.log.error(log_msg)
 
         #send email to admin
+        self.instrObj.log.info('Emailing koaadmin about fatal error.')
         emailTo   = self.config['REPORT']['ADMIN_EMAIL']
         emailFrom = self.config['REPORT']['ADMIN_EMAIL']
         subject = summary
@@ -194,9 +195,14 @@ class Dep:
         #update tpx
         #TODO: Note: we may not need/want to do this tpx update
         if self.tpx:
+            self.instrObj.log.info('Updating KOA database with error status.')
             utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
             update_koatpx(instr, utDate, 'arch_state', "ERROR", log)
             update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
+
+        #exit program
+        self.instrObj.log.info('EXITING DEP!')
+        sys.exit()
 
 
 #------- End dep class --------
