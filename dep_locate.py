@@ -58,7 +58,8 @@ def dep_locate(instrObj):
 
 
     # Create files to store the valid FITS files
-    presortFile = ''.join((stageDir, '/dep_locate', instr, 'pre.text'))
+    presort1File = ''.join((stageDir, '/dep_locate', instr, 'pre1.text'))
+    presort2File = ''.join((stageDir, '/dep_locate', instr, 'pre2.text'))
     locateFile  = ''.join((stageDir, '/dep_locate', instr, '.txt'))
 
 
@@ -70,15 +71,15 @@ def dep_locate(instrObj):
 
 
     #write filepaths to outfile
-    with open(presortFile, 'w') as f:
+    with open(presort1File, 'w') as f:
         for path in filePaths:
             f.write(path + '\n')
-    log.info('Copied fits file names from {} to {}'.format(useDirs, presortFile))
+    log.info('Copied fits file names from {} to {}'.format(useDirs, presort1File))
 
 
     # Read presortFile list and do some more filtering before we do final copy to staging.
-    with open(locateFile, 'w') as f:
-        with open(presortFile, 'r') as pre:
+    with open(presort2File, 'w') as f:
+        with open(presort1File, 'r') as pre:
             fcsConfigs = []
             for line in pre:
                 if ('.fits' in line 
@@ -113,18 +114,13 @@ def dep_locate(instrObj):
             del fcsConfigs
 
 
+    # Verify the files are valid - no corrupt headers, valid KOAID
+    locateFile = stageDir +'/dep_locate' + instr + '.txt'
+    dep_rawfiles(instr, utDate, instrObj.endTime, presort2File, locateFile, stageDir, ancDir, log)
+
+
     #log completion with count
     num = sum(1 for line in open(locateFile, 'r'))
-    log.info('dep_locate: {} raw {} FITS files found.'.format(num, instr))
-
-
-    # Verify the files are valid - no corrupt headers, valid KOAID
-    dqaFile = stageDir +'/dqa_' + instr + '.txt'
-    dep_rawfiles(instr, utDate, instrObj.endTime, locateFile, dqaFile, stageDir, ancDir, log)
-
-
-    #log completion with count
-    num = sum(1 for line in open(dqaFile, 'r'))
     log.info('dep_locate: {} {} FITS files passed final checks.'.format(num, instr))
 
 #-----------------------END DEP LOCATE----------------------------------
@@ -148,7 +144,7 @@ def copy_file(source, destination):
         shutil.copy2(source, destination)
 
 
-def dep_rawfiles(instr, utDate, endTime, locateFile, dqaFile, stageDir, ancDir, log):
+def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log):
     """
     This function will look for non-raw images, duplicate KOAIDs,
     or bad dates for each fits file.
@@ -163,10 +159,10 @@ def dep_rawfiles(instr, utDate, endTime, locateFile, dqaFile, stageDir, ancDir, 
     @param utDate: The date in UT of the night that the fits tiles were taken
     @type endTime: datetime
     @param endTime: The hour that the observations ended
-    @type locateFile: string
-    @param locateFile: Filepath of text file with list of all FITS files within 24 hours of the given date
-    @type dqaFile: string
-    @param dqaFile: Filepath for final output file for all valid FITS passing checks.
+    @type inFile: string
+    @param inFile: Filepath of text file with list of all FITS files within 24 hours of the given date
+    @type outFile: string
+    @param outFile: Filepath for final output file for all valid FITS passing checks.
     @type stageDir: string
     @param stageDir: The staging area to store the files for transport to KOA
     @type ancDir: string
@@ -187,7 +183,7 @@ def dep_rawfiles(instr, utDate, endTime, locateFile, dqaFile, stageDir, ancDir, 
     # Loop through the file list and read in
     # the fits files found from within 24 hours
     # of the given date
-    with open(locateFile, 'r') as ffiles:
+    with open(inFile, 'r') as ffiles:
         for line in ffiles:
             fitsList.append(line.strip())
 
@@ -265,15 +261,14 @@ def dep_rawfiles(instr, utDate, endTime, locateFile, dqaFile, stageDir, ancDir, 
 
 
     # Create final dqa_<instr>.txt file with only the good lines from dep_locateINSTR.txt
-    ffiles = open(locateFile, 'r')
-    lines = ffiles.readlines()
-    ffiles.close()
-    with open(dqaFile, 'w') as ffiles:
+    with open(inFile, 'r') as fhIn:
+      lines = fhIn.readlines()
+    with open(outFile, 'w') as fhOut:
         for line in lines:
             if line.strip() in fitsList:
                 num = fitsList.index(line.strip())
                 if raw[num] == 1:
-                    ffiles.write(line)
+                    fhOut.write(line)
 
 
 #------------------END RAWFILES-----------------------------

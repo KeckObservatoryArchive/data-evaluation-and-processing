@@ -54,9 +54,9 @@ def create_prog(instrObj):
 
     # Get all files
     fileList = []
-    dqa_instr = stageDir + '/dqa_' + instr + '.txt'
-    with open(dqa_instr, 'r') as dqa:
-        for item in dqa:
+    locateFile = stageDir + '/dep_locate' + instr + '.txt'
+    with open(locateFile, 'r') as loc:
+        for item in loc:
             fileList.append(item.strip())
 
 
