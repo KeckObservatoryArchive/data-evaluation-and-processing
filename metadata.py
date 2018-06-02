@@ -134,6 +134,7 @@ def check_keyword_val(keyword, val, fmt, log=None):
     if (val == 'null'):
         if (fmt['allowNull'] == 'N'):
             if log: log.error('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))
+            sys.exit()
         return val
 
 
