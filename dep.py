@@ -21,7 +21,7 @@ import configparser
 from dep_obtain import dep_obtain
 from dep_locate import dep_locate
 from dep_add import dep_add
-from dqa_run import dqa_run
+from dep_dqa import dep_dqa
 from dep_tar import dep_tar
 from send_email import send_email
 from common import *
@@ -103,7 +103,7 @@ class Dep:
             if   step == 'obtain': dep_obtain(self.instrObj)
             elif step == 'locate': dep_locate(self.instrObj)
             elif step == 'add'   : dep_add(self.instrObj)
-            elif step == 'dqa'   : dqa_run(self.instrObj)
+            elif step == 'dqa'   : dep_dqa(self.instrObj)
             #lev1
             elif step == 'tar'   : dep_tar(self.instrObj)
             #koaxfr
@@ -153,11 +153,11 @@ class Dep:
             checkFiles.append(dirs['stage'] + '/dep_obtain' + instr + '.txt')
         elif step == 'locate':
             checkFiles.append(dirs['stage'] + '/dep_locate' + instr + '.txt')
-            checkFiles.append(dirs['stage'] + '/dqa_' + instr + '.txt')
         elif step == 'add':
             #note: dep_add should not exit if weather files are not found
             pass
         elif step == 'dqa':
+            checkFiles.append(dirs['stage'] + '/dep_dqa' + instr + '.txt')
             checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.filelist.table')
             checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.metadata.table')
             checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.metadata.md5sum')
