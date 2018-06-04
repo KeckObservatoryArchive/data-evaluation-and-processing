@@ -3,6 +3,8 @@ import os
 import hashlib
 import urllib
 import json
+from send_email import send_email
+import configparser
 
 
 
@@ -294,3 +296,35 @@ def url_get(url):
 
     data = json.loads(data)
     return data
+
+
+def do_fatal_error(msg, instr=None, utDate=None, failStage=None, log=None):
+
+    #read config vars
+    config = configparser.ConfigParser()
+    config.read('config.live.ini')
+
+    isDev = int(config['RUNTIME']['DEV'])
+    adminEmail = config['REPORT']['ADMIN_EMAIL']
+
+    
+    #form subject
+    subject = 'DEP ERROR: ['
+    if (instr)     : subject += instr     + ' '
+    if (utDate)    : subject += utDate    + ' '
+    if (failStage) : subject += failStage + ' '
+    subject += ']'
+
+
+    #always print
+    print (subject + ' ' + msg)
+
+
+    #if log then log
+    if log: log.error(subject + ' ' + msg)
+
+
+    #if admin email and not dev then email
+    print (isDev, adminEmail)
+    if (isDev == 0 and adminEmail != ''):
+        send_email(adminEmail, adminEmail, subject, msg)
