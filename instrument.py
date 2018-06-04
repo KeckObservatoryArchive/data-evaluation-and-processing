@@ -13,7 +13,6 @@ from astropy.io import fits
 from datetime import timedelta, datetime as dt
 from envlog import *
 import shutil
-import makejpg
 import create_log as cl
 from verification import *
 import urllib.request
@@ -668,27 +667,6 @@ class Instrument:
         return True
 
 
-
-    def create_lev0_jpg(self):
-    
-        #make sure we have a koaid
-        keys = self.fitsHeader
-        koaid = keys.get('KOAID')
-        if (not koaid):
-            self.log.error('create_lev0_jpg: Could not find KOAID for output filename.')
-            return False
-
-        #build path to final fits file
-        fitsfile = self.dirs['lev0']
-        if   (koaid.startswith('NC')): fitsfile += '/scam'
-        elif (koaid.startswith('NS')): fitsfile += '/spec'
-        fitsfile += '/' + koaid
-
-        #create jpg
-        #todo: why does the old IDL code create jpgs to a tempdir first?
-        makejpg.main(fitsfile, self.instr, self.dirs['lev0'] + '/')
-        return True
-
     def make_jpg(self):
         '''
         Converts a FITS file to JPG image
@@ -727,6 +705,6 @@ class Instrument:
             self.log.info('make_jpg: file created {}'.format(jpgFile))
             return True
         else:
-            self.log.info('make_jpg: file does not exist {}'.format(filePath))
+            self.log.error('make_jpg: file does not exist {}'.format(filePath))
             return False
 
