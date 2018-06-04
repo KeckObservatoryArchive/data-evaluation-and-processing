@@ -49,7 +49,7 @@ def koaxfr(instrObj):
         # Send email verifying transfer complete
         emailTo = config['KOAXFR']['emailto']
         instrObj.log.info('koaxfr.py sending email to {}'.format(emailTo))
-        subject = ''.join(('lev0', instrObj.utDate, ' ', instr))
+        subject = ''.join(('lev0 ', instrObj.utDate.replace('-', ''), ' ', instr))
         message = 'lev0 data successfully transferred to koaxfr'
         send_email(emailTo, emailFrom, subject, message)
         return True

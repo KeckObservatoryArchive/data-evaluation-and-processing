@@ -689,3 +689,44 @@ class Instrument:
         makejpg.main(fitsfile, self.instr, self.dirs['lev0'] + '/')
         return True
 
+    def make_jpg(self):
+        '''
+        Converts a FITS file to JPG image
+        '''
+
+        import matplotlib as mpl
+        mpl.use('Agg')
+        import matplotlib.pyplot as plt
+        from PIL import Image
+        from astropy.visualization import ZScaleInterval, SinhStretch
+        from astropy.visualization.mpl_normalize import ImageNormalize
+
+        # file to convert is lev0Dir/KOAID
+
+        path = self.dirs['lev0']
+        koaid = self.fitsHeader.get('KOAID')
+        filePath = ''.join(path, '/', koaid)
+        self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
+
+        # verify file exists
+
+        if os.path.isfile(filePath):
+            # image data to convert
+            image = self.fitsHdu[0].data
+            interval = ZScaleInterval()
+            vmin, vmax = interval.get_limits(image)
+            norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=SinhStretch())
+            plt.imshow(image, cmap='gray', origin='lower', norm=norm)
+            plt.axis('off')
+            # save as png, then convert to jpg
+            pngFile = filePath.replace('.fits', '.png')
+            jpgFile = pngFile.replace('.png', '.jpg')
+            plt.savefig(pngFile)
+            Image.open(pngFile).save(jpgFile)
+            os.remove(pngFile)
+            self.log.info('make_jpg: file created {}'.format(jpgFile))
+            return True
+        else:
+            self.log.info('make_jpg: file does not exist {}'.format(filePath))
+            return False
+
