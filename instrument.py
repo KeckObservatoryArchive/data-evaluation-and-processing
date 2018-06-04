@@ -80,7 +80,7 @@ class Instrument:
 
 
 
-    def dep_init(self):
+    def dep_init(self, config):
         '''
         Perform specific initialization tasks for DEP processing.
         '''
@@ -88,7 +88,14 @@ class Instrument:
         #TODO: exit if existence of output/stage dirs? Maybe put override in config?
         
 
-        #create log if it does nto exist
+        #store config
+        self.config = config
+        self.koaUrl = config['API']['KOAAPI']
+        self.telUrl = config['API']['TELAPI']
+        self.metadataTablesDir = config['MISC']['METADATA_TABLES_DIR']
+
+
+        #create log if it does not exist
         if not self.log:
             self.log = cl.create_log(self.rootDir, self.instr, self.utDate, True)
             self.log.info('instrument.py: log created')
@@ -116,11 +123,14 @@ class Instrument:
         # Create the directories, if they don't already exist
         for key, dir in self.dirs.items():
             self.log.info('instrument.py: using directory {}'.format(dir))
-            if not os.path.isdir(dir):
+            if os.path.isdir(dir):
+                #todo: only raise if not config DEV?
+                raise Exception('Staging and/or output directories already exist')
+            else:
                 try:
                     os.makedirs(dir)
                 except:
-                    print('instrument.py: Could not create {}'.format(dir))
+                    self.log.error('instrument.py: could not create {}'.format(dir))
 
 
         # Additions for NIRSPEC
