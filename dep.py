@@ -59,10 +59,7 @@ class Dep:
         module = importlib.import_module(moduleName)
         instrClass = getattr(module, className)
         self.instrObj = instrClass(self.instr, self.utDate, self.rootDir)
-        self.instrObj.koaUrl = self.config['API']['KOAAPI']
-        self.instrObj.telUrl = self.config['API']['TELAPI']
-        self.instrObj.metadataTablesDir = self.config['MISC']['METADATA_TABLES_DIR']
-        self.instrObj.dep_init()
+        self.instrObj.dep_init(self.config)
         
         
     def go(self, processStart=None, processStop=None):
@@ -76,10 +73,13 @@ class Dep:
 
         #verify
         if self.tpx:
-            if not self.verify_can_proceed(): return
+            if not self.verify_can_proceed(): return False
 
 
-        #todo: write to tpx at dep start
+        #write to tpx at dep start
+        if self.tpx:
+            utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+            update_koatpx(self.instrObj.instr, self.instrObj.utDate, 'start_time', utcTimestamp, self.instrObj.log)
 
 
         #process steps control (pair down ordered list if requested)
@@ -90,10 +90,8 @@ class Dep:
         if (processStop != None and processStop not in steps):
             self.instrObj.log.error('Incorrect use of processStop')
             return False
-        if processStart != None:
-            steps = steps[steps.index(processStart):]
-        if processStop  != None:
-            steps = steps[:(steps.index(processStop)+1)]
+        if processStart != None: steps = steps[steps.index(processStart):]
+        if processStop  != None: steps = steps[:(steps.index(processStop)+1)]
 
 
         #run each step in order
@@ -112,7 +110,9 @@ class Dep:
             self.check_step_results(step)
 
 
+        #complete
         self.instrObj.log.info('*** DEP PROCESSSING COMPLETE! ***')
+        return True
 
 
     def verify_can_proceed(self):
