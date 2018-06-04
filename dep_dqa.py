@@ -89,7 +89,7 @@ def dep_dqa(instrObj, tpx=0):
             if ok: ok = instrObj.set_fits_file(filename)
             if ok: ok = instrObj.run_dqa_checks(progData)
             if ok: ok = instrObj.write_lev0_fits_file()
-            if ok: ok = instrObj.create_lev0_jpg()
+            if ok: ok = instrObj.make_jpg()
 
             #If any of these steps return false then copy to udf and skip
             if (not ok): 
@@ -176,6 +176,7 @@ def dep_dqa(instrObj, tpx=0):
     #catch exceptions
     except Exception as err:
         log.error('dep_dqa.py program crashed, exiting: {}'.format(str(err)))
+        sys.exit()
 
 
     #log success
@@ -192,7 +193,7 @@ def notify_zero_files(dqaFile):
     open(dqaFile, 'a').close()
 
     #todo: should we handle ipac email and tpx status here or in koaxfr
-    
+
 
 
 def make_metadata(instr, utDate, lev0Dir, progData, tablesDir, log):
