@@ -158,11 +158,14 @@ class Dep:
             pass
         elif step == 'dqa':
             checkFiles.append(dirs['stage'] + '/dep_dqa' + instr + '.txt')
-            checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.filelist.table')
-            checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.metadata.table')
-            checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.metadata.md5sum')
-            checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.FITS.md5sum.table')
-            checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.JPEG.md5sum.table')
+            with open(checkFiles[0], 'r') as f:
+                count = sum(1 for line in f)
+            if count > 0:
+                checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.filelist.table')
+                checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.metadata.table')
+                checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.metadata.md5sum')
+                checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.FITS.md5sum.table')
+                checkFiles.append(dirs['lev0'] + '/' + utDateDir + '.JPEG.md5sum.table')
         elif step == 'tar':
             checkFiles.append(dirs['anc'] + '/anc' + utDateDir + '.tar.gz')
             checkFiles.append(dirs['anc'] + '/anc' + utDateDir + '.md5sum')
