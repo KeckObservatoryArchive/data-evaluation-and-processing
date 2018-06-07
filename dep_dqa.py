@@ -65,7 +65,7 @@ def dep_dqa(instrObj, tpx=0):
 
     #if no files, then exit out
     if len(files) == 0 :
-        notify_zero_files(dqaFile)
+        notify_zero_files(dqaFile, log)
         return
 
 
@@ -109,7 +109,7 @@ def dep_dqa(instrObj, tpx=0):
 
         #if no files passed DQA, then exit out
         if len(outFiles) == 0 :
-            notify_zero_files(dqaFile)
+            notify_zero_files(dqaFile, log)
             return
 
 
@@ -184,7 +184,7 @@ def dep_dqa(instrObj, tpx=0):
 
 
 
-def notify_zero_files(dqaFile):
+def notify_zero_files(dqaFile, log):
 
     #log
     log.info('dep_dqa.py: 0 files output from DQA process.')

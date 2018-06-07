@@ -27,6 +27,7 @@ def dep_tar(instrObj):
 
     # Go to directory and create tarball
     instrObj.log.info('dep_tar.py creating {}'.format(tarFileName))
+    myCwd = os.getcwd()
     os.chdir(instrObj.dirs['anc'])
     with tarfile.open(tarFileName, 'w:gz') as tar:
         tar.add('./')
@@ -61,3 +62,6 @@ def dep_tar(instrObj):
         if not os.path.isdir(delDir): continue
         instrObj.log.info('dep_tar.py removing {}'.format(delDir))
         shutil.rmtree(delDir)
+
+    # go back to original directory
+    os.chdir(myCwd)
