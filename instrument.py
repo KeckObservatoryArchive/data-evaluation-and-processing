@@ -121,7 +121,7 @@ class Instrument:
 
         # Create the directories, if they don't already exist
         for key, dir in self.dirs.items():
-            if key == 'process': continue # process dir always exists
+            if key == 'process': continue # process dir should always exists
             self.log.info('instrument.py: using directory {}'.format(dir))
             if os.path.isdir(dir):
                 #todo: only raise if not config DEV?
