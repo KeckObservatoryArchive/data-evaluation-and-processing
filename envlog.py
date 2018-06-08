@@ -79,6 +79,8 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 	envDatetime = data[hstKeys[0]][0:] + ' ' + data[hstKeys[1]][0:]
 	envEntries = pd.to_datetime(envDatetime, format=' %d-%b-%Y %H:%M:%S.%f').between(dt1, dt2)
 	envIndex = envEntries.index[envEntries]
+	if len(envIndex) == 0:
+		return values
 	#
 	# Timestamp of this entry in UT
 	#
