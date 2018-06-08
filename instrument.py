@@ -490,12 +490,16 @@ class Instrument:
         semid = semester + '_' + progid
 
 
-        #create url and get data
-        url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
-        data = urllib.request.urlopen(url).read().decode('utf8')
-        data = json.loads(data)
-        assert (data and len(data) > 0 and data[0]['propint']), 'set_proprint: Unable to set PROPINT keyword.'
-        propint = int(data[0]['propint'])
+        # Default to 18 for ENG data (***verify with SAs***)
+        if progid == 'ENG':
+            propint = 18
+        else:
+            #create url and get data
+            url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
+            data = urllib.request.urlopen(url).read().decode('utf8')
+            data = json.loads(data)
+            assert (data and len(data) > 0 and data[0]['propint']), 'set_proprint: Unable to set PROPINT keyword.'
+            propint = int(data[0]['propint'])
 
 
         #update
@@ -602,13 +606,14 @@ class Instrument:
 
         #get input vars
         keys = self.fitsHeader
+        dateobs = keys.get('DAET-OBS')
         utc = keys.get('UTC')
         telnr = self.get_telnr()
 
 
         #read envMet.arT and write to header
         logFile = self.dirs['anc'] + '/nightly/envMet.arT'
-        data = envlog(logFile, 'envMet',   telnr, self.utDate, utc)
+        data = envlog(logFile, 'envMet',   telnr, dateobs, utc)
         assert type(data) is dict, "Could not read envMet.arT data"
 
         keys.update({'WXDOMHUM' : (data['wx_domhum'],    'KOA: Added keyword')})
@@ -624,7 +629,7 @@ class Instrument:
 
         #read envFocus.arT and write to header
         logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
-        data = envlog(logFile, 'envFocus', telnr, self.utDate, utc)
+        data = envlog(logFile, 'envFocus', telnr, dateobs, utc)
         assert type(data) is dict, "Could not read envFocus.arT data"
 
         keys.update({'GUIDFWHM' : (data['guidfwhm'],     'KOA: Added keyword')})
@@ -701,7 +706,7 @@ class Instrument:
             pngFile = filePath.replace('.fits', '.png')
             jpgFile = pngFile.replace('.png', '.jpg')
             plt.savefig(pngFile)
-            Image.open(pngFile).save(jpgFile)
+            Image.open(pngFile).convert('RGB').save(jpgFile)
             os.remove(pngFile)
             self.log.info('make_jpg: file created {}'.format(jpgFile))
             return True
