@@ -606,13 +606,14 @@ class Instrument:
 
         #get input vars
         keys = self.fitsHeader
+        dateobs = keys.get('DAET-OBS')
         utc = keys.get('UTC')
         telnr = self.get_telnr()
 
 
         #read envMet.arT and write to header
         logFile = self.dirs['anc'] + '/nightly/envMet.arT'
-        data = envlog(logFile, 'envMet',   telnr, self.utDate, utc)
+        data = envlog(logFile, 'envMet',   telnr, dateobs, utc)
         assert type(data) is dict, "Could not read envMet.arT data"
 
         keys.update({'WXDOMHUM' : (data['wx_domhum'],    'KOA: Added keyword')})
@@ -628,7 +629,7 @@ class Instrument:
 
         #read envFocus.arT and write to header
         logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
-        data = envlog(logFile, 'envFocus', telnr, self.utDate, utc)
+        data = envlog(logFile, 'envFocus', telnr, dateobs, utc)
         assert type(data) is dict, "Could not read envFocus.arT data"
 
         keys.update({'GUIDFWHM' : (data['guidfwhm'],     'KOA: Added keyword')})
