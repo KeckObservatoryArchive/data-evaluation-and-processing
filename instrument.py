@@ -490,12 +490,16 @@ class Instrument:
         semid = semester + '_' + progid
 
 
-        #create url and get data
-        url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
-        data = urllib.request.urlopen(url).read().decode('utf8')
-        data = json.loads(data)
-        assert (data and len(data) > 0 and data[0]['propint']), 'set_proprint: Unable to set PROPINT keyword.'
-        propint = int(data[0]['propint'])
+        # Default to 18 for ENG data (***verify with SAs***)
+        if progid == 'ENG':
+            propint = 18
+        else:
+            #create url and get data
+            url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
+            data = urllib.request.urlopen(url).read().decode('utf8')
+            data = json.loads(data)
+            assert (data and len(data) > 0 and data[0]['propint']), 'set_proprint: Unable to set PROPINT keyword.'
+            propint = int(data[0]['propint'])
 
 
         #update
