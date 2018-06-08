@@ -706,7 +706,7 @@ class Instrument:
             pngFile = filePath.replace('.fits', '.png')
             jpgFile = pngFile.replace('.png', '.jpg')
             plt.savefig(pngFile)
-            Image.open(pngFile).save(jpgFile)
+            Image.open(pngFile).convert('RGB').save(jpgFile)
             os.remove(pngFile)
             self.log.info('make_jpg: file created {}'.format(jpgFile))
             return True
