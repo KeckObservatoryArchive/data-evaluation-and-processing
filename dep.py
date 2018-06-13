@@ -14,6 +14,7 @@
 #-------------------------------------------------------------------------------
 
 import os
+import sys
 import importlib
 import urllib.request
 import json
@@ -53,13 +54,11 @@ class Dep:
         self.config.read('config.live.ini')
 
         # Create instrument object
-        # This will also verify inputs, create the logger and create all directories
         moduleName = ''.join(('instr_', self.instr.lower()))
         className = self.instr.capitalize()
         module = importlib.import_module(moduleName)
         instrClass = getattr(module, className)
         self.instrObj = instrClass(self.instr, self.utDate, self.rootDir)
-        self.instrObj.dep_init(self.config)
         
         
     def go(self, processStart=None, processStop=None):
@@ -71,9 +70,15 @@ class Dep:
         @type instr: string
         """
 
-        #verify
+        # Init DEP process (verify inputs, create the logger and create directories)
+        # NOTE: A full run assert fails if dirs exist, otherwise assumes you know what you are doing.
+        fullRun = True if (processStart == None and processStop == None) else False
+        self.instrObj.dep_init(self.config, fullRun)
+
+
+        #check koa for existing entry
         if self.tpx:
-            if not self.verify_can_proceed(): return False
+            if not self.check_koa_db_entry(): return False
 
 
         #write to tpx at dep start
@@ -85,10 +90,10 @@ class Dep:
         #process steps control (pair down ordered list if requested)
         steps = ['obtain', 'locate', 'add', 'dqa', 'lev1', 'tar', 'koaxfr']
         if (processStart != None and processStart not in steps):
-            self.instrObj.log.error('Incorrect use of processStart')
+            raise Exception('Incorrect use of processStart: ' + processStart)
             return False
         if (processStop != None and processStop not in steps):
-            self.instrObj.log.error('Incorrect use of processStop')
+            raise Exception('Incorrect use of processStop: ' + processStop)
             return False
         if processStart != None: steps = steps[steps.index(processStart):]
         if processStop  != None: steps = steps[:(steps.index(processStop)+1)]
@@ -115,7 +120,7 @@ class Dep:
         return True
 
 
-    def verify_can_proceed(self):
+    def check_koa_db_entry(self):
         """
         Verify whether or not processing can proceed.  Processing cannot
         proceed if there is already an entry in koa.koatpx.
@@ -127,11 +132,12 @@ class Dep:
             url = ''.join((self.instrObj.koaUrl, 'cmd=isInKoatpx&instr=', self.instr, '&utdate=', self.utDate))
             data = url_get(url)
             if data[0]['num'] != '0':
-                self.instrObj.log.error('dep: entry already exists in database, exiting')
+                raise Exception('dep: entry already exists in database. EXITING!')
                 return False
         except:
-            self.instrObj.log.error('dep: could not query koa database')
+            raise Exception('dep: could not query koa database. EXITING!')
             return False
+
         return True
 
 
@@ -150,7 +156,7 @@ class Dep:
         #get list of files to check for existence
         checkFiles = []
         if   step == 'obtain':
-            checkFiles.append(dirs['stage'] + '/dep_obtain' + instr + '.txt')
+            checkFiles.append(dirs['stage'] + '/dep_obtains' + instr + '.txt')
         elif step == 'locate':
             checkFiles.append(dirs['stage'] + '/dep_locate' + instr + '.txt')
         elif step == 'add':
@@ -174,26 +180,16 @@ class Dep:
         #check for file existence and fatal error if not found
         for file in checkFiles:
             if not os.path.exists(file):
-                self.do_fatal_error(step, file + " not found!")
+                self.do_fatal_error(step, 'Process post-check: ' + file + " not found!")
                 break
 
 
 
     def do_fatal_error(self, step, msg):
 
-        summary = "DEP ERROR: [" + self.instrObj.instr + ', ' + self.instrObj.utDate + ', ' + step + ']'
+        #call common.do_fatal_error
+        do_fatal_error(msg, self.instrObj.instr, self.instrObj.utDate, step, self.instrObj.log)
 
-        #log message
-        log_msg = summary + ' (' + msg + ')'
-        self.instrObj.log.error(log_msg)
-
-        #send email to admin
-        self.instrObj.log.info('Emailing koaadmin about fatal error.')
-        emailTo   = self.config['REPORT']['ADMIN_EMAIL']
-        emailFrom = self.config['REPORT']['ADMIN_EMAIL']
-        subject = summary
-        message = subject + "\n\n" + msg
-        send_email(emailTo, emailFrom, subject, message)
 
         #update tpx
         #TODO: Note: we may not need/want to do this tpx update
