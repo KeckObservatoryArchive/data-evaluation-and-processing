@@ -303,8 +303,6 @@ def do_fatal_error(msg, instr=None, utDate=None, failStage=None, log=None):
     #read config vars
     config = configparser.ConfigParser()
     config.read('config.live.ini')
-
-    isDev = int(config['RUNTIME']['DEV'])
     adminEmail = config['REPORT']['ADMIN_EMAIL']
 
     
@@ -325,8 +323,7 @@ def do_fatal_error(msg, instr=None, utDate=None, failStage=None, log=None):
 
 
     #if admin email and not dev then email
-    print (isDev, adminEmail)
-    if (isDev == 0 and adminEmail != ''):
+    if (adminEmail != ''):
         send_email(adminEmail, adminEmail, subject, msg)
 
 def update_koatpx(instr, utDate, column, value, log=''):
