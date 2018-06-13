@@ -49,7 +49,8 @@ def create_prog(instrObj):
             items = line.strip().split(' ')
             if len(items)>1:
                 oa.append(items[1])
-    if len(oa) >= 1: oa = oa[0]
+    if (len(oa) == 0): oa = ''
+    else             : oa = oa[0]
 
 
     # Get all files
