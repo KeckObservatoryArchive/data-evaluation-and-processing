@@ -79,7 +79,7 @@ class Instrument:
 
 
 
-    def dep_init(self, config):
+    def dep_init(self, config, fullRun=True):
         '''
         Perform specific initialization tasks for DEP processing.
         '''
@@ -101,7 +101,7 @@ class Instrument:
 
 
         #check and create dirs
-        self.init_dirs()
+        self.init_dirs(fullRun)
 
 
         #create README (output dir with everything before /koadata##/... stripped off)
@@ -113,7 +113,7 @@ class Instrument:
             f.write(path + '\n')
 
 
-    def init_dirs(self):
+    def init_dirs(self, fullRun=True):
 
         # get the various root dirs
         self.dirs = get_root_dirs(self.rootDir, self.instr, self.utDate)
@@ -122,15 +122,15 @@ class Instrument:
         # Create the directories, if they don't already exist
         for key, dir in self.dirs.items():
             if key == 'process': continue # process dir should always exists
-            self.log.info('instrument.py: using directory {}'.format(dir))
+            self.log.info('instrument.py: {} directory {}'.format(key, dir))
             if os.path.isdir(dir):
-                #todo: only raise if not config DEV?
-                raise Exception('Staging and/or output directories already exist')
+                if (fullRun):
+                    raise Exception('instrument.py: staging and/or output directories already exist')
             else:
                 try:
                     os.makedirs(dir)
                 except:
-                    self.log.error('instrument.py: could not create {}'.format(dir))
+                    raise Exception('instrument.py: could not create {}'.format(dir))
 
 
         # Additions for NIRSPEC
@@ -608,7 +608,7 @@ class Instrument:
 
         #get input vars
         keys = self.fitsHeader
-        dateobs = keys.get('DAET-OBS')
+        dateobs = keys.get('DATE-OBS')
         utc = keys.get('UTC')
         telnr = self.get_telnr()
 
