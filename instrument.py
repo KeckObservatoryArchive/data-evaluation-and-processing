@@ -148,12 +148,14 @@ class Instrument:
         '''
 
         #todo: should we have option to just read the header for performance if that is all that is needed?
-        #todo: check for empty/corrupted and return false
-        self.fitsHdu = fits.open(filename)
-        self.fitsHeader = self.fitsHdu[0].header
-        #self.fitsHeader = fits.getheader(filename)
-        self.fitsFilepath = filename
-
+        try:
+            self.fitsHdu = fits.open(filename)
+            self.fitsHeader = self.fitsHdu[0].header
+            #self.fitsHeader = fits.getheader(filename)
+            self.fitsFilepath = filename
+        except:
+            self.log.error('set_fits_file: Could not read FITS file')
+            return False
 
         self.koaid = '';
         self.rawfile = ''

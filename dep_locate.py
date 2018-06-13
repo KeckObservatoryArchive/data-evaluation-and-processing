@@ -200,12 +200,21 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
     for i in range(lsize):
         raw[i] = 0
 
+        # check for empty file
+        if (os.path.getsize(fitsList[i]) == 0):
+            move_bad_file(instr, fitsList[i], ancDir, 'Empty File', log_writer)
+            continue
+
         # Get the header of the current fits file
-        if instr == 'NIRC2':
-            header0 = fits.getheader(fitsList[i], ignore_missing_end=True)
-            header0['INSTRUME'] = 'NIRC2'
-        else:
-            header0 = fits.getheader(fitsList[i])
+        try:
+            if instr == 'NIRC2':
+                header0 = fits.getheader(fitsList[i], ignore_missing_end=True)
+                header0['INSTRUME'] = 'NIRC2'
+            else:
+                header0 = fits.getheader(fitsList[i])
+        except:
+            move_bad_file(instr, fitsList[i], ancDir, 'Unreadable Header', log_writer)
+            continue
 
         # Break the file path into a list
         root = fitsList[i].split('/')
