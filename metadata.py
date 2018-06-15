@@ -18,6 +18,7 @@ from astropy.io import fits
 import pandas
 from common import make_dir_md5_table
 import datetime
+import re
 
 def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=None):
     """
@@ -121,7 +122,6 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log):
         out.write("\n")
  
 
-
 def check_keyword_val(keyword, val, fmt, log=None):
     '''
     Checks keyword for correct type and proper value.
@@ -169,14 +169,28 @@ def check_keyword_val(keyword, val, fmt, log=None):
      
 
     #check char length
-    #TODO: round instead of truncate for type double?
     length = len(str(val))
     if (length > fmt['colSize']):
             if log: log.warning('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
-            val = str(val)[:fmt['colSize']]
+            if (fmt['dataType'] == 'float') : val = truncate_float(val, fmt['colSize'])
+            else                            : val = str(val)[:fmt['colSize']]
 
 
     #todo: check value range, discrete values?
 
 
     return val
+
+
+
+def truncate_float(f, n):
+    s = '{}'.format(f)
+    exp = ''
+    if 'e' in s or 'E' in s:
+        parts = re.split('e', s, flags=re.IGNORECASE)
+        s = parts[0]
+        exp = 'e' + parts[1]
+
+    n -= len(exp)
+    return s[:n] + exp
+
