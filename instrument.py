@@ -330,8 +330,6 @@ class Instrument:
         Checks to see if we have a date obsv keyword, and if it needs to be fixed or created.
         '''
 
-        self.log.info('set_dateObs: verifying DATE-OBS keyowrd exists')
-
         keys = self.fitsHeader
         filename = self.fitsFilepath
 
@@ -365,8 +363,6 @@ class Instrument:
         '''
         Checks to see if we have a utc time keyword, and if it needs to be fixed or created.
         '''
-
-        self.log.info('set_utc: verifying UTC keyowrd exists')
 
         keys = self.fitsHeader
         filename = self.fitsFilepath
@@ -487,8 +483,6 @@ class Instrument:
 
 
     def set_semester(self):
-
-        self.log.info('set_semester: setting SEMESTER keyword value')
 
         #TODO: move existing common.py semester() to Instrument?
         keys = self.fitsHeader        
