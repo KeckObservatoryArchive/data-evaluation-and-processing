@@ -27,7 +27,7 @@ def dep_add(instrObj):
 
 
     #Log start
-    log.info('dqa_run.py started for {} {}'.format(instr, utDate))
+    log.info('dep_add.py started for {} {}'.format(instr, utDate))
 
 
     #get telescope number

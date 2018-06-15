@@ -134,10 +134,13 @@ class Nires(instrument.Instrument):
         #NOTE: keyword FRAMENUM added in Apr 2018
         """
  
-         #skip if it exists
+        self.log.info('set_frameno: setting FRAMNO keyword value from FRAMENUM')
+
+        #skip if it exists
         keys = self.fitsHeader
         if keys.get('FRAMENO') != None: return True
 
+        # todo: derive from FRAMENUM first, then go on to DATAFILE
 
         #get value
         #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
@@ -166,6 +169,8 @@ class Nires(instrument.Instrument):
         Adds OFNAME keyword to header (copy of DATAFILE)
         """
 
+        self.log.info('set_ofName: setting OFNAME keyword value')
+
         #get value
         keys = self.fitsHeader
         ofName = keys.get(self.ofName)
@@ -185,6 +190,8 @@ class Nires(instrument.Instrument):
         '''
         Fixes missing ELAPTIME keyword.
         '''
+
+        self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
 
         keys = self.fitsHeader
 
@@ -211,6 +218,8 @@ class Nires(instrument.Instrument):
         # NOTE: kfilter is always on for imag
         '''
 
+        self.log.info('set_wavelengths: setting wavelength keyword values')
+
         keys = self.fitsHeader
         instr = keys.get('INSTR')
 
@@ -233,6 +242,8 @@ class Nires(instrument.Instrument):
         '''
         Adds nominal spectral resolution keyword
         '''
+
+        self.log.info('set_specres: setting SPECRES keyword values')
 
         keys = self.fitsHeader
         if (keys.get('INSTR') == 'spec'):
@@ -275,6 +286,7 @@ class Nires(instrument.Instrument):
         #add keyword for 'imag' only
         keys = self.fitsHeader
         if (keys.get('INSTR') == 'imag'):
+            self.log.info('set_filter: setting FILTER keyword value')
             filt = 'Kp'
             keys.update({'FILTER' : (filt, 'KOA: Added keyword')})
         return True
@@ -288,6 +300,7 @@ class Nires(instrument.Instrument):
         #add keywords for 'spec' only
         keys = self.fitsHeader
         if (keys.get('INSTR') == 'spec'):
+            self.log.info('set_slit_dims: setting slit keyword values')
             slitlen  = 18.1
             slitwidt = 0.5
             keys.update({'SLITLEN'  : (slitlen,  'KOA: Added keyword')})
@@ -300,6 +313,8 @@ class Nires(instrument.Instrument):
         Fixes missing KOAIMTYP keyword.
         This is derived from OBSTYPE keyword.
         '''
+
+        self.log.info('set_koaimtyp: setting KOAIMTYP keyowrd value from OBSTYPE')
 
         #get obstype value
         keys = self.fitsHeader

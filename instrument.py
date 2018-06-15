@@ -171,6 +171,8 @@ class Instrument:
         Create and add KOAID to header if it does not already exist
         '''
 
+        self.log.info('set_koaid: setting KOAID keyowrd value')
+
         #skip if it exists
         if self.fitsHeader.get('KOAID') != None: return True
 
@@ -290,6 +292,8 @@ class Instrument:
         #todo:  go over idl file again and pull out logic for other instruments
         #todo: use class key vals instead
 
+        self.log.info('check_instr: verifying this is a ' + self.instr + ' FITS file')
+
         ok = False
         keys = self.fitsHeader
 
@@ -317,7 +321,7 @@ class Instrument:
 
         #log err
         if (not ok):
-            self.log.warning('check_instr: Cannot determine if file is from ' + self.instr + '.  UDF!')
+            self.log.warning('check_instr: cannot determine if file is from ' + self.instr + '.  UDF!')
 
         return ok
 
@@ -342,6 +346,7 @@ class Instrument:
             dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             dateObs = dateObs.strftime('%Y-%m-%d')
             keys.update({self.dateObs : (dateObs, 'KOA: Added missing keyword')})
+            self.log.info('set_dateObs: DATE-OBS value determined from FITS file time')
 
         # Fix yy/mm/dd to yyyy-mm-dd
         if '-' not in dateObs:
@@ -349,6 +354,7 @@ class Instrument:
             yr, mo, dy = dateObs.split('/')
             dateObs = ''.join(('20', yr, '-', mo, '-', dy))
             keys.update({self.dateObs : (dateObs, 'KOA: value corrected (' + orig + ')')})
+            self.log.info('set_dateObs: fixed formatting of DATE-OBS value (yyyy-mm-dd)')
 
         #todo: can this check fail?
         return True
@@ -371,6 +377,7 @@ class Instrument:
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S')
             keys.update({self.utc : (utc, 'KOA: Added missing keyword')})
+            self.log.info('set_utc: UTC value determined from FITS file time')
 
         return True
 
@@ -435,6 +442,8 @@ class Instrument:
 
     def set_prog_info(self, progData):
         
+        self.log.info('set_prog_info: setting program information keywords')
+
         #note: progData is also stored in newproginfo.txt output from getProgInfo.py
 
         #find matching filename in array 
@@ -485,6 +494,8 @@ class Instrument:
         '''
         Set proprietary period length.
         '''
+
+        self.log.info('set_propint: determining PROPINT value')
 
         #create semid
         keys = self.fitsHeader
@@ -547,6 +558,9 @@ class Instrument:
         '''
         Adds mean, median, std keywords to header
         '''
+
+        self.log.info('set_image_stats_keywords: setting image statistics keyword values')
+
         keys = self.fitsHeader
 
         image = self.fitsHdu[0].data     
@@ -565,6 +579,9 @@ class Instrument:
         '''
         Determines number of saturated pixels and adds NPIXSAT to header
         '''
+
+        self.log.info('set_npixsat: setting pixel saturation keyword value')
+
         keys = self.fitsHeader
         satVal = keys.get('SATURATE')
 
@@ -605,6 +622,8 @@ class Instrument:
         Adds all weather related keywords to header.
         NOTE: DEP should not exit if weather files are not found
         '''
+
+        self.log.info('set_weather_keywords: setting weather keyword values')
 
         #get input vars
         keys = self.fitsHeader
@@ -681,6 +700,7 @@ class Instrument:
 
         #write out new fits file with altered header
         self.fitsHdu.writeto(outfile)
+        self.log.info('write_lev0_fits_file: output file is ' + outfile)
         return True
 
 
