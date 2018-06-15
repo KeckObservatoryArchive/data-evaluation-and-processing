@@ -74,109 +74,99 @@ def dep_dqa(instrObj, tpx=0):
     progData = gpi.getProgInfo(utDate, instr, dirs['stage'], log)
 
 
-    # Catch for any asserts in processing
-    try:
+    # Loop through each entry in input_list
+    log.info('dep_dqa.py: Processing {} files'.format(len(files)))
+    for filename in files:
 
-        log.info('dep_dqa.py: Processing {} files'.format(len(files)))
+        log.info('dep_dqa.py input file is {}'.format(filename))
 
-        # Loop through each entry in input_list
-        for filename in files:
+        #Set current file to work on and run dqa checks, etc
+        ok = True
+        if ok: ok = instrObj.set_fits_file(filename)
+        if ok: ok = instrObj.run_dqa_checks(progData)
+        if ok: ok = instrObj.write_lev0_fits_file()
+        if ok: ok = instrObj.make_jpg()
 
-            log.info('dep_dqa.py input file is {}'.format(filename))
+        #If any of these steps return false then copy to udf and skip
+        if (not ok): 
+            log.info('copying {} to {}'.format(filename, dirs['udf']))
+            shutil.copy2(filename, dirs['udf']);
+            continue
 
-            #Set current file to work on and run dqa checks, etc
-            ok = True
-            if ok: ok = instrObj.set_fits_file(filename)
-            if ok: ok = instrObj.run_dqa_checks(progData)
-            if ok: ok = instrObj.write_lev0_fits_file()
-            if ok: ok = instrObj.make_jpg()
+        #keep list of good fits filenames
+        else:
+            procFiles.append(instrObj.fitsFilepath)
+            inFiles.append(os.path.basename(instrObj.fitsFilepath))
+            outFiles.append(instrObj.fitsHeader.get('KOAID'))
 
-            #If any of these steps return false then copy to udf and skip
-            if (not ok): 
-                log.info('copying {} to {}'.format(filename, dirs['udf']))
-                shutil.copy2(filename, dirs['udf']);
-                continue
-
-            #keep list of good fits filenames
-            else:
-                procFiles.append(instrObj.fitsFilepath)
-                inFiles.append(os.path.basename(instrObj.fitsFilepath))
-                outFiles.append(instrObj.fitsHeader.get('KOAID'))
-
-            #stats
-            if instrObj.is_science(): sciFiles += 1
+        #stats
+        if instrObj.is_science(): sciFiles += 1
 
 
-        #if no files passed DQA, then exit out
-        if len(outFiles) == 0 :
-            notify_zero_files(dqaFile, log)
-            return
+    #if no files passed DQA, then exit out
+    if len(outFiles) == 0 :
+        notify_zero_files(dqaFile, log)
+        return
 
 
-        #log num files passed DQA and write out list to file
-        log.info('dep_dqa.py: {} files passed DQA'.format(len(procFiles)))
-        with open(dqaFile, 'w') as f:
-            for path in procFiles:
-                f.write(path + '\n')
+    #log num files passed DQA and write out list to file
+    log.info('dep_dqa.py: {} files passed DQA'.format(len(procFiles)))
+    with open(dqaFile, 'w') as f:
+        for path in procFiles:
+            f.write(path + '\n')
 
 
-        #Create yyyymmdd.filelist.table
-        fltFile = dirs['lev0'] + '/' + utDateDir + '.filelist.table'
-        with open(fltFile, 'w') as fp:
-            for i in range(len(inFiles)):
-                fp.write(inFiles[i] + ' ' + outFiles[i] + "\n")
-            fp.write("    " + str(len(inFiles)) + ' Total FITS files\n')
+    #Create yyyymmdd.filelist.table
+    fltFile = dirs['lev0'] + '/' + utDateDir + '.filelist.table'
+    with open(fltFile, 'w') as fp:
+        for i in range(len(inFiles)):
+            fp.write(inFiles[i] + ' ' + outFiles[i] + "\n")
+        fp.write("    " + str(len(inFiles)) + ' Total FITS files\n')
 
 
-        #create metadata file
-        log.info('make_metadata.py started for {} {} UT'.format(instr.upper(), utDate))
-        tablesDir = instrObj.metadataTablesDir
-        make_metadata(instr, utDate, dirs['lev0'], progData, tablesDir, log)
+    #create metadata file
+    log.info('make_metadata.py started for {} {} UT'.format(instr.upper(), utDate))
+    tablesDir = instrObj.metadataTablesDir
+    make_metadata(instr, utDate, dirs['lev0'], progData, tablesDir, log)
 
 
-        #Create yyyymmdd.FITS.md5sum.table
-        md5Outfile = dirs['lev0'] + '/' + utDateDir + '.FITS.md5sum.table'
-        log.info('dep_dqa.py creating {}'.format(md5Outfile))
-        make_dir_md5_table(dirs['lev0'], ".fits", md5Outfile)
+    #Create yyyymmdd.FITS.md5sum.table
+    md5Outfile = dirs['lev0'] + '/' + utDateDir + '.FITS.md5sum.table'
+    log.info('dep_dqa.py creating {}'.format(md5Outfile))
+    make_dir_md5_table(dirs['lev0'], ".fits", md5Outfile)
 
 
-        #Create yyyymmdd.JPEG.md5sum.table
-        md5Outfile = dirs['lev0'] + '/' + utDateDir + '.JPEG.md5sum.table'
-        log.info('dep_dqa.py creating {}'.format(md5Outfile))
-        make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
+    #Create yyyymmdd.JPEG.md5sum.table
+    md5Outfile = dirs['lev0'] + '/' + utDateDir + '.JPEG.md5sum.table'
+    log.info('dep_dqa.py creating {}'.format(md5Outfile))
+    make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
 
 
-        #gzip the fits files
-        import gzip
-        for file in os.listdir(dirs['lev0']):
-            if file.endswith('.fits'): 
-                in_path = dirs['lev0'] + '/' + file
-                out_path = in_path + '.gz'
-                with open(in_path, 'rb') as fIn:
-                    with gzip.open(out_path, 'wb') as fOut:
-                        shutil.copyfileobj(fIn, fOut)
-                        os.remove(in_path)
+    #gzip the fits files
+    import gzip
+    for file in os.listdir(dirs['lev0']):
+        if file.endswith('.fits'): 
+            in_path = dirs['lev0'] + '/' + file
+            out_path = in_path + '.gz'
+            with open(in_path, 'rb') as fIn:
+                with gzip.open(out_path, 'wb') as fOut:
+                    shutil.copyfileobj(fIn, fOut)
+                    os.remove(in_path)
 
 
-        #get sdata number lists and PI list strings
-        piList = get_tpx_pi_str(progData)
-        sdataList = get_tpx_sdata_str(progData)
+    #get sdata number lists and PI list strings
+    piList = get_tpx_pi_str(progData)
+    sdataList = get_tpx_sdata_str(progData)
 
 
-        #update TPX: archive ready
-        if tpx:
-            utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
-            update_koatpx(instr, utDate, 'pi', piList, log)
-            update_koatpx(instr, utDate, 'sdata', sdataList, log)
-            update_koatpx(instr, utDate, 'sci_files', sciFiles, log)
-            update_koatpx(instr, utDate, 'arch_state', 'DONE', log)
-            update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
-
-
-    #catch exceptions
-    except Exception as err:
-        log.error('dep_dqa.py program crashed, exiting: {}'.format(str(err)))
-        sys.exit()
+    #update TPX: archive ready
+    if tpx:
+        utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+        update_koatpx(instr, utDate, 'pi', piList, log)
+        update_koatpx(instr, utDate, 'sdata', sdataList, log)
+        update_koatpx(instr, utDate, 'sci_files', sciFiles, log)
+        update_koatpx(instr, utDate, 'arch_state', 'DONE', log)
+        update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
 
 
     #log success
@@ -208,6 +198,9 @@ def make_metadata(instr, utDate, lev0Dir, progData, tablesDir, log):
     #necessary based on how metadata.py works (assuming all keywords were in header).
     extraData = {}
     for row in progData:
+        if ('koaid' not in row):
+            log.warning('dep_dqa: could not find "koaid" in progdata: {}'.format(row))
+            continue
         filekey = os.path.basename(row['koaid'])
         extraData[filekey] = {'PROGTITL': row['progtitl']}
 
