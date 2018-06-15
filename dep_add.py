@@ -52,9 +52,9 @@ def dep_add(instrObj):
     #check for valid nightly dir
     nightlyDir = ''.join(('/s/nightly', str(telnr), '/', str(year), '/', month, '/', day))
     if not os.path.isdir(nightlyDir):
-        nightlyDir.replace('/s/', '/h/')
+        nightlyDir = nightlyDir.replace('/s/', '/h/')
         if not os.path.isdir(nightlyDir):
-            instrObj.log.info('dep_add.py no nightly directory found')
+            instrObj.log.warning('dep_add.py no nightly directory found')
             return
 
 
