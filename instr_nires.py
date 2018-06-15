@@ -193,7 +193,7 @@ class Nires(instrument.Instrument):
 
         self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
 
-        ekeys = self.fitsHeader
+        keys = self.fitsHeader
 
         #skip if it exists
         if keys.get('ELAPTIME') != None: return True
