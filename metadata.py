@@ -29,8 +29,8 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
     @type metaOutFile: string
     @param lev0Dir: directory for finding FITS files and writing output files
     @type lev0Dir: string
-    @param lev0Dir: dictionary of any extra key val pairs not in header
-    @type lev0Dir: dictionary
+    @param extraData: dictionary of any extra key val pairs not in header
+    @type extraData: dictionary
     """
 
 

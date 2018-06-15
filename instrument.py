@@ -154,7 +154,7 @@ class Instrument:
             #self.fitsHeader = fits.getheader(filename)
             self.fitsFilepath = filename
         except:
-            self.log.error('set_fits_file: Could not read FITS file')
+            self.log.warning('set_fits_file: Could not read FITS file.  UDF!')
             return False
 
         self.koaid = '';
@@ -175,7 +175,7 @@ class Instrument:
         #make it
         koaid, result = self.make_koaid(self.fitsHeader)
         if not result: 
-            self.log.error('set_koaid: Could not create KOAID')
+            self.log.warning('set_koaid: Could not create KOAID.  UDF!')
             return False
 
         #save it
@@ -315,7 +315,7 @@ class Instrument:
 
         #log err
         if (not ok):
-            self.log.error('check_instr: Cannot determine if file is from ' + self.instr)
+            self.log.warning('check_instr: Cannot determine if file is from ' + self.instr + '.  UDF!')
 
         return ok
 
@@ -384,7 +384,7 @@ class Instrument:
         #get utc from header
         utc = keys.get(self.utc)
         if (not utc): 
-            self.log.error('set_ut: Could not get UTC value.')
+            self.log.warning('set_ut: Could not get UTC value.  UDF!')
             return False
 
         #copy to UT
@@ -446,7 +446,7 @@ class Instrument:
                 data = progFile
                 break
         if data == None: 
-            self.log.error('set_prog_info: Could not get program info.')
+            self.log.warning('set_prog_info: Could not get program info.  UDF!')
             return False
 
         #create keys
@@ -604,6 +604,7 @@ class Instrument:
     def set_weather_keywords(self):
         '''
         Adds all weather related keywords to header.
+        NOTE: DEP should not exit if weather files are not found
         '''
 
         #get input vars
@@ -616,7 +617,9 @@ class Instrument:
         #read envMet.arT and write to header
         logFile = self.dirs['anc'] + '/nightly/envMet.arT'
         data = envlog(logFile, 'envMet',   telnr, dateobs, utc)
-        assert type(data) is dict, "Could not read envMet.arT data"
+        if type(data) is not dict: 
+            self.log.warning("Could not read envMet.arT data")
+            return True
 
         keys.update({'WXDOMHUM' : (data['wx_domhum'],    'KOA: Added keyword')})
         keys.update({'WXDOMTMP' : (data['wx_domtmp'],    'KOA: Added keyword')})
@@ -632,7 +635,9 @@ class Instrument:
         #read envFocus.arT and write to header
         logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
         data = envlog(logFile, 'envFocus', telnr, dateobs, utc)
-        assert type(data) is dict, "Could not read envFocus.arT data"
+        if type(data) is not dict: 
+            self.log.warning("Could not read envFocus.arT data")
+            return True
 
         keys.update({'GUIDFWHM' : (data['guidfwhm'],     'KOA: Added keyword')})
         keys.update({'GUIDTIME' : (data['time'],         'KOA: Added keyword')})
@@ -669,6 +674,11 @@ class Instrument:
         elif (koaid.startswith('NS')): outfile += '/spec'
         outfile += '/' + koaid
 
+        #already exists?
+        #todo: only allow skip if not fullRun
+        # if os.path.isfile(outfile):
+        #     self.log.warning('write_lev0_fits_file: file already exists. SKIPPING')
+        # return True
 
         #write out new fits file with altered header
         self.fitsHdu.writeto(outfile)
@@ -691,8 +701,16 @@ class Instrument:
 
         path = self.dirs['lev0']
         koaid = self.fitsHeader.get('KOAID')
-        filePath = ''.join(path, '/', koaid)
+        filePath = ''.join((path, '/', koaid))
         self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
+
+        #already exists?
+        #todo: only allow skip if not fullRun
+
+        jpgFile = filePath.replace('.fits', '.jpg')
+        if os.path.isfile(jpgFile):
+            self.log.warning('make_jpg: file already exists. SKIPPING')
+            return True
 
         # verify file exists
 
@@ -713,6 +731,7 @@ class Instrument:
             self.log.info('make_jpg: file created {}'.format(jpgFile))
             return True
         else:
+            #TODO: if this errors, should we remove .fits file added previously?
             self.log.error('make_jpg: file does not exist {}'.format(filePath))
             return False
 

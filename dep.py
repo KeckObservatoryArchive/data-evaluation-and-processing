@@ -156,7 +156,7 @@ class Dep:
         #get list of files to check for existence
         checkFiles = []
         if   step == 'obtain':
-            checkFiles.append(dirs['stage'] + '/dep_obtains' + instr + '.txt')
+            checkFiles.append(dirs['stage'] + '/dep_obtain' + instr + '.txt')
         elif step == 'locate':
             checkFiles.append(dirs['stage'] + '/dep_locate' + instr + '.txt')
         elif step == 'add':
