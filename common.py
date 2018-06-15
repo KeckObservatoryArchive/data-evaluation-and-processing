@@ -282,20 +282,26 @@ def make_dir_md5_table(readDir, endswith, outfile):
             fp.write(md5 + '  ' + os.path.basename(file) + "\n")
 
 
-def url_get(url):
+def url_get(url, getOne=False):
     '''
     Gets data for common calls to url API requests.
 
     #todo: add some better validation checks and maybe some options (ie getOne, typeCast)
     '''
     
-    data = urllib.request.urlopen(url)
+    try:
+        data = urllib.request.urlopen(url)
+        data = data.read().decode('utf8')
+        data = json.loads(data)
 
-    data = data.read().decode('utf8')
-    if (not data or data == ''): return None
+        if (getOne and len(data) > 0):
+            data = data[0]
 
-    data = json.loads(data)
-    return data
+        return data
+
+    except:
+        return None
+
 
 
 def do_fatal_error(msg, instr=None, utDate=None, failStage=None, log=None):
