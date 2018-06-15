@@ -140,8 +140,6 @@ class Nires(instrument.Instrument):
         keys = self.fitsHeader
         if keys.get('FRAMENO') != None: return True
 
-        # todo: derive from FRAMENUM first, then go on to DATAFILE
-
         #get value
         #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
         frameno = keys.get(self.frameno)
