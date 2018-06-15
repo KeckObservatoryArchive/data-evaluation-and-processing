@@ -66,6 +66,7 @@ class Instrument:
         self.rawfile = ''
         self.koaid = ''
         self.sdataList = []
+        self.extraMeta = {}
 
 
         #other helpful vars
@@ -160,6 +161,7 @@ class Instrument:
         self.koaid = '';
         self.rawfile = ''
         self.prefix = ''
+        self.extraMeta = {}
 
         return True
 
@@ -463,11 +465,9 @@ class Instrument:
         keys.update({'PROGTL3': (progtl3, '')})
 
 
-        #NOTE: PROGTITL in full does not go in header, but does go in metadata
-        #This is problematic for metadata.py, so we add some data to progData 
-        #so we can find it later.
-        progData[dataKey]['koaid'] = keys.get('KOAID')
-
+        #NOTE: PROGTITL goes in metadata but not in header so we store in temp dict for later
+        self.extraMeta['PROGTITL'] = data['progtitl']
+        
         return True
 
 
@@ -481,7 +481,10 @@ class Instrument:
 
 
 
-    def set_propint(self):
+    def set_propint(self, progData):
+        '''
+        Set proprietary period length.
+        '''
 
         #create semid
         keys = self.fitsHeader
@@ -490,21 +493,19 @@ class Instrument:
         assert (semester != None and progid != None), 'set_propint: Could not find either SEMESTER or PROGID keyword.'
         semid = semester + '_' + progid
 
-
         # Default to 18 for ENG data (***verify with SAs***)
         if progid == 'ENG':
             propint = 18
         else:
             #create url and get data
             url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
-            data = urllib.request.urlopen(url).read().decode('utf8')
-            data = json.loads(data)
-            assert (data and len(data) > 0 and data[0]['propint']), 'set_proprint: Unable to set PROPINT keyword.'
-            propint = int(data[0]['propint'])
+            data = url_get(url, getOne=True)
+            assert (data and  data['propint']), 'set_proprint: Unable to set PROPINT keyword.'
+            propint = int(data['propint'])
 
+        #NOTE: PROPINT goes in metadata but not in header so we store in temp dict for later
+        self.extraMeta['PROPINT'] = propint
 
-        #update
-        keys.update({'PROPINT' : (propint, 'KOA: Added keyword')})
         return True
 
 
@@ -549,10 +550,9 @@ class Instrument:
         keys = self.fitsHeader
 
         image = self.fitsHdu[0].data     
-
-        imageMean   = np.mean(image)
-        imageStd    = np.std(image)
-        imageMedian = np.median(image)
+        imageMean   = round(np.mean(image)  , 2)
+        imageStd    = round(np.std(image)   , 2)
+        imageMedian = round(np.median(image), 2)
 
         keys.update({'IMAGEMN' : (imageMean,   'KOA: Added keyword')})
         keys.update({'IMAGESD' : (imageStd,    'KOA: Added keyword')})
@@ -652,8 +652,8 @@ class Instrument:
         '''
 
         url = self.telUrl + 'cmd=getTelnr&instr=' + self.instr.upper()
-        data = url_get(url)
-        telNr = int(data[0]['TelNr'])
+        data = url_get(url, getOne=True)
+        telNr = int(data['TelNr'])
         assert telNr in [1, 2], 'telNr "' + telNr + '"" not allowed'
         return telNr
 
