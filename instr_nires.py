@@ -47,7 +47,7 @@ class Nires(instrument.Instrument):
         if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
-        if ok: ok = self.set_propint()
+        if ok: ok = self.set_propint(progData)
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_specres()
         if ok: ok = self.set_weather_keywords()
@@ -216,15 +216,15 @@ class Nires(instrument.Instrument):
 
         #imaging (K-filter always on):
         if (instr == 'imag'):
-            keys.update({'WAVERED' : (19500, 'KOA: Added keyword')})
-            keys.update({'WAVECNTR': (21230, 'KOA: Added keyword')})
-            keys.update({'WAVEBLUE': (22950, 'KOA: Added keyword')})
+            keys.update({'WAVERED' : (22950, 'KOA: Added keyword')})
+            keys.update({'WAVECNTR': (21225, 'KOA: Added keyword')})
+            keys.update({'WAVEBLUE': (19500, 'KOA: Added keyword')})
 
         #spec:
         elif (instr == 'spec'):
-            keys.update({'WAVERED' : (9400,  'KOA: Added keyword')})
+            keys.update({'WAVERED' : (24500,  'KOA: Added keyword')})
             keys.update({'WAVECNTR': (16950, 'KOA: Added keyword')})
-            keys.update({'WAVEBLUE': (24500, 'KOA: Added keyword')})
+            keys.update({'WAVEBLUE': (9400, 'KOA: Added keyword')})
 
         return True
 
