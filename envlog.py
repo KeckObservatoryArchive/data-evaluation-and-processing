@@ -48,7 +48,8 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 		#column mixed data types. We should define dtypes for columns to speed up.
 		data = pd.read_csv(logFile, skiprows=[0,2], dtype=object)
 	except IOError as e:
-		raise Exception('Unable to open {}!'.format(logFile))
+		print ('envlog: Unable to open: {}!'.format(logFile))
+		return False
 	#
 	# Setup if using header or index numbers
 	#
