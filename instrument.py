@@ -436,12 +436,11 @@ class Instrument:
         #note: progData is also stored in newproginfo.txt output from getProgInfo.py
 
         #find matching filename in array 
-        baseFilename = os.path.basename(self.fitsFilepath)
         dataKey = None
         data = None
         for key, progFile in enumerate(progData):
             filepath = progFile['file']
-            if baseFilename in filepath:
+            if filepath in self.fitsFilepath:
                 dataKey = key
                 data = progFile
                 break
@@ -678,7 +677,7 @@ class Instrument:
         #todo: only allow skip if not fullRun
         # if os.path.isfile(outfile):
         #     self.log.warning('write_lev0_fits_file: file already exists. SKIPPING')
-        # return True
+        #     return True
 
         #write out new fits file with altered header
         self.fitsHdu.writeto(outfile)

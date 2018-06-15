@@ -196,12 +196,13 @@ def make_metadata(instr, utDate, lev0Dir, progData, tablesDir, log):
     #Handle special case of PROGTITL that is not in header, but does go in in metadata
     #NOTE: This relies on instrObj adding 'koaid' to progdata.  This is annoying but
     #necessary based on how metadata.py works (assuming all keywords were in header).
+    #todo: why not have getproginfo put koaid in output?
     extraData = {}
     for row in progData:
         if ('koaid' not in row):
             log.warning('dep_dqa: could not find "koaid" in progdata: {}'.format(row))
             continue
-        filekey = os.path.basename(row['koaid'])
+        filekey = row['koaid']
         extraData[filekey] = {'PROGTITL': row['progtitl']}
 
     #call the metadata module
