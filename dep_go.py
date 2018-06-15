@@ -4,6 +4,7 @@ from datetime import datetime
 from dep import *
 import configparser
 from common import *
+import traceback
 
 
 # Parse the configuration file
@@ -34,7 +35,8 @@ if (utDate == None): utDate = datetime.utcnow().strftime('%Y-%m-%d')
 # Create and run Dep
 
 try:
-	dep = Dep(instr, utDate, config[instr]['ROOTDIR'], tpx)
-	dep.go(pstart, pstop)
+    dep = Dep(instr, utDate, config[instr]['ROOTDIR'], tpx)
+    dep.go(pstart, pstop)
 except Exception as error:
-    do_fatal_error(repr(error), instr, utDate, 'dep_go')
+    msg = traceback.format_exc()
+    do_fatal_error(msg, instr, utDate, 'dep_go')
