@@ -39,6 +39,7 @@ def dep_dqa(instrObj, tpx=0):
     inFiles = []
     outFiles = []
     procFiles = []
+    extraMeta = {}
     dqaFile = dirs['stage'] +'/dep_dqa' + instr +'.txt'
 
 
@@ -94,13 +95,16 @@ def dep_dqa(instrObj, tpx=0):
             continue
 
         #keep list of good fits filenames
-        else:
-            procFiles.append(instrObj.fitsFilepath)
-            inFiles.append(os.path.basename(instrObj.fitsFilepath))
-            outFiles.append(instrObj.fitsHeader.get('KOAID'))
+        procFiles.append(instrObj.fitsFilepath)
+        inFiles.append(os.path.basename(instrObj.fitsFilepath))
+        outFiles.append(instrObj.fitsHeader.get('KOAID'))
 
         #stats
         if instrObj.is_science(): sciFiles += 1
+
+        #deal with extra metadata
+        koaid = instrObj.fitsHeader.get('KOAID')
+        extraMeta[koaid] = instrObj.extraMeta
 
 
     #if no files passed DQA, then exit out
@@ -127,7 +131,10 @@ def dep_dqa(instrObj, tpx=0):
     #create metadata file
     log.info('make_metadata.py started for {} {} UT'.format(instr.upper(), utDate))
     tablesDir = instrObj.metadataTablesDir
-    make_metadata(instr, utDate, dirs['lev0'], progData, tablesDir, log)
+    ymd = utDate.replace('-', '')
+    metaOutFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
+    keywordsDefFile = tablesDir + '/keywords.format.' + instr
+    metadata.make_metadata(keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log)    
 
 
     #Create yyyymmdd.FITS.md5sum.table
@@ -183,30 +190,6 @@ def notify_zero_files(dqaFile, log):
     open(dqaFile, 'a').close()
 
     #todo: should we handle ipac email and tpx status here or in koaxfr
-
-
-
-def make_metadata(instr, utDate, lev0Dir, progData, tablesDir, log):
-
-    #create various file/dir paths
-    ymd = utDate.replace('-', '')
-    metaOutFile =  lev0Dir + '/' + ymd + '.metadata.table'
-    keywordsDefFile = tablesDir + '/keywords.format.' + instr
-
-    #Handle special case of PROGTITL that is not in header, but does go in in metadata
-    #NOTE: This relies on instrObj adding 'koaid' to progdata.  This is annoying but
-    #necessary based on how metadata.py works (assuming all keywords were in header).
-    #todo: why not have getproginfo put koaid in output?
-    extraData = {}
-    for row in progData:
-        if ('koaid' not in row):
-            log.warning('dep_dqa: could not find "koaid" in progdata: {}'.format(row))
-            continue
-        filekey = row['koaid']
-        extraData[filekey] = {'PROGTITL': row['progtitl']}
-
-    #call the metadata module
-    metadata.make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData, log)    
 
 
 
