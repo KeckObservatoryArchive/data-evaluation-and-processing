@@ -159,7 +159,7 @@ class Nires(instrument.Instrument):
 
 
         #update
-        keys.update({'FRAMENO' : (frameno, 'KOA: Added keyword')})
+        keys.update({'FRAMENO' : (frameno, 'KOA: Image frame number')})
         return True
 
 
@@ -182,7 +182,7 @@ class Nires(instrument.Instrument):
         if (ofName.endswith('.fits') == False) : ofName += '.fits'
 
         #update
-        keys.update({'OFNAME' : (ofName, 'KOA: Added keyword')})
+        keys.update({'OFNAME' : (ofName, 'KOA: Original file name')})
         return True
 
 
@@ -207,7 +207,7 @@ class Nires(instrument.Instrument):
 
         #update val
         elaptime = itime * coadds
-        keys.update({'ELAPTIME' : (elaptime, 'KOA: Added keyword')})
+        keys.update({'ELAPTIME' : (elaptime, 'KOA: Total integration time')})
         return True
         
 
@@ -225,15 +225,15 @@ class Nires(instrument.Instrument):
 
         #imaging (K-filter always on):
         if (instr == 'imag'):
-            keys.update({'WAVERED' : (22950, 'KOA: Added keyword')})
-            keys.update({'WAVECNTR': (21225, 'KOA: Added keyword')})
-            keys.update({'WAVEBLUE': (19500, 'KOA: Added keyword')})
+            keys.update({'WAVERED' : (22950, 'KOA: Red end wavelength')})
+            keys.update({'WAVECNTR': (21225, 'KOA: Center wavelength')})
+            keys.update({'WAVEBLUE': (19500, 'KOA: Blue end wavelength')})
 
         #spec:
         elif (instr == 'spec'):
-            keys.update({'WAVERED' : (24500,  'KOA: Added keyword')})
-            keys.update({'WAVECNTR': (16950, 'KOA: Added keyword')})
-            keys.update({'WAVEBLUE': (9400, 'KOA: Added keyword')})
+            keys.update({'WAVERED' : (24500, 'KOA: Red end wavelength')})
+            keys.update({'WAVECNTR': (16950, 'KOA: Center wavelength')})
+            keys.update({'WAVEBLUE': ( 9400, 'KOA: Blue end wavelength')})
 
         return True
 
@@ -248,20 +248,20 @@ class Nires(instrument.Instrument):
         keys = self.fitsHeader
         if (keys.get('INSTR') == 'spec'):
             specres = 2700.0
-            keys.update({'SPECRES' : (specres,  'KOA: Added keyword')})
+            keys.update({'SPECRES' : (specres,  'KOA: Nominal spectral resolution')})
         return True
 
 
     def set_dispscal(self):
         '''
-        Adds display scale keyword to header.
+        Adds CCD pixel scale, dispersion (arcsec/pixel) keyword to header.
         '''
 
         keys = self.fitsHeader
         instr = keys.get('INSTR')
         if   (instr == 'imag'): dispscal = 0.12
         elif (instr == 'spec'): dispscal = 0.15
-        keys.update({'DISPSCAL' : (dispscal, 'KOA: Added keyword')})
+        keys.update({'DISPSCAL' : (dispscal, 'KOA: CCD pixel scale, dispersion')})
         return True
 
 
@@ -274,7 +274,7 @@ class Nires(instrument.Instrument):
         instr = keys.get('INSTR')
         if   (instr == 'imag'): spatscal = 0.12
         elif (instr == 'spec'): spatscal = 0.15
-        keys.update({'SPATSCAL' : (spatscal, 'KOA: Added keyword')})
+        keys.update({'SPATSCAL' : (spatscal, 'KOA: CCD pixel scale, spatial')})
         return True
 
 
@@ -288,7 +288,7 @@ class Nires(instrument.Instrument):
         if (keys.get('INSTR') == 'imag'):
             self.log.info('set_filter: setting FILTER keyword value')
             filt = 'Kp'
-            keys.update({'FILTER' : (filt, 'KOA: Added keyword')})
+            keys.update({'FILTER' : (filt, 'KOA: Filter')})
         return True
 
 
@@ -303,8 +303,8 @@ class Nires(instrument.Instrument):
             self.log.info('set_slit_dims: setting slit keyword values')
             slitlen  = 18.1
             slitwidt = 0.5
-            keys.update({'SLITLEN'  : (slitlen,  'KOA: Added keyword')})
-            keys.update({'SLITWIDT' : (slitwidt, 'KOA: Added keyword')})
+            keys.update({'SLITLEN'  : (slitlen,  'KOA: Slit length projected on sky')})
+            keys.update({'SLITWIDT' : (slitwidt, 'KOA: Slit width projected on sky')})
         return True
 
 
@@ -338,7 +338,7 @@ class Nires(instrument.Instrument):
             if (validValsMap[obstype] != None): koaimtyp = validValsMap[obstype]
 
         #update keyword
-        keys.update({'KOAIMTYP' : (koaimtyp,  'KOA: Added keyword')})
+        keys.update({'KOAIMTYP' : (koaimtyp,  'KOA: Image type')})
         return True
 
 
