@@ -26,6 +26,7 @@ from dep_dqa import dep_dqa
 from dep_tar import dep_tar
 from send_email import send_email
 from common import *
+import re
 
 
 class Dep:
@@ -115,6 +116,10 @@ class Dep:
             self.check_step_results(step)
 
 
+        #email completion report
+        if fullRun: self.do_process_report_email()
+
+
         #complete
         self.instrObj.log.info('*** DEP PROCESSSING COMPLETE! ***')
         return True
@@ -182,6 +187,56 @@ class Dep:
             if not os.path.exists(file):
                 self.do_fatal_error(step, 'Process post-check: ' + file + " not found!")
                 break
+
+
+    def do_process_report_email(self):
+
+        #read log file for errors and warnings
+        logStr = ''
+        count = 0
+        errCount = 0
+        warnCount = 0
+        logOutFile = self.instrObj.log.handlers[0].baseFilename
+        with open(logOutFile, 'r') as log:
+            for line in log:
+                count += 1
+                if re.search('WARNING', line, re.IGNORECASE):
+                    logStr += str(count) + ': ' + line + "\n"
+                    warnCount += 1
+                elif re.search('ERROR', line, re.IGNORECASE):
+                    logStr += str(count) + ': ' + line + "\n"
+                    errCount += 1
+
+
+        #form subject
+        subject = ''
+        if (errCount  > 0): subject += '(ERR:'  + str(errCount) + ')'
+        if (warnCount > 0): subject += '(WARN:' + str(warnCount) + ')'
+        subject += ' DEP: ' + self.instrObj.instr + ' ' + self.instrObj.utDate
+
+
+        #form msg
+        #todo: clean this up a bit
+        msg = ''
+        msg += logStr + "\n"
+
+        dirs = self.instrObj.dirs
+        utDateDir = self.instrObj.utDateDir
+        filelistOutFile = dirs['lev0'] + '/' + utDateDir + '.filelist.table'
+        with open(filelistOutFile, 'r') as file:
+            for line in file: 
+                msg += line + "\n"
+
+
+        #read config vars
+        config = configparser.ConfigParser()
+        config.read('config.live.ini')
+        adminEmail = config['REPORT']['ADMIN_EMAIL']
+
+        
+        #if admin email then email
+        if (adminEmail != ''):
+            send_email(adminEmail, adminEmail, subject, msg)
 
 
 
