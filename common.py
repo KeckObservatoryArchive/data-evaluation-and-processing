@@ -371,3 +371,23 @@ def update_koatpx(instr, utDate, column, value, log=''):
         return False
     return True
 
+def get_directory_size(dir):
+    """
+    Returns the directory size in MB
+
+    @param dir: directory to determine size for
+    @type dir: string
+    """
+
+    #directory doesn't exist
+    if not os.path.isdir(dir):
+        return 0
+
+    #walk through and sum up size
+    total = 0
+    for dirpath, dirnames, filenames in os.walk(dir):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total += os.path.getsize(fp)
+    return total
+
