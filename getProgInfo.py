@@ -152,8 +152,8 @@ class ProgSplit:
         This method checks whether or not the stage dir exists
         """
         if not os.path.isdir(self.stageDir):
-            print("progInfo - stage directory doesn't exist!")
-            exit()
+            raise Exception("progInfo - stage directory doesn't exist!")
+            return
 
     def check_instrument(self):
         """
@@ -172,8 +172,8 @@ class ProgSplit:
         readfile = ''.join((self.stageDir, '/dep_obtain',
                 self.instrument, '.txt'))
         if not os.path.exists(readfile):
-            print('read_dep_obtain - file does not exist!!')
-            exit()
+            raise Exception('read_dep_obtain - file does not exist!!')
+            return
 
         save = ['utdate', 'oa','account', 'proginst',
                 'progpi', 'progid', 'observer']
@@ -200,8 +200,8 @@ class ProgSplit:
         colCount = len(colsToSave)
         fname = ''.join((self.stageDir, '/createprog.txt'))
         if not os.path.isfile(fname):
-            print('This file does not exist!!!')
-            exit()
+            raise Exception('This file does not exist!!!')
+            return
         with open(fname, 'r') as flist:
             num = 0
             count = 0

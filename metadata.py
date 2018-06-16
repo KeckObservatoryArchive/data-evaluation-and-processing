@@ -75,6 +75,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
                 extra = {}
                 if filename in extraData: extra = extraData[filename]
 
+                log.info("Creating metadata record for: " + fitsFile)
                 add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log)
 
 
@@ -133,8 +134,7 @@ def check_keyword_val(keyword, val, fmt, log=None):
     #check null
     if (val == 'null'):
         if (fmt['allowNull'] == 'N'):
-            if log: log.error('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))
-            sys.exit()
+            raise Exception('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))            
         return val
 
 

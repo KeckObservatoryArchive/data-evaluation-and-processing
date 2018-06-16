@@ -53,9 +53,9 @@ def dep_dqa(instrObj, tpx=0):
     # Error if locate file does not exist (required input file)
     locateFile = dirs['stage'] + '/dep_locate' + instr + '.txt'
     if not os.path.exists(locateFile):
-        log.error('dep_dqa.py: locate input file does not exist.  EXITING.')
-        sys.exit()
-
+        raise Exception('dep_dqa.py: locate input file does not exist.  EXITING.')
+        return
+        
 
     # Read the list of FITS files
     files = []
