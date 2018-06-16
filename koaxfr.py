@@ -1,6 +1,6 @@
 from send_email import *
 
-def koaxfr(instrObj):
+def koaxfr(instrObj, tpx=0):
     """
     Transfers the contents of outputDir to its final destination.
     Location transferring to is located in config.live.ini:
@@ -62,11 +62,15 @@ def koaxfr(instrObj):
                       stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
     output, error = xfrCmd.communicate()
     if not error:
-        # Send email verifying transfer complete
+        # Send email verifying transfer complete and update koatpx
         instrObj.log.info('koaxfr.py sending email to {}'.format(emailTo))
         subject = ''.join(('lev0 ', instrObj.utDate.replace('-', ''), ' ', instr))
         message = 'lev0 data successfully transferred to koaxfr'
         send_email(emailTo, emailFrom, subject, message)
+        if tpx:
+            utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")
+            update_koatpx(instr, instrObj.utDate, 'dvdsent_stat', 'DONE', log)
+            update_koatpx(instr, instrObj.utDate, 'dvdsent_time', utcTimestamp, log)
         return True
     else:
         # Send email notifying of error
