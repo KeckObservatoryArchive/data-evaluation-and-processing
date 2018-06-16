@@ -449,7 +449,7 @@ def find_24hr_fits(useDirs, utDate, endTime, modtimeOverride=0):
     filePaths = []
     for fitsDir in useDirs:
         for root, dirs, files in os.walk(fitsDir):
-            for item in files:
+            for item in sorted(files):
 
                 if not '.fits' in item: continue
 

@@ -68,7 +68,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
     #walk lev0Dir to find all final fits files
     if log: log.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
     for root, directories, files in os.walk(lev0Dir):
-        for filename in files:
+        for filename in sorted(files):
             if filename.endswith('.fits'):
                 fitsFile = os.path.join(root, filename)
 
