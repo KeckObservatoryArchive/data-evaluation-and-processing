@@ -171,7 +171,7 @@ class Instrument:
         Create and add KOAID to header if it does not already exist
         '''
 
-        self.log.info('set_koaid: setting KOAID keyowrd value')
+        self.log.info('set_koaid: setting KOAID keyword value')
 
         #skip if it exists
         if self.fitsHeader.get('KOAID') != None: return True
@@ -183,7 +183,7 @@ class Instrument:
             return False
 
         #save it
-        self.fitsHeader.update({'KOAID' : (koaid, 'KOA: Added missing keyword')})
+        self.fitsHeader.update({'KOAID' : (koaid, 'KOA: Data file name')})
         return True
 
 
@@ -345,7 +345,7 @@ class Instrument:
             lastMod = os.stat(filename).st_mtime
             dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             dateObs = dateObs.strftime('%Y-%m-%d')
-            keys.update({self.dateObs : (dateObs, 'KOA: Added missing keyword')})
+            keys.update({self.dateObs : (dateObs, 'KOA: Observing date')})
             self.log.info('set_dateObs: DATE-OBS value determined from FITS file time')
 
         # Fix yy/mm/dd to yyyy-mm-dd
@@ -353,7 +353,7 @@ class Instrument:
             orig = dateObs
             yr, mo, dy = dateObs.split('/')
             dateObs = ''.join(('20', yr, '-', mo, '-', dy))
-            keys.update({self.dateObs : (dateObs, 'KOA: value corrected (' + orig + ')')})
+            keys.update({self.dateObs : (dateObs, 'KOA: Value corrected (' + orig + ')')})
             self.log.info('set_dateObs: fixed formatting of DATE-OBS value (yyyy-mm-dd)')
 
         #todo: can this check fail?
@@ -376,7 +376,7 @@ class Instrument:
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S')
-            keys.update({self.utc : (utc, 'KOA: Added missing keyword')})
+            keys.update({self.utc : (utc, 'KOA: Observing time')})
             self.log.info('set_utc: UTC value determined from FITS file time')
 
         return True
@@ -397,7 +397,7 @@ class Instrument:
             return False
 
         #copy to UT
-        keys.update({'UT' : (utc, 'KOA: Added missing keyword')})
+        keys.update({'UT' : (utc, 'KOA: Observing time')})
         return True
 
 
@@ -461,17 +461,17 @@ class Instrument:
 
         #create keys
         keys = self.fitsHeader
-        keys.update({'PROGID'  : (data['progid']  , 'KOA: Added keyword')})
-        keys.update({'PROGINST': (data['proginst'], 'KOA: Added keyword')})
-        keys.update({'PROGPI'  : (data['progpi']  , 'KOA: Added keyword')})
+        keys.update({'PROGID'  : (data['progid']  , 'KOA: Program ID')})
+        keys.update({'PROGINST': (data['proginst'], 'KOA: Program institution')})
+        keys.update({'PROGPI'  : (data['progpi']  , 'KOA: Program principal investigator')})
 
-        #divide PROGTITL into length 70 chunks PROGTL1/2/3
-        progtl1 = data['progtitl'][0:70]
-        progtl2 = data['progtitl'][70:140]
-        progtl3 = data['progtitl'][140:210]
-        keys.update({'PROGTL1': (progtl1, '')})
-        keys.update({'PROGTL2': (progtl2, '')})
-        keys.update({'PROGTL3': (progtl3, '')})
+        #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
+        progtl1 = data['progtitl'][0:50]
+        progtl2 = data['progtitl'][50:100]
+        progtl3 = data['progtitl'][100:150]
+        keys.update({'PROGTL1': (progtl1, 'Program title 1')})
+        keys.update({'PROGTL2': (progtl2, 'Program title 2')})
+        keys.update({'PROGTL3': (progtl3, 'Program title 3')})
 
 
         #NOTE: PROGTITL goes in metadata but not in header so we store in temp dict for later
@@ -525,7 +525,7 @@ class Instrument:
         Adds "DATLEVEL" keyword to header
         '''
         keys = self.fitsHeader
-        keys.update({'DATLEVEL' : (datlevel, 'KOA: Added keyword')})
+        keys.update({'DATLEVEL' : (datlevel, 'KOA: Data reduction level')})
         return True
 
 
@@ -535,7 +535,7 @@ class Instrument:
         """
         keys = self.fitsHeader
         dqa_date = dt.strftime(dt.now(), '%Y-%m-%dT%H:%M:%S')
-        keys.update({'DQA_DATE' : (dqa_date, 'KOA: Added keyword')})
+        keys.update({'DQA_DATE' : (dqa_date, 'KOA: Data quality assess time')})
         return True
 
 
@@ -550,7 +550,7 @@ class Instrument:
         config.read('config.live.ini')
 
         version = config['INFO']['DQA_VERSION']
-        keys.update({'DQA_VERS' : (version, 'KOA: Added keyword')})
+        keys.update({'DQA_VERS' : (version, 'KOA: Data quality assess code version')})
         return True
 
 
@@ -568,9 +568,9 @@ class Instrument:
         imageStd    = round(np.std(image)   , 2)
         imageMedian = round(np.median(image), 2)
 
-        keys.update({'IMAGEMN' : (imageMean,   'KOA: Added keyword')})
-        keys.update({'IMAGESD' : (imageStd,    'KOA: Added keyword')})
-        keys.update({'IMAGEMD' : (imageMedian, 'KOA: Added keyword')})
+        keys.update({'IMAGEMN' : (imageMean,   'KOA: Image data mean')})
+        keys.update({'IMAGESD' : (imageStd,    'KOA: Image data standard deviation')})
+        keys.update({'IMAGEMD' : (imageMedian, 'KOA: Image data median')})
 
         return True
 
@@ -588,7 +588,7 @@ class Instrument:
         image = self.fitsHdu[0].data     
         pixSat = image[np.where(image >= satVal)]
         nPixSat = len(image[np.where(image >= satVal)])
-        keys.update({'NPIXSAT' : (nPixSat, 'KOA: Added keyword')})
+        keys.update({'NPIXSAT' : (nPixSat, 'KOA: Number of saturated pixels')})
 
         return True
 
@@ -610,7 +610,7 @@ class Instrument:
         if (len(oas) >= 1): oa = oas[0]
 
         keys = self.fitsHeader
-        keys.update({'OA' : (oa, 'KOA: Added keyword')})
+        keys.update({'OA' : (oa, 'KOA: Observing Assistant name')})
 
         return True
 
@@ -639,15 +639,15 @@ class Instrument:
             self.log.warning("Could not read envMet.arT data")
             return True
 
-        keys.update({'WXDOMHUM' : (data['wx_domhum'],    'KOA: Added keyword')})
-        keys.update({'WXDOMTMP' : (data['wx_domtmp'],    'KOA: Added keyword')})
-        keys.update({'WXDWPT'   : (data['wx_dewpoint'],  'KOA: Added keyword')})
-        keys.update({'WXOUTHUM' : (data['wx_outhum'],    'KOA: Added keyword')})
-        keys.update({'WXOUTTMP' : (data['wx_outtmp'],    'KOA: Added keyword')})
-        keys.update({'WXPRESS'  : (data['wx_pressure'],  'KOA: Added keyword')})
-        keys.update({'WXTIME'   : (data['time'],         'KOA: Added keyword')})
-        keys.update({'WXWNDIR'  : (data['wx_winddir'],   'KOA: Added keyword')})
-        keys.update({'WXWNDSP'  : (data['wx_windspeed'], 'KOA: Added keyword')})
+        keys.update({'WXDOMHUM' : (data['wx_domhum'],    'KOA: Weather dome humidity')})
+        keys.update({'WXDOMTMP' : (data['wx_domtmp'],    'KOA: Weather dome temperature')})
+        keys.update({'WXDWPT'   : (data['wx_dewpoint'],  'KOA: Weather dewpoint')})
+        keys.update({'WXOUTHUM' : (data['wx_outhum'],    'KOA: Weather outside humidity')})
+        keys.update({'WXOUTTMP' : (data['wx_outtmp'],    'KOA: Weather outside temperature')})
+        keys.update({'WXPRESS'  : (data['wx_pressure'],  'KOA: Weather pressure')})
+        keys.update({'WXTIME'   : (data['time'],         'KOA: Weather measurement time')})
+        keys.update({'WXWNDIR'  : (data['wx_winddir'],   'KOA: Weather wind direction')})
+        keys.update({'WXWNDSP'  : (data['wx_windspeed'], 'KOA: Weather wind speed')})
 
 
         #read envFocus.arT and write to header
@@ -657,8 +657,8 @@ class Instrument:
             self.log.warning("Could not read envFocus.arT data")
             return True
 
-        keys.update({'GUIDFWHM' : (data['guidfwhm'],     'KOA: Added keyword')})
-        keys.update({'GUIDTIME' : (data['time'],         'KOA: Added keyword')})
+        keys.update({'GUIDFWHM' : (data['guidfwhm'],     'KOA: Guide star FWHM value')})
+        keys.update({'GUIDTIME' : (data['time'],         'KOA: Guide star FWHM measure time')})
 
         return True
 

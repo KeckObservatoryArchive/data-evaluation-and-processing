@@ -272,7 +272,7 @@ def fixdatetime(utdate, fname, keys):
 def make_dir_md5_table(readDir, endswith, outfile):
 
     files = []
-    for file in os.listdir(readDir):
+    for file in sorted(os.listdir(readDir)):
         if (endswith == None or file.endswith(endswith)): 
             files.append(readDir + '/' + file)
 
