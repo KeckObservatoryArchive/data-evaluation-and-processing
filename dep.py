@@ -24,9 +24,11 @@ from dep_locate import dep_locate
 from dep_add import dep_add
 from dep_dqa import dep_dqa
 from dep_tar import dep_tar
+from koaxfr import koaxfr
 from send_email import send_email
 from common import *
 import re
+import datetime as dt
 
 
 class Dep:
@@ -84,7 +86,7 @@ class Dep:
 
         #write to tpx at dep start
         if self.tpx:
-            utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+            utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")
             update_koatpx(self.instrObj.instr, self.instrObj.utDate, 'start_time', utcTimestamp, self.instrObj.log)
 
 
@@ -105,12 +107,13 @@ class Dep:
             self.instrObj.log.info('*** RUNNING DEP PROCESS STEP: ' + step + ' ***')
 
             if   step == 'obtain': dep_obtain(self.instrObj)
-            elif step == 'locate': dep_locate(self.instrObj)
+            elif step == 'locate': dep_locate(self.instrObj, self.tpx)
             elif step == 'add'   : dep_add(self.instrObj)
-            elif step == 'dqa'   : dep_dqa(self.instrObj)
+            elif step == 'dqa'   : dep_dqa(self.instrObj, self.tpx)
             #lev1
             elif step == 'tar'   : dep_tar(self.instrObj)
             #koaxfr
+            elif step == 'koaxfr': koaxfr(self.instrObj, self.tpx)
 
             #check for expected output
             self.check_step_results(step)
@@ -250,8 +253,8 @@ class Dep:
         #TODO: Note: we may not need/want to do this tpx update
         if self.tpx:
             self.instrObj.log.info('Updating KOA database with error status.')
-            utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
-            update_koatpx(instr, utDate, 'arch_state', "ERROR", log)
+            utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")
+            update_koatpx(instr, utDate, 'arch_stat', "ERROR", log)
             update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
 
         #exit program
