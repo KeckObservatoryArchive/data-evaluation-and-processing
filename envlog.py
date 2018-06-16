@@ -99,7 +99,7 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 	for index, key in enumerate(keys):
 		try:
 #			value = float(round(data[key][envIndex[0]], 2))
-			value = "%0.2f" % float(data[key][envIndex[0]])
+			value = float("%0.2f" % float(data[key][envIndex[0]]))
 		except ValueError:
 			value = 'null'
 		values[output[index]] = value
