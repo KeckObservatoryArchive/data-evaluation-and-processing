@@ -142,7 +142,7 @@ class Nires(instrument.Instrument):
 
         #get value
         #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
-        frameno = keys.get(self.frameno)
+        frameno = keys.get('FRAMENUM')
         if (frameno == None): 
 
             datafile = keys.get('DATAFILE')
@@ -155,6 +155,7 @@ class Nires(instrument.Instrument):
             frameno = frameno[num:]
             frameno = int(frameno)
 
+            keys.update({'FRAMENUM' : (frameno, 'KOA: Image frame number')})
 
         #update
         keys.update({'FRAMENO' : (frameno, 'KOA: Image frame number')})
