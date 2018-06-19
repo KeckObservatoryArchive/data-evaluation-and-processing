@@ -71,7 +71,7 @@ FCSVOLT1	double	16	Y
 FCSVOLT2	double	16	Y
 FCTHETXY	char	32	Y
 FOCALSTN	char	32	Y
-FRAMENUM	integer	8	Y
+FRAMENUM	integer	8	N
 GAIN	double	16	Y
 HA	double	16	Y
 INSTANGL	double	16	Y
@@ -94,7 +94,6 @@ NUMUTRS	integer	16	Y
 OBJECT	char	68	Y
 OBSERVER	char	68	Y
 OBSTYPE	char	32	Y
-OFNAME	char	68	Y
 OUTDIR	char	68	Y
 OUTPUT1	double	16	Y
 OUTPUT2	double	16	Y
@@ -174,7 +173,7 @@ TMPACT2	integer	8	Y
 TUBETEMP	double	16	Y
 TVANGL	double	16	Y
 TVFLIP	char	16	Y
-UTC	char	16	Y
+UTC	char	16	N
 WAT0_001	char	32	Y
 WAT1_001	char	32	Y
 WAT2_001	char	32	Y
@@ -196,9 +195,9 @@ IMAGEMD	double	16	Y
 IMAGEMN	double	16	Y
 IMAGESD	double	16	Y
 KOAIMTYP	char	32	N
-NPIXSAT	integer	16	N
-OA	char	32	N
-OFNAME	char	32	N
+NPIXSAT	integer	16	Y
+OA	char	32	Y
+OFNAME	char	32	Y
 PROGID	char	32	N
 PROGINST	char	32	N
 PROGPI	char	32	N
