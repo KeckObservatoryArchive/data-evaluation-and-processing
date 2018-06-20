@@ -5,7 +5,12 @@ from dep import *
 import configparser
 from common import *
 import traceback
+import os
 
+# Go to directory of source
+
+baseCodeDir = sys.argv[0].replace('dep_go.py', '')
+os.chdir(basecodeDir)
 
 # Parse the configuration file
 
