@@ -358,10 +358,11 @@ def update_koatpx(instr, utDate, column, value, log=''):
     sendUrl = sendUrl + ('&utdate=', utDate.replace('/', '-'), '&')
     sendUrl = sendUrl + ('column=', column, '&value=', value.replace(' ', '+'))
     sendUrl = ''.join(sendUrl)
-    sendUrl = ''.join((url, sendUrl, '&hash=', myHash))
 
     if log:
         log.info('update_koatpx {} - {}'.format(user, sendUrl))
+
+    sendUrl = ''.join((url, sendUrl, '&hash=', myHash))
 
     data = urllib.request.urlopen(sendUrl)
     data = data.read().decode('utf8')       # Convert from byte to ascii
