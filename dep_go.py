@@ -10,7 +10,7 @@ import os
 # Go to directory of source
 
 baseCodeDir = sys.argv[0].replace('dep_go.py', '')
-os.chdir(basecodeDir)
+if (baseCodeDir != ""): os.chdir(baseCodeDir)
 
 # Parse the configuration file
 
