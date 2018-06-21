@@ -172,8 +172,8 @@ def check_keyword_val(keyword, val, fmt, log=None):
     length = len(str(val))
     if (length > fmt['colSize']):
             if log: log.warning('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
-            if (fmt['dataType'] == 'float') : val = truncate_float(val, fmt['colSize'])
-            else                            : val = str(val)[:fmt['colSize']]
+            if (fmt['dataType'] == 'double') : val = truncate_float(val, fmt['colSize'])
+            else                             : val = str(val)[:fmt['colSize']]
 
 
     #todo: check value range, discrete values?
