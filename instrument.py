@@ -564,9 +564,9 @@ class Instrument:
         keys = self.fitsHeader
 
         image = self.fitsHdu[0].data     
-        imageMean   = round(np.mean(image)  , 2)
-        imageStd    = round(np.std(image)   , 2)
-        imageMedian = round(np.median(image), 2)
+        imageStd    = float("%0.2f" % np.std(image))
+        imageMean   = float("%0.2f" % np.mean(image))
+        imageMedian = float("%0.2f" % np.median(image))
 
         keys.update({'IMAGEMN' : (imageMean,   'KOA: Image data mean')})
         keys.update({'IMAGESD' : (imageStd,    'KOA: Image data standard deviation')})
