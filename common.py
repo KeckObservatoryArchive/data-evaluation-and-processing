@@ -358,10 +358,11 @@ def update_koatpx(instr, utDate, column, value, log=''):
     sendUrl = sendUrl + ('&utdate=', utDate.replace('/', '-'), '&')
     sendUrl = sendUrl + ('column=', column, '&value=', value.replace(' ', '+'))
     sendUrl = ''.join(sendUrl)
-    sendUrl = ''.join((url, sendUrl, '&hash=', myHash))
 
     if log:
         log.info('update_koatpx {} - {}'.format(user, sendUrl))
+
+    sendUrl = ''.join((url, sendUrl, '&hash=', myHash))
 
     data = urllib.request.urlopen(sendUrl)
     data = data.read().decode('utf8')       # Convert from byte to ascii
@@ -370,4 +371,24 @@ def update_koatpx(instr, utDate, column, value, log=''):
             log.info('update_koatpx failed')
         return False
     return True
+
+def get_directory_size(dir):
+    """
+    Returns the directory size in MB
+
+    @param dir: directory to determine size for
+    @type dir: string
+    """
+
+    #directory doesn't exist
+    if not os.path.isdir(dir):
+        return 0
+
+    #walk through and sum up size
+    total = 0
+    for dirpath, dirnames, filenames in os.walk(dir):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total += os.path.getsize(fp)
+    return total
 
