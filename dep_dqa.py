@@ -168,10 +168,11 @@ def dep_dqa(instrObj, tpx=0):
 
     #update TPX: archive ready
     if tpx:
-        utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")
+        utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+        update_koatpx(instr, utDate, 'files_arch', str(len(procFiles)), log)
         update_koatpx(instr, utDate, 'pi', piList, log)
         update_koatpx(instr, utDate, 'sdata', sdataList, log)
-        update_koatpx(instr, utDate, 'sci_files', sciFiles, log)
+        update_koatpx(instr, utDate, 'sci_files', str(sciFiles), log)
         update_koatpx(instr, utDate, 'arch_stat', 'DONE', log)
         update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
         update_koatpx(instr, utDate, 'size', get_directory_size(dirs['output']), log)
