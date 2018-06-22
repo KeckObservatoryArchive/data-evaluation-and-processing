@@ -390,5 +390,5 @@ def get_directory_size(dir):
         for f in filenames:
             fp = os.path.join(dirpath, f)
             total += os.path.getsize(fp)
-    return str(total)
+    return str(total/1000000.0)
 
