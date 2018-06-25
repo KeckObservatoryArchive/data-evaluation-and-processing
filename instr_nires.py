@@ -319,22 +319,21 @@ class Nires(instrument.Instrument):
         keys = self.fitsHeader
         obstype = keys.get('OBSTYPE')
 
-        #map to KOAIMTYP value
+        #map to KOAIMTYP value 
         koaimtyp = 'undefined'
         validValsMap = {
-            'object'  : None,
+            'object'  : 'object',
             'standard': 'object',
-            'bias'    : None, 
-            'dark'    : None, 
-            'domeflat': None, 
-            'domearc' : None, 
+            'bias'    : 'bias', 
+            'dark'    : 'dark', 
+            'domeflat': 'domeflat', 
+            'domearc' : 'domearc', 
             'astro'   : 'object',   #NOTE: old val
             'star'    : 'object',   #NOTE: old val
             'calib'   : 'undefined' #NOTE: old val
         }
-        if (obstype != None and obstype in validValsMap): 
-            koaimtyp = obstype
-            if (validValsMap[obstype] != None): koaimtyp = validValsMap[obstype]
+        if (obstype != None and obstype.lower() in validValsMap): 
+            koaimtyp = validValsMap[obstype.lower()]
 
         #update keyword
         keys.update({'KOAIMTYP' : (koaimtyp,  'KOA: Image type')})
