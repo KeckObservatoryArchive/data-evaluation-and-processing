@@ -150,13 +150,14 @@ def dep_dqa(instrObj, tpx=0):
 
 
     #gzip the fits files
+    log.info('dep_dqa.py gzipping fits files in {}'.format(dirs['lev0']))
     import gzip
     for file in os.listdir(dirs['lev0']):
         if file.endswith('.fits'): 
             in_path = dirs['lev0'] + '/' + file
             out_path = in_path + '.gz'
             with open(in_path, 'rb') as fIn:
-                with gzip.open(out_path, 'wb') as fOut:
+                with gzip.open(out_path, 'wb', compresslevel=5) as fOut:
                     shutil.copyfileobj(fIn, fOut)
                     os.remove(in_path)
 
@@ -168,6 +169,7 @@ def dep_dqa(instrObj, tpx=0):
 
     #update TPX: archive ready
     if tpx:
+        log.info('dep_dqa.py updating tpx DB records')
         utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
         update_koatpx(instr, utDate, 'files_arch', str(len(procFiles)), log)
         update_koatpx(instr, utDate, 'pi', piList, log)
