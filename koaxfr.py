@@ -1,4 +1,6 @@
 from send_email import *
+from common import update_koatpx
+from datetime import datetime as dt
 
 def koaxfr(instrObj, tpx=0):
     """
@@ -68,9 +70,9 @@ def koaxfr(instrObj, tpx=0):
         message = 'lev0 data successfully transferred to koaxfr'
         send_email(emailTo, emailFrom, subject, message)
         if tpx:
-            utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")
-            update_koatpx(instr, instrObj.utDate, 'dvdsent_stat', 'DONE', log)
-            update_koatpx(instr, instrObj.utDate, 'dvdsent_time', utcTimestamp, log)
+            utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+            update_koatpx(instr, instrObj.utDate, 'dvdsent_stat', 'DONE', instrObj.log)
+            update_koatpx(instr, instrObj.utDate, 'dvdsent_time', utcTimestamp, instrObj.log)
         return True
     else:
         # Send email notifying of error
