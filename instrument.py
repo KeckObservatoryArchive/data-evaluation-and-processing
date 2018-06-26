@@ -20,6 +20,13 @@ import json
 import numpy as np
 import re
 
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+from PIL import Image
+from astropy.visualization import ZScaleInterval, SinhStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
+
 
 class Instrument:
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -511,8 +518,12 @@ class Instrument:
             #create url and get data
             url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
             data = url_get(url, getOne=True)
-            assert (data and  data['propint']), 'set_proprint: Unable to set PROPINT keyword.'
-            propint = int(data['propint'])
+#            assert (data and  data['propint']), 'set_proprint: Unable to set PROPINT keyword.'
+            if not data:
+                self.log.warning('set_propint: PROPINT not found for ' + semid + ' and ' + self.utDate + ', defaulting to 18 months')
+                propint = 18
+            else:
+                propint = int(data['propint'])
 
         #NOTE: PROPINT goes in metadata but not in header so we store in temp dict for later
         self.extraMeta['PROPINT'] = propint
@@ -709,13 +720,6 @@ class Instrument:
         Converts a FITS file to JPG image
         '''
 
-        import matplotlib as mpl
-        mpl.use('Agg')
-        import matplotlib.pyplot as plt
-        from PIL import Image
-        from astropy.visualization import ZScaleInterval, SinhStretch
-        from astropy.visualization.mpl_normalize import ImageNormalize
-
         # file to convert is lev0Dir/KOAID
 
         path = self.dirs['lev0']
@@ -748,6 +752,7 @@ class Instrument:
             Image.open(pngFile).convert('RGB').save(jpgFile)
             os.remove(pngFile)
             self.log.info('make_jpg: file created {}'.format(jpgFile))
+            plt.close()
             return True
         else:
             #TODO: if this errors, should we remove .fits file added previously?
