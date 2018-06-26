@@ -221,7 +221,7 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
 
         # check for empty file
         if (os.path.getsize(fitsList[i]) == 0):
-            move_bad_file(instr, fitsList[i], ancDir, 'Empty File', log_writer)
+            copy_bad_file(instr, fitsList[i], ancDir, 'Empty File', log)
             continue
 
         # Get the header of the current fits file
@@ -232,7 +232,7 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
             else:
                 header0 = fits.getheader(fitsList[i])
         except:
-            move_bad_file(instr, fitsList[i], ancDir, 'Unreadable Header', log_writer)
+            copy_bad_file(instr, fitsList[i], ancDir, 'Unreadable Header', log)
             continue
 
         # Break the file path into a list
@@ -250,14 +250,14 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
             continue
 
         # Get KOAID
-        if not koaid(header0, utDate):
-            copy_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log)
-            raw[i] = 2
-            continue
-        try:
-            koa[i] = header0['KOAID']
-        except KeyError:
-            koa[i] = ''
+#        if not koaid(header0, utDate):
+#            copy_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log)
+#            raw[i] = 2
+#            continue
+#        try:
+#            koa[i] = header0['KOAID']
+#        except KeyError:
+#            koa[i] = ''
 
         # If filename is rootfile then file is a raw image
         if filename == rootfile[i]:
@@ -270,22 +270,22 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
 
 
     #check for duplicate KOA ID
-    for i in range(len(fitsList)-1):
-        if   raw[i] == 2: continue
-        elif raw[i] == 0:
-            for j in range(i+1,len(fitsList)):
-                if koa[j]==koa[i]: # j will always be greater than i
-                    copy_bad_file(instr, fitsList[i], ancDir, 'Duplicate KOAID', log)
-                    raw[i] = 2
-                    break
+#    for i in range(len(fitsList)-1):
+#        if   raw[i] == 2: continue
+#        elif raw[i] == 0:
+#            for j in range(i+1,len(fitsList)):
+#                if koa[j]==koa[i]: # j will always be greater than i
+#                    copy_bad_file(instr, fitsList[i], ancDir, 'Duplicate KOAID', log)
+#                    raw[i] = 2
+#                    break
 
     # Check for bad date
-    for i in range(len(fitsList)):
-        if raw[i] == 2: continue
-        prefix, fdate, ftime, postfix = koa[i].split('.')
-        if fdate != date and float(ftime) < endTimeSec:
-            copy_bad_file(instr, fitsList[i], ancDir, 'KOADATE', log)
-            raw[i] = 2
+#    for i in range(len(fitsList)):
+#        if raw[i] == 2: continue
+#        prefix, fdate, ftime, postfix = koa[i].split('.')
+#        if fdate != date and float(ftime) < endTimeSec:
+#            copy_bad_file(instr, fitsList[i], ancDir, 'KOADATE', log)
+#            raw[i] = 2
 
 
     # Create final dqa_<instr>.txt file with only the good lines from dep_locateINSTR.txt
