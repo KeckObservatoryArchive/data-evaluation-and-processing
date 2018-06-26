@@ -145,20 +145,22 @@ def koaid(keywords, utDate):
                 try:
                         utc = keywords['UT']
                 except:
-                        utc = keywords['DATE'].split('T')
-                        if len(utc) == 2:
-                                utc = utc[1] + '.0'
-                        else:
+                        try:
+                                utc = keywords['DATE'].split('T')
+                                if len(utc) == 2:
+                                        utc = utc[1] + '.0'
+                        except:
                                 return False
 
         # Get DATE-OBS or default to DATE
         try:
                 dateobs = keywords['DATE-OBS']
         except:
-                dateobs = keywords['DATE'].split('T')
-                if len(dateobs) == 2:
-                        dateobs = dateobs[0]
-                else:
+                try:
+                        dateobs = keywords['DATE'].split('T')
+                        if len(dateobs) == 2:
+                                dateobs = dateobs[0]
+                except:
                         return False
 
         try:
