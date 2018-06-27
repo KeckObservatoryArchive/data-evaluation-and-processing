@@ -116,7 +116,7 @@ def dep_locate(instrObj, tpx=0):
 
     # Verify the files are valid - no corrupt headers, valid KOAID
     locateFile = stageDir +'/dep_locate' + instr + '.txt'
-    dep_rawfiles(instr, utDate, instrObj.endTime, presort2File, locateFile, stageDir, ancDir, log)
+    dep_rawfiles(instr, utDate, presort2File, locateFile, ancDir, log)
 
 
     #log completion with count
@@ -163,10 +163,10 @@ def copy_file(source, destination):
         shutil.copy2(source, destination)
 
 
-def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log):
+def dep_rawfiles(instr, utDate, inFile, outFile, ancDir, log):
     """
-    This function will look for non-raw images, duplicate KOAIDs,
-    or bad dates for each fits file.
+    This function will remove empty, corrupt, and non-raw fits files
+    and create a new outFile list.
 
     Written by Jeff Mader
 
@@ -176,46 +176,31 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
     @param instr: The instrument used to make the fits files being looked at
     @type utDate: datetime
     @param utDate: The date in UT of the night that the fits tiles were taken
-    @type endTime: datetime
-    @param endTime: The hour that the observations ended
     @type inFile: string
     @param inFile: Filepath of text file with list of all FITS files within 24 hours of the given date
     @type outFile: string
     @param outFile: Filepath for final output file for all valid FITS passing checks.
-    @type stageDir: string
-    @param stageDir: The staging area to store the files for transport to KOA
     @type ancDir: string
     @param ancDir: The anc directory to store the bad and corrupted fits files
     @type log: Logger Object
     @param log: The log handler for the script. Writes to the logfile
     """
-    log.info('dep_locate: starting rawfiles check: {0} {1} {2} {3} {4}'.format(instr, utDate, endTime, stageDir, ancDir))
+    log.info('dep_locate: starting rawfiles check: {0} {1} {2}'.format(instr, utDate, ancDir))
 
-    # Change yyyy/mm/dd to yyyymmdd
-    if   '/' in utDate: year, month, day = utDate.split('/')
-    elif '-' in utDate: year, month, day = utDate.split('-')
-    date = year + month + day
+
+    #NOTE: duplicate KOAID and bad KOAID date/time check moved to DQA
 
     # read input file list into an array
     fitsList = []
-
-    # Loop through the file list and read in
-    # the fits files found from within 24 hours
-    # of the given date
     with open(inFile, 'r') as ffiles:
         for line in ffiles:
             fitsList.append(line.strip())
 
-    # lsize = list size: get the size of the file list 
-    lsize = len(fitsList)
-
     # Initialize lists with the number of fits files found
+    lsize = len(fitsList)
     raw = [0]*lsize
-    koa = ['0']*lsize
-    rootfile = ['0']*lsize
 
-    # Each line in the file list is a fits file
-    # We want to check the validity of each file
+    # Check the validity of each fits file (raw[i]=1 means good file)
     for i in range(lsize):
         raw[i] = 0
 
@@ -224,7 +209,7 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
             copy_bad_file(instr, fitsList[i], ancDir, 'Empty File', log)
             continue
 
-        # Get the header of the current fits file
+        # Get fits header (check for bad header)
         try:
             if instr == 'NIRC2':
                 header0 = fits.getheader(fitsList[i], ignore_missing_end=True)
@@ -235,57 +220,21 @@ def dep_rawfiles(instr, utDate, endTime, inFile, outFile, stageDir, ancDir, log)
             copy_bad_file(instr, fitsList[i], ancDir, 'Unreadable Header', log)
             continue
 
-        # Break the file path into a list
-        root = fitsList[i].split('/')
-
-        # Grab the last element in the filepath list
-        # This should be the filename *.fits
-        rootfile[i] = root[-1]
-
         # Construct the original file name
-        filename, successful = construct_filename(instr,fitsList[i], ancDir, header0, log)
+        filename, successful = construct_filename(instr, fitsList[i], ancDir, header0, log)
         if not successful:
             copy_bad_file(instr, fitsList[i], ancDir, 'Bad Header', log)
-            raw[i] = 2
             continue
 
-        # Get KOAID
-#        if not koaid(header0, utDate):
-#            copy_bad_file(instr, fitsList[i], ancDir, 'Bad KOAID', log)
-#            raw[i] = 2
-#            continue
-#        try:
-#            koa[i] = header0['KOAID']
-#        except KeyError:
-#            koa[i] = ''
+        # Make sure constructed filename matches basename.
+        basename = os.path.basename(fitsList[i])
+        if filename != basename:
+            copy_bad_file(instr, fitsList[i], ancDir, 'Mismatched filename', log)
+            continue
 
-        # If filename is rootfile then file is a raw image
-        if filename == rootfile[i]:
+        #else good file!
+        else:
             raw[i] = 1
-
-    #get endtime in seconds
-    #endTimeSec = float(endTime) * 3600.0
-    hours, minutes, seconds = endTime.split(":") 
-    endTimeSec = float(hours) * 3600.0 + float(minutes)*60.0 + float(seconds)
-
-
-    #check for duplicate KOA ID
-#    for i in range(len(fitsList)-1):
-#        if   raw[i] == 2: continue
-#        elif raw[i] == 0:
-#            for j in range(i+1,len(fitsList)):
-#                if koa[j]==koa[i]: # j will always be greater than i
-#                    copy_bad_file(instr, fitsList[i], ancDir, 'Duplicate KOAID', log)
-#                    raw[i] = 2
-#                    break
-
-    # Check for bad date
-#    for i in range(len(fitsList)):
-#        if raw[i] == 2: continue
-#        prefix, fdate, ftime, postfix = koa[i].split('.')
-#        if fdate != date and float(ftime) < endTimeSec:
-#            copy_bad_file(instr, fitsList[i], ancDir, 'KOADATE', log)
-#            raw[i] = 2
 
 
     # Create final dqa_<instr>.txt file with only the good lines from dep_locateINSTR.txt
