@@ -226,9 +226,10 @@ class Dep:
         dirs = self.instrObj.dirs
         utDateDir = self.instrObj.utDateDir
         filelistOutFile = dirs['lev0'] + '/' + utDateDir + '.filelist.table'
-        with open(filelistOutFile, 'r') as file:
-            for line in file: 
-                msg += line + "\n"
+        if os.path.isfile(filelistOutFile): 
+            with open(filelistOutFile, 'r') as file:
+                for line in file: 
+                    msg += line + "\n"
 
 
         #read config vars
