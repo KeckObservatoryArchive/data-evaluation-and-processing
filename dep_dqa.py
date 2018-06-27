@@ -85,9 +85,11 @@ def dep_dqa(instrObj, tpx=0):
         ok = True
         if ok: ok = instrObj.set_fits_file(filename)
         if ok: ok = instrObj.run_dqa_checks(progData)
+        if ok: ok = check_koaid(instrObj, outFiles, log)
         if ok: ok = instrObj.write_lev0_fits_file()
         if ok: ok = instrObj.make_jpg()
 
+ 
         #If any of these steps return false then copy to udf and skip
         if (not ok): 
             log.info('copying {} to {}'.format(filename, dirs['udf']))
@@ -182,6 +184,33 @@ def dep_dqa(instrObj, tpx=0):
 
     #log success
     log.info('dep_dqa.py DQA Successful for {}'.format(instr))
+
+
+
+def check_koaid(instrObj, koaidList, log):
+
+    #sanity check
+    koaid = instrObj.fitsHeader.get('KOAID')
+    if (koaid == False or koaid == None):
+        log.warning('dep_dqa.py: BAD KOAID "{}" found for {}'.format(koaid, instrObj.fitsFilepath))
+        return False
+
+    #check for duplicates
+    print(koaid, koaidList)
+    if (koaid in koaidList):
+        log.warning('dep_dqa.py: DUPLICATE KOAID "{}" found for {}'.format(koaid, instrObj.fitsFilepath))
+        return False
+
+    #check for correct date and time in koaid that we expect.
+    prefix, kdate, ktime, postfix = koaid.split('.')
+    hours, minutes, seconds = instrObj.endTime.split(":") 
+    endTimeSec = float(hours) * 3600.0 + float(minutes)*60.0 + float(seconds)
+    iDate = instrObj.utDate.replace('/', '-').replace('-', '')
+    if (kdate != iDate and float(ktime) < endTimeSec):
+        log.warning('dep_dqa.py: KOAID "{}" has bad Date "{}" for file {}'.format(koaid, kdate, instrObj.fitsFilepath))
+        return False
+
+    return True
 
 
 
