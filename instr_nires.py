@@ -313,7 +313,7 @@ class Nires(instrument.Instrument):
         This is derived from OBSTYPE keyword.
         '''
 
-        self.log.info('set_koaimtyp: setting KOAIMTYP keyowrd value from OBSTYPE')
+        self.log.info('set_koaimtyp: setting KOAIMTYP keyword value from OBSTYPE')
 
         #get obstype value
         keys = self.fitsHeader
@@ -323,7 +323,8 @@ class Nires(instrument.Instrument):
         koaimtyp = 'undefined'
         validValsMap = {
             'object'  : 'object',
-            'standard': 'object',
+            'standard': 'object',   #NOTE: old val
+            'telluric': 'object',
             'bias'    : 'bias', 
             'dark'    : 'dark', 
             'domeflat': 'domeflat', 
@@ -334,6 +335,10 @@ class Nires(instrument.Instrument):
         }
         if (obstype != None and obstype.lower() in validValsMap): 
             koaimtyp = validValsMap[obstype.lower()]
+
+        #warn if undefined
+        if (koaimtyp == 'undefined'):
+            self.log.warning('set_koaimtyp: Could not determine KOAIMTYP from OBSTYPE value of "' + obstype + '"')
 
         #update keyword
         keys.update({'KOAIMTYP' : (koaimtyp,  'KOA: Image type')})
