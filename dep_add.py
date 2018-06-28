@@ -61,12 +61,21 @@ def dep_add(instrObj):
     # Copy nightly data to ancDir/nightly
     files = ['envMet.arT', 'envFocus.arT']
     for file in files:
-        source = (nightlyDir, '/', file)
-        source = ''.join(source)
+        source = ''.join((nightlyDir, '/', file))
         if os.path.exists(source):
-            destination = (instrObj.dirs['anc'], '/nightly/', file)
-            destination = ''.join(destination)
+            destination = ''.join((instrObj.dirs['anc'], '/nightly/', file))
             instrObj.log.info('dep_add.py copying {} to {}'.format(source, destination))
             shutil.copyfile(source, destination)
 
+        #re-open file and look for bad lines with NUL chars and remove those lines and resave.
+        #(The bad characters are a result of copying a file that is being modified every few seconds)
+        if os.path.exists(destination):
+            newLines = []
+            with open(destination, 'r') as f:
+                for line in f:
+                    if '\0' in line: continue
+                    newLines.append(line)
+            with open(destination, 'w') as f:
+                f.write("".join(newLines))
 
+    
