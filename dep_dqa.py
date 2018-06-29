@@ -196,7 +196,6 @@ def check_koaid(instrObj, koaidList, log):
         return False
 
     #check for duplicates
-    print(koaid, koaidList)
     if (koaid in koaidList):
         log.warning('dep_dqa.py: DUPLICATE KOAID "{}" found for {}'.format(koaid, instrObj.fitsFilepath))
         return False
