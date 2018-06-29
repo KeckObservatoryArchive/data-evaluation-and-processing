@@ -10,6 +10,7 @@ import urllib.request as url
 #import pymysql as pms
 import time
 import create_log as cl
+from common import url_get
 
 class ProgSplit:
     """
@@ -353,12 +354,14 @@ class ProgSplit:
         @type progid: string
         @param progid: ID of the observation program
         """
+
         semid = ''.join((sem, '_', progid))
         req = ''.join((self.api, 'koa.php?cmd=getTitle&semid=', semid))
-        req = url.urlopen(req)
-        title = req.read().decode()
-        title = json.loads(title)[0]['progtitl']
-        return title
+        title = url_get(req, getOne=True)
+        if (title == None or 'progtitl' not in title): 
+            self.log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
+            return ''
+        else : return title['progtitl']
 
 #--------------------- END GET PROG TITLE-----------------------------------------------
 
