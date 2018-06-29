@@ -358,7 +358,9 @@ class ProgSplit:
         semid = ''.join((sem, '_', progid))
         req = ''.join((self.api, 'koa.php?cmd=getTitle&semid=', semid))
         title = url_get(req, getOne=True)
-        if (title == None or 'progtitl' not in title) : return ''
+        if (title == None or 'progtitl' not in title): 
+            self.log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
+            return ''
         else : return title['progtitl']
 
 #--------------------- END GET PROG TITLE-----------------------------------------------
