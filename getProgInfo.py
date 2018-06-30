@@ -216,13 +216,13 @@ class ProgSplit:
                     # Check to see if it is an engineering night
                     # Key = instrument, value = outdir/obs
                     for key, value in self.engineering.items():
-                        if key in self.fileList[count][value].lower():
+                        if key in self.fileList[count][value].lower() or self.fileList[count]['progid'] == 'ENG':
                             self.fileList[count]['proginst'] = 'KECK'
                             self.fileList[count]['progid'] = 'ENG'
                             self.fileList[count]['progpi'] = ''.join(
                                     (self.instrument.lower(), 'eng'))
                             self.fileList[count]['progtitl'] = ''.join(
-                                    (self.instrument.lower(), ' Engineering'))
+                                    (self.instrument.upper(), ' Engineering'))
                     # Check to see if it is a ToO observation
                     for key, value in self.too.items():
                         if key in self.fileList[count][value]:
@@ -360,7 +360,7 @@ class ProgSplit:
         title = url_get(req, getOne=True)
         if (title == None or 'progtitl' not in title): 
             self.log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
-            return ''
+            return 'NONE'
         else : return title['progtitl']
 
 #--------------------- END GET PROG TITLE-----------------------------------------------

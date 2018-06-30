@@ -61,6 +61,7 @@ def create_prog(instrObj):
             fileList.append(item.strip())
 
 
+    badValues = ['Usage', 'error']
     # Open output file
     outfile = stageDir + '/createprog.txt'
     with open(outfile, 'w') as ofile:
@@ -141,12 +142,12 @@ def create_prog(instrObj):
 
                 # Get the program information from the program ID
                 progpi, proginst, progtitl = get_prog_info(ktn)                   
-                if 'Usage' in progpi  : ofile.write('PROGPI\n')
-                else                  : ofile.write(progpi+'\n')
-                if 'Usage' in proginst: ofile.write('PROGINST\n')
-                else                  : ofile.write(proginst+'\n')
-                if 'Usage' in progtitl: ofile.write('PROGTITL\n')
-                else                  : ofile.write(progtitl+'\n')
+                if any(x in progpi for x in badValues): ofile.write('PROGPI\n')
+                else                                  : ofile.write(progpi+'\n')
+                if any(x in proginst for x in badValues): ofile.write('PROGINST\n')
+                else                                    : ofile.write(proginst+'\n')
+                if any(x in progtitl for x in badValues): ofile.write('PROGTITL\n')
+                else                                    : ofile.write(progtitl+'\n')
 
             #write OA last
             ofile.write(oa + '\n')
