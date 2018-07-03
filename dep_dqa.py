@@ -39,6 +39,7 @@ def dep_dqa(instrObj, tpx=0):
     inFiles = []
     outFiles = []
     procFiles = []
+    semids = []
     extraMeta = {}
     dqaFile = dirs['stage'] +'/dep_dqa' + instr +'.txt'
 
@@ -100,6 +101,7 @@ def dep_dqa(instrObj, tpx=0):
         procFiles.append(instrObj.fitsFilepath)
         inFiles.append(os.path.basename(instrObj.fitsFilepath))
         outFiles.append(instrObj.fitsHeader.get('KOAID'))
+        semids.append(instrObj.get_semid())
 
         #stats
         if instrObj.is_science(): sciFiles += 1
@@ -182,8 +184,58 @@ def dep_dqa(instrObj, tpx=0):
         update_koatpx(instr, utDate, 'size', get_directory_size(dirs['output']), log)
 
 
+    #update koapi_send for all unique semids
+    if tpx or True:
+        check_koapi_send(semids, instrObj.utDate, log)
+
+
     #log success
     log.info('dep_dqa.py DQA Successful for {}'.format(instr))
+
+
+
+def check_koapi_send(semids, utDate, log):
+    '''
+    Sends all unique semids processed in DQA to KOA api to flag semids
+    for needing an email sent to PI that there data has been archived
+    '''
+
+    #create needed api vars
+    import configparser
+    config = configparser.ConfigParser()
+    config.read('config.live.ini')
+
+    import hashlib
+    user = os.getlogin()
+    myHash = hashlib.md5(user.encode('utf-8')).hexdigest()
+
+    #loops thru semids, skipping duplicates
+    processed = []
+    for semid in semids:
+
+        if semid in processed: continue
+
+        #check if we should update koapi_send
+        semester, progid = semid.split('_')
+        if progid == 'NONE' or progid == 'null' or progid == 'ENG' or progid == '':
+            continue;
+        if progid == None or semester == None:
+            continue;
+
+        #koa api url
+        url = config['API']['koaapi']
+        url += 'cmd=updateKoapiSend'
+        url += '&utdate=' + utDate
+        url += '&semid='  + semid
+        url += '&hash='   + myHash
+
+        #call and check results
+        log.info('check_koapi_send: calling koa api url: {}'.format(url))
+        result = url_get(url)
+        if result == None or result == 'false':
+            log.warning('check_koapi_send failed')
+
+        processed.append(semid)
 
 
 
