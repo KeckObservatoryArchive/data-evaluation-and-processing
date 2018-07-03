@@ -40,7 +40,7 @@ def koaxfr(instrObj, tpx=0):
 
     count = len([name for name in os.listdir(instrObj.dirs['lev0']) if name.endswith('.fits.gz')])
     if count == 0:
-        instrObj.log.error('koaxfr.py no FITS files to transfer')
+        instrObj.log.info('koaxfr.py no FITS files to transfer')
         # Send email verifying transfer complete
         subject = ''.join((instrObj.utDate.replace('-', ''), ' ', instr))
         message = ''.join(('No metadata for ', instrObj.utDate.replace('-', '')))
