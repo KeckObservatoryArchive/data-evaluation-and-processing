@@ -505,13 +505,12 @@ class Instrument:
         self.log.info('set_propint: determining PROPINT value')
 
         #create semid
-        keys = self.fitsHeader
-        semester = keys.get('SEMESTER')
-        progid   = keys.get('PROGID')
-        assert (semester != None and progid != None), 'set_propint: Could not find either SEMESTER or PROGID keyword.'
-        semid = semester + '_' + progid
+        semid = self.get_semid()
+        assert (semid != None), 'set_propint: Could not create SEMID.'
+
 
         # Default to 18 for ENG data (***verify with SAs***)
+        progid = self.fitsHeader.get('PROGID')
         if progid == 'ENG':
             propint = 18
         else:
@@ -759,3 +758,15 @@ class Instrument:
             self.log.error('make_jpg: file does not exist {}'.format(filePath))
             return False
 
+
+    def get_semid(self):
+
+        keys = self.fitsHeader
+        semester = keys.get('SEMESTER')
+        progid   = keys.get('PROGID')
+
+        if (semester == None or progid == None): 
+            return None
+
+        semid = semester + '_' + progid
+        return semid
