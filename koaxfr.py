@@ -1,6 +1,7 @@
 from send_email import *
 from common import update_koatpx
 from datetime import datetime as dt
+import os
 
 def koaxfr(instrObj, tpx=0):
     """
@@ -13,19 +14,17 @@ def koaxfr(instrObj, tpx=0):
     Email is sent to KOAXFR:emailerror if an error occurs
     """
 
-    import configparser
-    import os
+    # shorthand vars
 
-    instr = instrObj.instr.upper()
-
-    # Directory that will be transfered
-
+    instr   = instrObj.instr.upper()
+    utDate  = instrObj.utDate
+    log     = instrObj.log
     fromDir = instrObj.dirs['output']
 
     # Verify that the directory to transfer exists
 
     if not os.path.isdir(fromDir):
-        instrObj.log.error('koaxfr.py directory ({}) does not exist'.format(fromDir))
+        log.error('koaxfr.py directory ({}) does not exist'.format(fromDir))
         return False
 
     # Read config file
@@ -36,16 +35,27 @@ def koaxfr(instrObj, tpx=0):
     emailFrom = config['KOAXFR']['EMAILFROM']
     emailTo = config['KOAXFR']['EMAILTO']
 
-    # Verify that there are FITS files
+    # If no FITS files then email IPAC verifying (empty) transfer complete
 
     count = len([name for name in os.listdir(instrObj.dirs['lev0']) if name.endswith('.fits.gz')])
     if count == 0:
-        instrObj.log.error('koaxfr.py no FITS files to transfer')
-        # Send email verifying transfer complete
-        subject = ''.join((instrObj.utDate.replace('-', ''), ' ', instr))
-        message = ''.join(('No metadata for ', instrObj.utDate.replace('-', '')))
-        instrObj.log.info('koaxfr.py sending no data email to {}'.format(emailTo))
+        log.error('koaxfr.py no FITS files to transfer')
+        subject = ''.join((utDate.replace('-', ''), ' ', instr))
+        message = ''.join(('No metadata for ', utDate.replace('-', '')))
+        log.info('koaxfr.py sending no data email to {}'.format(emailTo))
         send_email(emailTo, emailFrom, subject, message)
+
+        if tpx:
+            update_koatpx(instr, utDate, 'files_arch', '0', log)
+            update_koatpx(instr, utDate, 'sci_files', '0', log)
+            update_koatpx(instr, utDate, 'ondisk_stat', 'N/A', log)
+            update_koatpx(instr, utDate, 'arch_stat', 'N/A', log)
+            update_koatpx(instr, utDate, 'metadata_stat', 'N/A', log)
+            update_koatpx(instr, utDate, 'dvdwrit_stat', 'N/A', log)
+            update_koatpx(instr, utDate, 'dvdsent_stat', 'N/A', log)
+            update_koatpx(instr, utDate, 'dvdstor_stat', 'N/A', log)
+            #update_koatpx(instr, utDate, 'tpx_stat', 'N/A', log)
+
         return True
 
     # Configure the transfer command
@@ -54,8 +64,8 @@ def koaxfr(instrObj, tpx=0):
     account = config['KOAXFR']['ACCOUNT']
     toDir = config['KOAXFR']['DIR']
     toLocation = ''.join((account, '@', server, ':', toDir, '/', instr))
-    instrObj.log.info('koaxfr.py transferring directory {} to {}'.format(fromDir, toLocation))
-    instrObj.log.info('koaxfr.py rsync -avz {} {}'.format(fromDir, toLocation))
+    log.info('koaxfr.py transferring directory {} to {}'.format(fromDir, toLocation))
+    log.info('koaxfr.py rsync -avz {} {}'.format(fromDir, toLocation))
 
     # Transfer the data
 
@@ -65,20 +75,20 @@ def koaxfr(instrObj, tpx=0):
     output, error = xfrCmd.communicate()
     if not error:
         # Send email verifying transfer complete and update koatpx
-        instrObj.log.info('koaxfr.py sending email to {}'.format(emailTo))
-        subject = ''.join(('lev0 ', instrObj.utDate.replace('-', ''), ' ', instr))
+        log.info('koaxfr.py sending email to {}'.format(emailTo))
+        subject = ''.join(('lev0 ', utDate.replace('-', ''), ' ', instr))
         message = 'lev0 data successfully transferred to koaxfr'
         send_email(emailTo, emailFrom, subject, message)
         if tpx:
             utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
-            update_koatpx(instr, instrObj.utDate, 'dvdsent_stat', 'DONE', instrObj.log)
-            update_koatpx(instr, instrObj.utDate, 'dvdsent_time', utcTimestamp, instrObj.log)
+            update_koatpx(instr, utDate, 'dvdsent_stat', 'DONE', log)
+            update_koatpx(instr, utDate, 'dvdsent_time', utcTimestamp, log)
         return True
     else:
         # Send email notifying of error
         emailError = config['KOAXFR']['EMAILERROR']
-        instrObj.log.error('koaxfr.py error transferring directory ({}) to {}'.format(fromDir, toLocation))
-        instrObj.log.error('koaxfr.py sending email to {}'.format(emailError))
+        log.error('koaxfr.py error transferring directory ({}) to {}'.format(fromDir, toLocation))
+        log.error('koaxfr.py sending email to {}'.format(emailError))
         message = ''.join(('Error transferring directory', fromDir, ' to ', toDir, '\n\n'))
         send_email(emailError, emailFrom, 'Error - koaxfr transfer', message)
         return False
