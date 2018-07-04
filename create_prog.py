@@ -1,5 +1,4 @@
 from common import fixdatetime
-from imagetyp_instr import imagetyp_instr
 from astropy.io import fits
 from urllib.request import urlopen
 from dep_obtain import get_obtain_data
@@ -80,7 +79,8 @@ def create_prog(instrObj):
             fixdatetime(utDate, filename, header)
 
             #get image type
-            imagetyp = imagetyp_instr(instr, header)
+            instrObj.set_koaimtyp()
+            imagetyp = header.get('KOAIMTYP')
 
             #get date-obs
             instrObj.set_dateObs()
