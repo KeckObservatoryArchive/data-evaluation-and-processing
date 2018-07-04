@@ -348,22 +348,21 @@ class Instrument:
 
         #if empty or bad values then build from file last mod time
         #note: converting to universal time (+10 hours)
-        if dateObs == None or 'Error' in dateObs or dateObs == '':
+        if dateObs == None or 'Error' in dateObs or dateObs == '' or dateObs == '0':
             lastMod = os.stat(filename).st_mtime
             dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             dateObs = dateObs.strftime('%Y-%m-%d')
             keys.update({self.dateObs : (dateObs, 'KOA: Observing date')})
-            self.log.info('set_dateObs: DATE-OBS value determined from FITS file time')
+            self.log.warning('set_dateObs: set DATE-OBS value from FITS file time')
 
-        # Fix yy/mm/dd to yyyy-mm-dd
-        if '-' not in dateObs:
+        # Fix timestamp format
+        if 'T' in dateObs:
             orig = dateObs
-            yr, mo, dy = dateObs.split('/')
-            dateObs = ''.join(('20', yr, '-', mo, '-', dy))
+            parts = dateObs.split('T')
+            dateObs = parts[0]
             keys.update({self.dateObs : (dateObs, 'KOA: Value corrected (' + orig + ')')})
-            self.log.info('set_dateObs: fixed formatting of DATE-OBS value (yyyy-mm-dd)')
+            self.log.warning('set_dateObs: fixed formatting of DATE-OBS value (orig: ' + orig + ')')
 
-        #todo: can this check fail?
         return True
        
 
@@ -379,12 +378,12 @@ class Instrument:
         #if empty or bad values then build from file last mod time
         #todo: make sure this is universal time
         utc = keys.get(self.utc)
-        if utc == None or 'Error' in utc or utc == '':
+        if utc == None or 'Error' in utc or utc == '' or utc == '0':
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S')
             keys.update({self.utc : (utc, 'KOA: Observing time')})
-            self.log.info('set_utc: UTC value determined from FITS file time')
+            self.log.warning('set_utc: set UTC value from FITS file time')
 
         return True
 

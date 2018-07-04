@@ -16,8 +16,6 @@
 import os
 import sys
 import importlib
-import urllib.request
-import json
 import configparser
 from dep_obtain import dep_obtain
 from dep_locate import dep_locate
@@ -112,7 +110,6 @@ class Dep:
             elif step == 'dqa'   : dep_dqa(self.instrObj, self.tpx)
             #lev1
             elif step == 'tar'   : dep_tar(self.instrObj)
-            #koaxfr
             elif step == 'koaxfr': koaxfr(self.instrObj, self.tpx)
 
             #check for expected output
@@ -219,7 +216,6 @@ class Dep:
 
 
         #form msg
-        #todo: clean this up a bit
         msg = ''
         msg += logStr + "\n"
 
@@ -251,7 +247,6 @@ class Dep:
 
 
         #update tpx
-        #TODO: Note: we may not need/want to do this tpx update
         if self.tpx:
             self.instrObj.log.info('Updating KOA database with error status.')
             utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")

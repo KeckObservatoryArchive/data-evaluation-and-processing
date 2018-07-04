@@ -126,21 +126,10 @@ def dep_locate(instrObj, tpx=0):
 
     #update koatpx
     if tpx:
-        if num == 0:
-            update_koatpx(instr, utDate, 'files_arch', '0', log)
-            update_koatpx(instr, utDate, 'sci_files', '0', log)
-            update_koatpx(instr, utDate, 'ondisk_stat', 'N/A', log)
-            update_koatpx(instr, utDate, 'arch_stat', 'N/A', log)
-            update_koatpx(instr, utDate, 'metadata_stat', 'N/A', log)
-            update_koatpx(instr, utDate, 'dvdwrit_stat', 'N/A', log)
-            update_koatpx(instr, utDate, 'dvdsent_stat', 'N/A', log)
-            update_koatpx(instr, utDate, 'dvdstor_stat', 'N/A', log)
-            update_koatpx(instr, utDate, 'tpx_stat', 'N/A', log)
-        else:
-            utcTimestamp = datetime.utcnow().strftime("%Y%m%d %H:%M")
-            update_koatpx(instr, utDate, 'ondisk_stat', 'DONE', log)
-            update_koatpx(instr, utDate, 'ondisk_time', utcTimestamp, log)
-            update_koatpx(instr, utDate, 'files', str(num), log)
+        update_koatpx(instr, utDate, 'files', str(num), log)
+        update_koatpx(instr, utDate, 'ondisk_stat', 'DONE', log)
+        update_koatpx(instr, utDate, 'ondisk_time', utcTimestamp, log)
+
 
 #-----------------------END DEP LOCATE----------------------------------
 

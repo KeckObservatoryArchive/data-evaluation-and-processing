@@ -173,19 +173,19 @@ def dep_dqa(instrObj, tpx=0):
 
     #update TPX: archive ready
     if tpx:
-        log.info('dep_dqa.py updating tpx DB records')
+        log.info('dep_dqa.py: updating tpx DB records')
         utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
         update_koatpx(instr, utDate, 'files_arch', str(len(procFiles)), log)
         update_koatpx(instr, utDate, 'pi', piList, log)
         update_koatpx(instr, utDate, 'sdata', sdataList, log)
         update_koatpx(instr, utDate, 'sci_files', str(sciFiles), log)
         update_koatpx(instr, utDate, 'arch_stat', 'DONE', log)
-        update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
+        update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)       
         update_koatpx(instr, utDate, 'size', get_directory_size(dirs['output']), log)
 
 
     #update koapi_send for all unique semids
-    if tpx or True:
+    if tpx:
         check_koapi_send(semids, instrObj.utDate, log)
 
 
@@ -273,7 +273,11 @@ def notify_zero_files(dqaFile, log):
     #touch empty output file
     open(dqaFile, 'a').close()
 
-    #todo: should we handle ipac email and tpx status here or in koaxfr
+    #tpx update
+    log.info('dep_dqa.py: updating tpx DB records')
+    utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+    update_koatpx(instr, utDate, 'arch_stat', 'DONE', log)
+    update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
 
 
 
