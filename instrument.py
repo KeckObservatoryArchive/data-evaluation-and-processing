@@ -19,6 +19,7 @@ import urllib.request
 import json
 import numpy as np
 import re
+from dep_obtain import get_obtain_data
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -608,18 +609,14 @@ class Instrument:
         '''
 
         # Get OA from dep_obtain file
-        dep_obtain = self.dirs['stage'] + '/dep_obtain' + self.instr + '.txt'
-        oas = []
+        obFile = self.dirs['stage'] + '/dep_obtain' + self.instr + '.txt'
+        obData = get_obtain_data(obFile)
         oa = None
-        with open(dep_obtain, 'r') as dob:
-            for line in dob:
-                items = line.strip().split(' ')
-                if len(items)>1:
-                    oas.append(items[1])
-        if (len(oas) >= 1): oa = oas[0]
+        if len(obData) >= 1: oa = obData[0]['oa']
 
-        keys = self.fitsHeader
-        keys.update({'OA' : (oa, 'KOA: Observing Assistant name')})
+        if oa != None:
+            keys = self.fitsHeader
+            keys.update({'OA' : (oa, 'KOA: Observing Assistant name')})
 
         return True
 

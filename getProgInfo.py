@@ -11,6 +11,8 @@ import urllib.request as url
 import time
 import create_log as cl
 from common import url_get
+from dep_obtain import get_obtain_data
+
 
 class ProgSplit:
     """
@@ -170,27 +172,15 @@ class ProgSplit:
         """
         This method reads the files from the dep_obtain output file
         """
-        readfile = ''.join((self.stageDir, '/dep_obtain',
-                self.instrument, '.txt'))
-        if not os.path.exists(readfile):
-            raise Exception('read_dep_obtain - file does not exist!!')
-            return
 
-        save = ['utdate', 'oa','account', 'proginst',
-                'progpi', 'progid', 'observer']
-        with open(readfile, 'r') as rfile:
-            for line in rfile:
-                vals = line.strip().split(' ')
-                # vals[5] is progid
-                if vals[5] != 'ENG':
-                    self.numSciencePI += 1
-                row = {}
-                # create a key-value pair from the save list
-                # and the values from dep_obtain
-                for i in range(1, len(save)):
-                    row[save[i]] = vals[i]
-                self.programs.append(row)
-                del row
+        obFile = self.stageDir + '/dep_obtain' + self.instrument + '.txt'
+        self.programs = get_obtain_data(obFile)
+
+        for data in self.programs:
+            print ('test: ', data)
+            if (data['progid'] != 'ENG'):
+                self.numSciencePI += 1
+
 
     def read_file_list(self):
         """
