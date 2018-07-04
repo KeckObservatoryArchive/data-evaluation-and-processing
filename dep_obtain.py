@@ -87,3 +87,30 @@ def dep_obtain(instrObj):
         return False
 
     return True
+
+
+
+def get_obtain_data(file):
+    '''
+    Reads an obtain output file (presumably one it created)
+    and parses it into a key-value pair array for each entry
+    '''
+
+    #check
+    if not os.path.exists(file):
+        raise Exception('get_obtain_data: file "{}" does not exist!!'.format(file))
+        return
+
+    #read each line and create key-value pair rows from col list names
+    data = []
+    cols = ['utdate', 'oa','account', 'proginst', 'progpi', 'progid', 'observer']
+    with open(file, 'r') as rfile:
+        for line in rfile:
+            vals = line.strip().split(' ')
+            row = {}
+            for i in range(0, len(cols)):
+                row[cols[i]] = vals[i]
+            data.append(row)
+            del row
+
+    return data

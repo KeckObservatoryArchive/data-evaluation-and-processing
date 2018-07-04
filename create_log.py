@@ -43,8 +43,8 @@ def create_log(rootDir, instr, utDate, doStdout=None):
 
 	log_writer.addHandler(log_handler)
 
-
 	#add stdout to output so we don't need both log and print statements(>= warning only)
+
 	if (doStdout):
 		sh = lg.StreamHandler(sys.stdout)
 		sh.setLevel(lg.WARNING)
@@ -52,7 +52,7 @@ def create_log(rootDir, instr, utDate, doStdout=None):
 		sh.setFormatter(formatter)
 		log_writer.addHandler(sh)
 	
-
 	#init message and return
+
 	log_writer.info('create_log.py log_writer created')
 	return log_writer

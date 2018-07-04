@@ -1,3 +1,8 @@
+#--------------------------------------------------------------------------
+# NOTE: This was replaced by instrument. subclass set_koaimtyp
+# (keeping this around for future addition of other instrument subclasses)
+#--------------------------------------------------------------------------
+
 def imagetyp_instr(instrument, keys):
     """
     Gets image type based on header keywords

@@ -1,8 +1,7 @@
 from common import fixdatetime
-from imagetyp_instr import imagetyp_instr
 from astropy.io import fits
 from urllib.request import urlopen
-
+from dep_obtain import get_obtain_data
 
 
 def create_prog(instrObj):
@@ -42,15 +41,10 @@ def create_prog(instrObj):
 
 
     # Get OA from dep_obtain file
-    dep_obtain = stageDir + '/dep_obtain' + instr + '.txt'
-    oa = []
-    with open(dep_obtain, 'r') as dob:
-        for line in dob:
-            items = line.strip().split(' ')
-            if len(items)>1:
-                oa.append(items[1])
-    if (len(oa) == 0): oa = ''
-    else             : oa = oa[0]
+    obFile = stageDir + '/dep_obtain' + instr + '.txt'
+    obData = get_obtain_data(obFile)
+    oa = ''
+    if len(obData) >= 1: oa = obData[0]['oa']
 
 
     # Get all files
@@ -85,7 +79,8 @@ def create_prog(instrObj):
             fixdatetime(utDate, filename, header)
 
             #get image type
-            imagetyp = imagetyp_instr(instr, header)
+            instrObj.set_koaimtyp()
+            imagetyp = header.get('KOAIMTYP')
 
             #get date-obs
             instrObj.set_dateObs()

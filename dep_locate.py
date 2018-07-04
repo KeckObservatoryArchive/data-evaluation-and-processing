@@ -16,7 +16,7 @@
 import calendar as cal               ## Used to convert a time object into a number of seconds
 import time as t                     ## Used to convert a string date into a time object
 from astropy.io import fits          ## Used for everything with fits
-from common import koaid,update_koatpx ## Used to determine the KOAID of a file for transport
+from common import update_koatpx 
 import os
 import shutil
 from sys import argv
