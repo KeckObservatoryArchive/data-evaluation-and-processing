@@ -109,7 +109,6 @@ def get_obtain_data(file):
             vals = line.strip().split(' ')
             row = {}
             for i in range(0, len(cols)):
-                print ('test: ', i)
                 row[cols[i]] = vals[i]
             data.append(row)
             del row

@@ -177,7 +177,6 @@ class ProgSplit:
         self.programs = get_obtain_data(obFile)
 
         for data in self.programs:
-            print ('test: ', data)
             if (data['progid'] != 'ENG'):
                 self.numSciencePI += 1
 
