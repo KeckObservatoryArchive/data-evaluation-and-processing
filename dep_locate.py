@@ -127,6 +127,8 @@ def dep_locate(instrObj, tpx=0):
     #update koatpx
     if tpx:
         update_koatpx(instr, utDate, 'files', str(num), log)
+        update_koatpx(instr, utDate, 'ondisk_stat', 'DONE', log)
+        update_koatpx(instr, utDate, 'ondisk_time', utcTimestamp, log)
 
 
 #-----------------------END DEP LOCATE----------------------------------

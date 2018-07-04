@@ -182,8 +182,6 @@ def dep_dqa(instrObj, tpx=0):
         update_koatpx(instr, utDate, 'arch_stat', 'DONE', log)
         update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)       
         update_koatpx(instr, utDate, 'size', get_directory_size(dirs['output']), log)
-        update_koatpx(instr, utDate, 'ondisk_stat', 'DONE', log)
-        update_koatpx(instr, utDate, 'ondisk_time', utcTimestamp, log)
 
 
     #update koapi_send for all unique semids
