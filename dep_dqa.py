@@ -66,7 +66,7 @@ def dep_dqa(instrObj, tpx=0):
 
     #if no files, then exit out
     if len(files) == 0 :
-        notify_zero_files(dqaFile, log)
+        notify_zero_files(instrObj, dqaFile, tpx, log)
         return
 
 
@@ -112,7 +112,7 @@ def dep_dqa(instrObj, tpx=0):
 
     #if no files passed DQA, then exit out
     if len(outFiles) == 0 :
-        notify_zero_files(dqaFile, log)
+        notify_zero_files(instrObj, dqaFile, tpx, log)
         return
 
 
@@ -264,7 +264,7 @@ def check_koaid(instrObj, koaidList, log):
 
 
 
-def notify_zero_files(dqaFile, log):
+def notify_zero_files(instrObj, dqaFile, tpx, log):
 
     #log
     log.info('dep_dqa.py: 0 files output from DQA process.')
@@ -273,10 +273,11 @@ def notify_zero_files(dqaFile, log):
     open(dqaFile, 'a').close()
 
     #tpx update
-    log.info('dep_dqa.py: updating tpx DB records')
-    utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
-    update_koatpx(instr, utDate, 'arch_stat', 'DONE', log)
-    update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)
+    if tpx:
+        log.info('dep_dqa.py: updating tpx DB records')
+        utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
+        update_koatpx(instrObj.instr, instrObj.utDate, 'arch_stat', 'DONE', log)
+        update_koatpx(instrObj.instr, instrObj.utDate, 'arch_time', utcTimestamp, log)
 
 
 
