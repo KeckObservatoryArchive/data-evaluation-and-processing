@@ -91,7 +91,9 @@ def create_prog(instrObj):
             utc = header.get(instrObj.utc)
 
             #get observer
-            observer = header.get('OBSERVER').strip()
+            observer = header.get('OBSERVER')
+            if observer == None: observer = 'None'
+            observer = observer.strip()
 
             #get fileno
             fileno = instrObj.get_fileno()
