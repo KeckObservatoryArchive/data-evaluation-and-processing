@@ -248,8 +248,13 @@ class Instrument:
         """
         Method to extract the name of the instrument from the INSTRUME keyword value
         """
+
+        #todo: why is this named 'set'?  It is not setting anything
+
         # Extract the Instrume value from the header as lowercase
-        instr = keys[self.instrume].lower()
+        instr = keys.get(self.instrume)
+        if (instr == None) : return ''
+        instr = instr.lower()
 
         # Split the value up into an array 
         instr = instr.split(' ')
