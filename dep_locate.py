@@ -20,7 +20,7 @@ from common import update_koatpx
 import os
 import shutil
 from sys import argv
-from datetime import datetime, timedelta
+from datetime import datetime as dt, timedelta
 import configparser
 
 
@@ -126,6 +126,7 @@ def dep_locate(instrObj, tpx=0):
 
     #update koatpx
     if tpx:
+        utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
         update_koatpx(instr, utDate, 'files', str(num), log)
         update_koatpx(instr, utDate, 'ondisk_stat', 'DONE', log)
         update_koatpx(instr, utDate, 'ondisk_time', utcTimestamp, log)
@@ -385,7 +386,7 @@ def find_24hr_fits(useDirs, utDate, endTime, modtimeOverride=0):
     utDate = utDate.replace('/', '-')
 
     # Set up our +/-24 hour boundary
-    utDate2 = datetime.strptime(utDate, '%Y-%m-%d')
+    utDate2 = dt.strptime(utDate, '%Y-%m-%d')
     utDate2 -= timedelta(days=1)
     utDate2 = utDate2.strftime('%Y-%m-%d')
 
