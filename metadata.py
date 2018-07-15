@@ -65,6 +65,10 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
         out.write("|\n")
 
 
+    #track warning counts
+    warns = {'type': 0, 'truncate': 0}
+
+
     #walk lev0Dir to find all final fits files
     if log: log.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
     for root, directories, files in os.walk(lev0Dir):
@@ -76,7 +80,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
                 if filename in extraData: extra = extraData[filename]
 
                 log.info("Creating metadata record for: " + fitsFile)
-                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log)
+                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log)
 
 
     #create md5 sum
@@ -85,15 +89,21 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
     make_dir_md5_table(lev0Dir, ".metadata.table", md5Outfile)
 
 
+    #warn only if counts
+    if (warns['type'] > 0):
+        if log: log.warning('metadata.py: Found {} data type warnings (search "metadata check" in log).'.format(warns['type']))
+    if (warns['truncate'] > 0):
+        if log: log.warning('metadata.py: Found {} truncation warnings (search "metadata check" in log).'.format(warns['truncate']))
 
-def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log):
+
+
+def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log):
     """
     Adds a line to metadata file for one FITS file.
     """
 
     #get header object using astropy
     header = fits.getheader(fitsFile)
-
 
     #write all keywords vals for image to a line
     with open(metaOutFile, 'a') as out:
@@ -105,16 +115,13 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log):
             colSize   = row['colSize']
             allowNull = row['allowNull']
 
-
             #get value from header, set to null if not found
             if   (keyword in header) : val = header[keyword]
             elif (keyword in extra)  : val = extra[keyword]
             else                     : val = 'null';
 
-
             #check keyword val and format
-            val = check_keyword_val(keyword, val, row, log)
-
+            val = check_keyword_val(keyword, val, row, warns, log)
 
             #write out val padded to size
             out.write(' ')
@@ -123,12 +130,14 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, log):
         out.write("\n")
  
 
-def check_keyword_val(keyword, val, fmt, log=None):
+
+def check_keyword_val(keyword, val, fmt, warns, log=None):
     '''
     Checks keyword for correct type and proper value.
     '''
 
     #todo: assert/fail on any of these?
+
 
 
     #check null
@@ -146,26 +155,30 @@ def check_keyword_val(keyword, val, fmt, log=None):
             elif (val == False): val = 'F'
         elif (vtype != "str"):
             if log: log.warning('metadata check: var type {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
-
+            warns['type'] += 1
     elif (fmt['dataType'] == 'integer'):
         if (vtype != "int"):
             if log: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
+            warns['type'] += 1
 
     elif (fmt['dataType'] == 'double'):
         if (vtype != "float"):
             if log: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
+            warns['type'] += 1
 
     elif (fmt['dataType'] == 'date'):
         try:
             datetime.datetime.strptime(val, '%Y-%m-%d')
         except ValueError:
             if log: log.warning('metadata check: expected date format YYYY-mm-dd ({}={}).'.format(keyword, val))
+            warns['type'] += 1
 
     elif (fmt['dataType'] == 'datetime'):
         try:
             datetime.datetime.strptime(val, '%Y-%m-%d %H:%i:%s')
         except ValueError:
             if log: log.warning('metadata check: expected date format YYYY-mm-dd HH:ii:ss ({}={}).'.format(keyword, val))
+            warns['type'] += 1
      
 
     #check char length
@@ -174,16 +187,18 @@ def check_keyword_val(keyword, val, fmt, log=None):
         if (fmt['dataType'] == 'double'): 
             #todo: change this back to warning once this is fixed for good?
             if log: log.info('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
+            warns['truncate'] += 1
             val = truncate_float(val, fmt['colSize'])
         else: 
-            if log: log.warning('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
+            if log: log.info('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
+            warns['truncate'] += 1
             val = str(val)[:fmt['colSize']]
 
 
     #todo: check value range, discrete values?
 
 
-    return val
+    return val, warns
 
 
 
