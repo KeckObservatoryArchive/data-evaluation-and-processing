@@ -198,7 +198,7 @@ def check_keyword_val(keyword, val, fmt, warns, log=None):
     #todo: check value range, discrete values?
 
 
-    return val, warns
+    return val
 
 
 
