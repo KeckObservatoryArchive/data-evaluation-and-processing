@@ -73,13 +73,17 @@ class Dep:
 
         #check if full run.  Prompt if not full run and doing tpx updates
         fullRun = True if (processStart == None and processStop == None) else False
-        if (fullRun == False and self.tpx or True): 
+        if (fullRun == False and self.tpx): 
             self.prompt_confirm_tpx()
 
 
         # Init DEP process (verify inputs, create the logger and create directories)
         # NOTE: A full run assert fails if dirs exist, otherwise assumes you know what you are doing.
         self.instrObj.dep_init(self.config, fullRun)
+
+
+        #log start message
+        self.instrObj.log.info('*** DEP GO: {} {} {} {} {} ***'.format(self.instr, self.utDate, self.tpx, processStart, processStop))
 
 
         #check koa for existing entry
