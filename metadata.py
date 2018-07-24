@@ -136,8 +136,10 @@ def check_keyword_val(keyword, val, fmt, warns, log=None):
     Checks keyword for correct type and proper value.
     '''
 
-    #todo: assert/fail on any of these?
-
+    #specific ERROR, UDF values that we should convert to "null"
+    errVals = ['#### Error ###']
+    if (val in errVals):
+        val = 'null'
 
 
     #check null
