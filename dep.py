@@ -71,14 +71,19 @@ class Dep:
         @type instr: string
         """
 
+        #check if full run.  Prompt if not full run and doing tpx updates
+        fullRun = True if (processStart == None and processStop == None) else False
+        if (fullRun == False and self.tpx or True): 
+            self.prompt_confirm_tpx()
+
+
         # Init DEP process (verify inputs, create the logger and create directories)
         # NOTE: A full run assert fails if dirs exist, otherwise assumes you know what you are doing.
-        fullRun = True if (processStart == None and processStop == None) else False
         self.instrObj.dep_init(self.config, fullRun)
 
 
         #check koa for existing entry
-        if self.tpx:
+        if fullRun and self.tpx:
             if not self.check_koa_db_entry(): return False
 
 
@@ -122,6 +127,7 @@ class Dep:
 
         #complete
         self.instrObj.log.info('*** DEP PROCESSSING COMPLETE! ***')
+        print ('*** DEP PROCESSSING COMPLETE! ***')
         return True
 
 
@@ -144,6 +150,20 @@ class Dep:
             return False
 
         return True
+
+ 
+
+    def prompt_confirm_tpx(self):
+
+        sys.stdout.write("\n===> ATTENTION: You are doing a manual run with TPX updates ON!  Enter [y]es to continue: ")
+        choice = input().lower()
+
+        allowed = {'yes', 'ye', 'y'}
+        if choice not in allowed:
+            sys.stdout.write("EXITING!\n")
+            sys.stdout.write("EXITING!\n")
+            sys.stdout.write("EXITING!\n")
+            sys.exit()
 
 
 
