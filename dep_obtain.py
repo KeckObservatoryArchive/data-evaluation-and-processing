@@ -70,6 +70,7 @@ def dep_obtain(instrObj):
                 num = 0
                 for entry in schedData:
 
+                    if entry['Account'] == '': entry['Account'] = '-'
                     obsUrl = ''.join((instrObj.telUrl, 'cmd=getObservers', '&schedid=', entry['SchedId']))
                     log.info('dep_obtain: retrieving observers info: {}'.format(obsUrl))
                     obsData = url_get(obsUrl)
