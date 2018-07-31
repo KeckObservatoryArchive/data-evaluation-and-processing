@@ -82,17 +82,13 @@ class Dep:
         self.instrObj.dep_init(self.config, fullRun)
 
 
-        #log start message
-        self.instrObj.log.info('*** DEP GO: {} {} {} {} {} ***'.format(self.instr, self.utDate, self.tpx, processStart, processStop))
-
-
         #check koa for existing entry
         if fullRun and self.tpx:
             if not self.check_koa_db_entry(): return False
 
 
         #write to tpx at dep start
-        if self.tpx:
+        if fullRun and self.tpx:
             utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")
             update_koatpx(self.instrObj.instr, self.instrObj.utDate, 'start_time', utcTimestamp, self.instrObj.log)
 
