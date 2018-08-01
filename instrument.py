@@ -163,7 +163,7 @@ class Instrument:
             #self.fitsHeader = fits.getheader(filename)
             self.fitsFilepath = filename
         except:
-            self.log.warning('set_fits_file: Could not read FITS file.  UDF!')
+            self.log.warning('set_fits_file: Could not read FITS file "' + filename + '"!')
             return False
 
         self.koaid = '';
@@ -387,7 +387,7 @@ class Instrument:
         if utc == None or 'Error' in utc or utc == '' or utc == '0':
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
-            utc = utc.strftime('%H:%M:%S')
+            utc = utc.strftime('%H:%M:%S.00')
             keys.update({self.utc : (utc, 'KOA: Observing time')})
             self.log.warning('set_utc: set UTC value from FITS file time')
 
