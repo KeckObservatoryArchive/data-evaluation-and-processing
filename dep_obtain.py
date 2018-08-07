@@ -29,13 +29,6 @@ def dep_obtain(instrObj):
 
     try:
 
-        # Read the telescope schedul URL
-
-        schedUrl = ''.join((instrObj.telUrl, 'cmd=getSchedule', '&date=', hstDate, '&instr=', instrObj.instr))
-        log.info('dep_obtain: retrieving telescope schedule info: {}'.format(schedUrl))
-        schedData = url_get(schedUrl)
-        if isinstance(schedData, dict): schedData = [schedData]
-
         # Get OA
 
         telnr = instrObj.get_telnr()
@@ -52,9 +45,14 @@ def dep_obtain(instrObj):
                     if entry['Type'] == 'oa':
                         oa = entry['Alias']
 
+        # Read the telescope schedul URL
         # No entries found: Create stageDir/dep_notschedINSTR.txt and dep_obtainINSTR.txt
 
-        if (schedData == None):
+        schedUrl = ''.join((instrObj.telUrl, 'cmd=getSchedule', '&date=', hstDate, '&instr=', instrObj.instr))
+        log.info('dep_obtain: retrieving telescope schedule info: {}'.format(schedUrl))
+        schedData = url_get(schedUrl)
+        if schedData and isinstance(schedData, dict): schedData = [schedData]
+        if not schedData:
             log.info('dep_obtain: no telescope schedule info found for {}'.format(instrObj.instr))
 
             with open(notScheduledFile, 'w') as fp:
