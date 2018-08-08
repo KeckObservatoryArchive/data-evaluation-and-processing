@@ -92,7 +92,7 @@ def dep_dqa(instrObj, tpx=0):
  
         #If any of these steps return false then copy to udf and skip
         if (not ok): 
-            log.info('copying {} to {}'.format(filename, dirs['udf']))
+            log.info('FITS file is UDF.  Copying {} to {}'.format(filename, dirs['udf']))
             shutil.copy2(filename, dirs['udf']);
             continue
 
@@ -243,21 +243,28 @@ def check_koaid(instrObj, koaidList, log):
     #sanity check
     koaid = instrObj.fitsHeader.get('KOAID')
     if (koaid == False or koaid == None):
-        log.warning('dep_dqa.py: BAD KOAID "{}" found for {}'.format(koaid, instrObj.fitsFilepath))
+        log.error('dep_dqa.py: BAD KOAID "{}" found for {}'.format(koaid, instrObj.fitsFilepath))
         return False
 
     #check for duplicates
     if (koaid in koaidList):
-        log.warning('dep_dqa.py: DUPLICATE KOAID "{}" found for {}'.format(koaid, instrObj.fitsFilepath))
+        log.error('dep_dqa.py: DUPLICATE KOAID "{}" found for {}'.format(koaid, instrObj.fitsFilepath))
         return False
 
-    #check for correct date and time in koaid that we expect.
+    #check that date and time extracted from generated KOAID falls within our 24-hour processing datetime range.
+    #NOTE: Only checking outside of 1 day difference b/c file write time can cause this to trigger incorrectly
     prefix, kdate, ktime, postfix = koaid.split('.')
     hours, minutes, seconds = instrObj.endTime.split(":") 
     endTimeSec = float(hours) * 3600.0 + float(minutes)*60.0 + float(seconds)
-    iDate = instrObj.utDate.replace('/', '-').replace('-', '')
-    if (kdate != iDate and float(ktime) < endTimeSec):
-        log.warning('dep_dqa.py: KOAID "{}" has bad Date "{}" for file {}'.format(koaid, kdate, instrObj.fitsFilepath))
+    idate = instrObj.utDate.replace('/', '-').replace('-', '')
+
+    a = dt.strptime(kdate[:4]+'-'+kdate[4:6]+'-'+kdate[6:8], "%Y-%m-%d")
+    b = dt.strptime(idate[:4]+'-'+idate[4:6]+'-'+idate[6:8], "%Y-%m-%d")
+    delta = b - a
+    delta = abs(delta.days)
+
+    if (kdate != idate and delta > 1 and float(ktime) < endTimeSec):
+        log.error('dep_dqa.py: KOAID "{}" has bad Date "{}" for file {}'.format(koaid, kdate, instrObj.fitsFilepath))
         return False
 
     return True
