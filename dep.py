@@ -236,9 +236,13 @@ class Dep:
 
 
         #form msg
-        msg = ''
-        msg += logStr + "\n"
+        msg = ""
 
+        msg += "===== ERRORS AND WARNINGS ====\n"
+        if (logStr == ''): msg += "  (none)\n"
+        else:              msg += logStr + "\n"
+
+        msg += "\n\n===== FILE LIST =====\n"
         dirs = self.instrObj.dirs
         utDateDir = self.instrObj.utDateDir
         filelistOutFile = dirs['lev0'] + '/' + utDateDir + '.filelist.table'
@@ -246,6 +250,7 @@ class Dep:
             with open(filelistOutFile, 'r') as file:
                 for line in file: 
                     msg += line + "\n"
+        else: msg += "  0 Total FITS files\n"
 
 
         #read config vars

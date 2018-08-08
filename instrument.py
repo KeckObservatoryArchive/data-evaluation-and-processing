@@ -233,6 +233,8 @@ class Instrument:
         minute = utc.minute
         second = utc.second
 
+        print ("test: ", utc, hour, minute, second)
+
         # Calculate the total number of seconds since Midnight
         totalSeconds = str((hour * 3600) + (minute * 60) + second)
 
@@ -703,17 +705,21 @@ class Instrument:
         elif (koaid.startswith('NS')): outfile += '/spec'
         outfile += '/' + koaid
 
-        #already exists?
-        #todo: only allow skip if not fullRun
-        # if os.path.isfile(outfile):
-        #     self.log.warning('write_lev0_fits_file: file already exists. SKIPPING')
-        #     return True
-
         #write out new fits file with altered header
-        self.fitsHdu.writeto(outfile)
-        self.log.info('write_lev0_fits_file: output file is ' + outfile)
-        return True
+        try:
+            #already exists?
+            #todo: only allow skip if not fullRun
+            # if os.path.isfile(outfile):
+            #     self.log.warning('write_lev0_fits_file: file already exists. SKIPPING')
+            #     return True
 
+            self.fitsHdu.writeto(outfile)
+            self.log.info('write_lev0_fits_file: output file is ' + outfile)
+        except:
+            self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
+            return False
+
+        return True
 
     def make_jpg(self):
         '''
@@ -727,8 +733,8 @@ class Instrument:
         filePath = ''.join((path, '/', koaid))
         self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
 
-        #already exists?
-        #todo: only allow skip if not fullRun
+        #check if already exists? (JPG conversion is time consuming)
+        #todo: Only allow skip if not fullRun? (ie Will we ever want to regenerate the jpg?)
 
         jpgFile = filePath.replace('.fits', '.jpg')
         if os.path.isfile(jpgFile):
@@ -737,28 +743,32 @@ class Instrument:
 
         # verify file exists
 
-        if os.path.isfile(filePath):
-            # image data to convert
-            image = self.fitsHdu[0].data
-            interval = ZScaleInterval()
-            vmin, vmax = interval.get_limits(image)
-            norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=SinhStretch())
-            plt.imshow(image, cmap='gray', origin='lower', norm=norm)
-            plt.axis('off')
-            # save as png, then convert to jpg
-            pngFile = filePath.replace('.fits', '.png')
-            jpgFile = pngFile.replace('.png', '.jpg')
-            plt.savefig(pngFile)
-            Image.open(pngFile).convert('RGB').save(jpgFile)
-            os.remove(pngFile)
-            self.log.info('make_jpg: file created {}'.format(jpgFile))
-            plt.close()
-            return True
-        else:
-            #TODO: if this errors, should we remove .fits file added previously?
-            self.log.error('make_jpg: file does not exist {}'.format(filePath))
+        try:
+            if os.path.isfile(filePath):
+                # image data to convert
+                image = self.fitsHdu[0].data
+                interval = ZScaleInterval()
+                vmin, vmax = interval.get_limits(image)
+                norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=SinhStretch())
+                plt.imshow(image, cmap='gray', origin='lower', norm=norm)
+                plt.axis('off')
+                # save as png, then convert to jpg
+                pngFile = filePath.replace('.fits', '.png')
+                jpgFile = pngFile.replace('.png', '.jpg')
+                plt.savefig(pngFile)
+                Image.open(pngFile).convert('RGB').save(jpgFile)
+                os.remove(pngFile)
+                self.log.info('make_jpg: file created {}'.format(jpgFile))
+                plt.close()
+            else:
+                #TODO: if this errors, should we remove .fits file added previously?
+                self.log.error('make_jpg: file does not exist {}'.format(filePath))
+                return False
+        except:
+            self.log.error('make_jpg: Could not create JPG: ' + jpgFile)
             return False
 
+        return True
 
     def get_semid(self):
 
