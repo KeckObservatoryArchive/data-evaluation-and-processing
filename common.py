@@ -215,7 +215,7 @@ def update_koatpx(instr, utDate, column, value, log=''):
     data = data.read().decode('utf8')       # Convert from byte to ascii
     if data == 'false':
         if log:
-            log.info('update_koatpx failed')
+            log.warning('update_koatpx failed! URL: ' + sendUrl)
         return False
     return True
 

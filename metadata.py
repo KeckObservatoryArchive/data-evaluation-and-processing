@@ -155,6 +155,9 @@ def check_keyword_val(keyword, val, fmt, warns, log=None):
         if (vtype == 'bool'):
             if   (val == True):  val = 'T'
             elif (val == False): val = 'F'
+        elif (vtype == 'int' and val == 0):
+            val = ''
+            if log: log.warning('metadata check: found integer 0, expected {}. KNOWN ISSUE. SETTING TO BLANK!'.format(fmt['dataType']))
         elif (vtype != "str"):
             if log: log.warning('metadata check: var type {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
             warns['type'] += 1
@@ -164,7 +167,7 @@ def check_keyword_val(keyword, val, fmt, warns, log=None):
             warns['type'] += 1
 
     elif (fmt['dataType'] == 'double'):
-        if (vtype != "float"):
+        if (vtype != "float" and vtype != "int"):
             if log: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
             warns['type'] += 1
 
