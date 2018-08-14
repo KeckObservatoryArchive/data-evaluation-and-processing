@@ -233,8 +233,6 @@ class Instrument:
         minute = utc.minute
         second = utc.second
 
-        print ("test: ", utc, hour, minute, second)
-
         # Calculate the total number of seconds since Midnight
         totalSeconds = str((hour * 3600) + (minute * 60) + second)
 
@@ -347,29 +345,32 @@ class Instrument:
         Checks to see if we have a date obsv keyword, and if it needs to be fixed or created.
         '''
 
-        keys = self.fitsHeader
-        filename = self.fitsFilepath
-
         #try to get from header
+        keys = self.fitsHeader
         dateObs = keys.get(self.dateObs)
-        if dateObs: dateObs = dateObs.strip()
+        if dateObs: 
+            dateObs = str(dateObs) #NOTE: sometimes we can get a number
+            dateObs = dateObs.strip()
 
-        #if empty or bad values then build from file last mod time
+            #try match valid date
+            match = re.search('^\d\d\d\d[-]\d\d[-]\d\d', dateObs)
+
+        #if we couldn't match valid pattern, then build from file last mod time
         #note: converting to universal time (+10 hours)
-        if dateObs == None or 'Error' in dateObs or dateObs == '' or dateObs == '0':
+        if not dateObs or not match:
+            filename = self.fitsFilepath
             lastMod = os.stat(filename).st_mtime
             dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             dateObs = dateObs.strftime('%Y-%m-%d')
             keys.update({self.dateObs : (dateObs, 'KOA: Observing date')})
             self.log.warning('set_dateObs: set DATE-OBS value from FITS file time')
 
-        # Fix timestamp format
-        if 'T' in dateObs:
+        # If good match, just take first 10 chars (some dates have 'T' format and extra time)
+        if len(dateObs) > 10:
             orig = dateObs
-            parts = dateObs.split('T')
-            dateObs = parts[0]
+            dateObs = parts[0:10]
             keys.update({self.dateObs : (dateObs, 'KOA: Value corrected (' + orig + ')')})
-            self.log.warning('set_dateObs: fixed formatting of DATE-OBS value (orig: ' + orig + ')')
+            self.log.warning('set_dateObs: fixed DATE-OBS format (orig: ' + orig + ')')
 
         return True
        
@@ -380,17 +381,24 @@ class Instrument:
         Checks to see if we have a utc time keyword, and if it needs to be fixed or created.
         '''
 
+        #try to get from header
         keys = self.fitsHeader
-        filename = self.fitsFilepath
- 
-        #if empty or bad values then build from file last mod time
-        #todo: make sure this is universal time
         utc = keys.get(self.utc)
-        if utc == None or 'Error' in utc or utc == '' or utc == '0':
+        if utc: 
+            utc = str(utc) #NOTE: sometimes we can get a number
+            utc = utc.strip()
+
+            #try match valid date
+            match = re.search('^\d\d:\d\d:\d\d.\d\d', utc)
+
+        #if we couldn't match valid pattern, then build from file last mod time
+        #note: converting to universal time (+10 hours)
+        if not utc or not match:
+            filename = self.fitsFilepath
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S.00')
-            keys.update({self.utc : (utc, 'KOA: Observing time')})
+            keys.update({self.utc : (utc, 'KOA: Value corrected')})
             self.log.warning('set_utc: set UTC value from FITS file time')
 
         return True
