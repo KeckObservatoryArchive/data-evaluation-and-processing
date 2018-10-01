@@ -7,23 +7,29 @@ MOSFIRE specific DR techniques can be added to it in the future
 
 import instrument
 import datetime as dt
+from common import *
+
 
 class Mosfire(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now(), rDir=''):
-        # Call the parent init to get all the shared variables
-        super().__init__(endTime, rDir)
+    
+    def __init__(self, instr, utDate, rootDir, log=None):
 
-        # MOSFIRE has 'DATAFILE' instead of OUTFILE
-        self.ofName = 'DATAFILE'
-        # MOSFIRE has FRAMENUM instead of FRAMENO
+        # Call the parent init to get all the shared variables
+        super().__init__(instr, utDate, rootDir, log)
+
+
+        # Set any unique keyword index values here
+        self.ofName  = 'DATAFILE'        
         self.frameno = 'FRAMENUM'
-        # Set the MOSFIRE specific paths to anc and stage
-        seq = (self.rootDir, '/MOSFIRE/', self.utDate, '/anc')
-        self.ancDir = ''.join(seq)
-        seq = (self.rootDir, '/stage')
-        self.stageDir = ''.join(seq)
-        # Generate the paths to the MOSFIRE datadisk accounts
-        self.paths = self.get_dir_list()
+
+
+        # Other vars that subclass can overwrite
+        self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
+
+
+        # Generate the paths to the NIRES datadisk accounts
+        self.sdataList = self.get_dir_list()
+
 
     def get_dir_list(self):
         '''
@@ -44,6 +50,7 @@ class Mosfire(instrument.Instrument):
         dirs.append(path2)
         return dirs
 
+
     def set_prefix(self, keys):
         instr = self.set_instr(keys)
         if instr == 'mosfire':
@@ -52,11 +59,11 @@ class Mosfire(instrument.Instrument):
             prefix = ''
         return prefix
 
+
     def set_raw_fname(self, keys):
         """
-        Overloaded method to construct the raw filename 
-        of the original file. MOSFIRE stores the raw filename
-        without the FITS extension in DATAFILE.
+        Overloaded method to construct the raw filename of the original file. 
+        MOSFIRE stores the raw filename without the FITS extension in DATAFILE.
 
         @type keys: dictionary
         @param keys: FITS header file values
@@ -66,6 +73,6 @@ class Mosfire(instrument.Instrument):
         except KeyError:
             return '', False
         else:
-            seq = (outfile, '.fits')
-            filename = ''.join(seq)
+            filename = outfile
+            if (filename.endsWith('.fits') == False) : filename += '.fits'
             return filename, True
