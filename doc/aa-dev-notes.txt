@@ -1,0 +1,54 @@
+
+===older NIRES data issues===
+- float rounding
+- WARNING - metadata check: var type of str, expected double (EQUINOX=2000.0)
+- 'My Program'
+
+
+
+===reference===
+- The NIRES echelle spectrograph (NR) and slit viewing camera (NI) 
+	- spreadsheet columns 's'=spec, 'v'=imag
+- Percy Gomez is NIRES instrument master
+
+- KOA API is kept alive with cron on www that runs every 10 minutes to make sure API is running.  You can stop it with
+/home/www/public/software/db_api/pyServer/dbServer.csh stop 50001
+(Let the cron start it back up, though, until we fix the terminal issue.)
+
+- to set file mod time: touch -t <yyyymmddhhmm> <file>
+
+
+
+===DB: koatpx ===
+utdate         | date         | 
+instr          | varchar(10)  | 
+pi             | varchar(68)  | 
+files          | int(11)      | 
+files_arch     | int(11)      | 
+size           | float        | 
+sdata          | varchar(15)  | 
+ondisk_stat    | varchar(10)  | 
+ondisk_time    | varchar(15)  | 
+arch_stat      | varchar(10)  | 
+arch_time      | varchar(15)  | 
+metadata_stat  | varchar(10)  | 
+metadata_time  | varchar(15)  | 
+dvdwrit_stat   | varchar(10)  | 
+dvdwrit_time   | varchar(15)  | 
+dvdsent_stat   | varchar(10)  | 
+dvdsent_time   | varchar(15)  | 
+dvdsent_init   | char(3)      | 
+dvdsent_com    | varchar(80)  | 
+dvdstor_stat   | varchar(10)  | 
+dvdstor_time   | varchar(15)  | 
+dvdstor_init   | char(3)      | 
+dvdstor_com    | varchar(80)  | 
+tpx_stat       | varchar(10)  | 
+tpx_time       | varchar(15)  | 
+comment        | varchar(250) | 
+start_time     | varchar(15)  | 
+metadata_time2 | varchar(15)  | 
+sci_files      | int(11)      | 
+drpSent        | varchar(15)  | 
+lev1_stat      | varchar(10)  | 
+lev1_time      | varchar(15)  | 

@@ -1,0 +1,5 @@
+===Creating metadata format file===
+- Get latest spreadsheet definition file (currently in Google docs, owned by Jeff)
+- Export columns in this order: Keyword, DataType, ColSize, AllowNulls
+- Make sure KOAID is first keyword row
+- Save to repo as /metadata/keywords.format.<INSTR> (ie "keywords.format.NIRES")
