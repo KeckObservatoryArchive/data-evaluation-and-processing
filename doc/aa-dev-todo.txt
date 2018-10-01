@@ -4,11 +4,6 @@
 
 
 ===MISC===
-- Versioning:
-  - Tag/version (0.1.0)
-  - define release process. use git.
-  - move processing out of /PythonTesting/ to kroot.  
-
 - MOSFIRE full keywords
   - define spreadsheet standards (Keyword, DataType, ColSize, AllowNull) (KOAID first row)
   - spreadsheet export util, steps
