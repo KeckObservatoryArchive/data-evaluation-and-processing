@@ -208,32 +208,24 @@ class ProgSplit:
                         if key in self.fileList[count][value].lower() or self.fileList[count]['progid'] == 'ENG':
                             self.fileList[count]['proginst'] = 'KECK'
                             self.fileList[count]['progid'] = 'ENG'
-                            self.fileList[count]['progpi'] = ''.join(
-                                    (self.instrument.lower(), 'eng'))
-                            self.fileList[count]['progtitl'] = ''.join(
-                                    (self.instrument.upper(), ' Engineering'))
+                            self.fileList[count]['progpi'] = ''.join((self.instrument.lower(), 'eng'))
+                            self.fileList[count]['progtitl'] = ''.join((self.instrument.upper(), ' Engineering'))
                     # Check to see if it is a ToO observation
                     for key, value in self.too.items():
                         if key in self.fileList[count][value]:
+                            #todo: why is this default section here?
                             self.fileList[count]['proginst'] = 'KECK'
                             self.fileList[count]['progid'] = 'ToO'
                             self.fileList[count]['progpi'] = 'ToO'
                             self.fileList[count]['progtitl'] = 'ToO'
-                            # Get semid
-                            garbage, sem = self.fileList[count][value].split('_ToO_')
-                            sem, garbage = sem.split('/')
-                            # Get program information
-                            semid = ''.join((self.semester, '-', sem))
-                            req = ''.join((self.api, 'koa.php?cmd=getPI&semid=', 
-                                    semid))
-                            pid = url.urlopen(req).read().decode()['progpi']
-                            req = ''.join((self.api, 'koa.php?cmd=getTitle&semid=', 
-                                    semid))
-                            titl = url.urlopen(req).read().decode()['progtitl']
+                            garbage, progid = self.fileList[count][value].split('_ToO_')
+                            progid, garbage = sem.split('/')
+                            progpi = self.get_prog_pi(self.semester, progid)
+                            progtitl = self.get_prog_title(self.semester, progid)
                             self.fileList[count]['proginst'] = 'KECK'
-                            self.fileList[count]['progid'] = sem
-                            self.fileList[count]['progpi'] = pid
-                            self.fileList[count]['progtitl'] = titl
+                            self.fileList[count]['progid'] = progid
+                            self.fileList[count]['progpi'] = progpi
+                            self.fileList[count]['progtitl'] = progtitl
                     # Reset for the next file
                     count += 1
                     num = 0
@@ -351,6 +343,26 @@ class ProgSplit:
             self.log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
             return 'NONE'
         else : return title['progtitl']
+
+#--------------------- END GET PROG TITLE-----------------------------------------------
+
+    def get_prog_pi(self, sem, progid):
+        """
+        Query the DB and get the prog PI last name
+
+        @type sem: string
+        @param sem: semester of the observation
+        @type progid: string
+        @param progid: ID of the observation program
+        """
+
+        semid = ''.join((sem, '_', progid))
+        req = ''.join((self.api, 'koa.php?cmd=getPI&semid=', semid))
+        pi = url_get(req, getOne=True)
+        if (pi == None or 'pi_lastname' not in pi): 
+            self.log.warning('get_prog_pi: Could not find program PI for semid "{}"'.format(semid))
+            return 'NONE'
+        else : return pi['pi_lastname']
 
 #--------------------- END GET PROG TITLE-----------------------------------------------
 

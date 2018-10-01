@@ -1,0 +1,77 @@
+(NOTE: This is a super detailed list of development TODOs.)
+(NOTE: High level todos also listed in github projects page.)  
+
+
+
+===MISC===
+- Versioning:
+  - Tag/version (0.1.0)
+  - define release process. use git.
+  - move processing out of /PythonTesting/ to kroot.  
+
+- MOSFIRE full keywords
+  - define spreadsheet standards (Keyword, DataType, ColSize, AllowNull) (KOAID first row)
+  - spreadsheet export util, steps
+  - DEP class 
+  - util to find distinct values for keywords
+  - Do we want a DEP check for values in header that are not in metadata.format.<instr>??!!
+
+- Keyword mapping
+  - Could we create a master list of keywords that is a superset of all instruments.  When a new instrument is defined, it has a spreadsheet of keywords in its header and another column that, if filled in, has the actual keyword.  This info would be transferred to the instr_<instr>.py file.
+
+- make get_dir_list more readable (use asterisk?) (just list them) (put in config)
+- Should 24-hour cutoff hour be a config/input and not hard-coded into instrument class?
+- We are not using the keyword mapping code as designed.  What should we do here?
+- add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
+- Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?
+- convenience prompt for dir removal and tpx removal if running manually?
+- uber cron to ensure all instruments processing ran and completed?
+- review all koatpx columns vs which ones we touch and when (ie zero files)
+- should check_instr set keyword self.instrume?
+- JPG issues: From Chris: "In looking at the NIRES quicklook JPEGS, the ones for the images look fine.  It's the ones for the spectra that are strange.  Some specific examples: NR.20180702.22971, NR.20180702.46965 and NR.20180702.53897.  In all of these, it seems like the dynamic range is too small since most of the spectra looks saturated. This is the main reason why I'd like to have the interactive viewer used for all files and not just the calibrated ones."
+
+
+
+
+===FULL KEYWORDS===
+- Add all instrument missing keywords that are in the primary header to metadata.
+- q: What about HDU secondary headers?
+- order of work: NIRES, (NIRSPEC?), MOSFIRE, DEIMOS, ESI
+- ***Need tool to search all headers from old data for a particular keyword and bin the values so we know what to expect for those with discrete lists?
+- Don't forget WCS, slitmask plot and additional keywords from Mihseh (email).
+
+
+
+
+===LOW PRIORITY===
+- sort metadata by timestamp? (currently sorted by KOAID which has 'NR'/'NI' prefix sort first)
+- get rid of dqa info statements everywhere
+- convert all tab indentation to spaces
+- metadata graph demo with Pyviz + jupyter notebook
+- rename graveyard/ to old/
+
+
+
+===QUESTIONS===
+- Should a make_jpg failure result in UDF?
+- DATE-OBS: I created a check_keyword_dateobs function based on a dateobs check in create_prog.  But I see other, more extensive checks, like in the semester() function.  
+
+
+
+===IDEAS===
+- Improve logging and reporting more.
+- Rename dep_tar to dep_package.  Move fits gzip step to dep_package (but this would make koatpx.size incorrect so move that to dep_package as well).
+- Runtime option to auto remove stage/run dirs and remove tpx entry?
+- Clean up stage/fits files?
+- Move dep.check_koa_db_entry() to koaxfr.py so that we can always run DEP up to that point? (see koaxfrSetup.php)
+- Pull out metadata from DQA so it can be run as independent step after DQA? 
+- change back to instrument.py and subclasses as a service class (ie not holding current fits file etc)
+- Make insrument.py a better base class; denote which functions/vars must be defined in subclass.
+- process step base class would be nice.
+- always do instrObj header fix up front so we can just refer to things in the header as header['name']?
+- have log raise exception on log.error?
+- global singleton log object?
+- Should we change the instrument.<keyword name> index variables so they stand out from those that are not for that use?  '.keyDateObs', '.kDateObs'?  '.keyIndexes{}'?  Or come up with a master table mapping instruments to key indexes?  'kmap'.  instrument.setKeyVal(), instrument.getKeyVal()
+
+
+

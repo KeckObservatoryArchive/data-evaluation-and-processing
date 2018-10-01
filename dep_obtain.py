@@ -48,7 +48,8 @@ def dep_obtain(instrObj):
         # Read the telescope schedul URL
         # No entries found: Create stageDir/dep_notschedINSTR.txt and dep_obtainINSTR.txt
 
-        schedUrl = ''.join((instrObj.telUrl, 'cmd=getSchedule', '&date=', hstDate, '&instr=', instrObj.instr))
+        instrBase = 'NIRSP' if (instrObj.instr == 'NIRSPEC') else instrObj.instr
+        schedUrl = ''.join((instrObj.telUrl, 'cmd=getSchedule', '&date=', hstDate, '&instr=', instrBase))
         log.info('dep_obtain: retrieving telescope schedule info: {}'.format(schedUrl))
         schedData = url_get(schedUrl)
         if schedData and isinstance(schedData, dict): schedData = [schedData]
