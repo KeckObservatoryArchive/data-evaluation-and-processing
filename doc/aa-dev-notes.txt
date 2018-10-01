@@ -19,6 +19,7 @@
 
 
 
+
 ===DB: koatpx ===
 utdate         | date         | 
 instr          | varchar(10)  | 

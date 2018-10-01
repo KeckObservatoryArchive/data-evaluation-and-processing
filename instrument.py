@@ -574,7 +574,7 @@ class Instrument:
         config = configparser.ConfigParser()
         config.read('config.live.ini')
 
-        version = config['INFO']['DQA_VERSION']
+        version = config['INFO']['DEP_VERSION']
         keys.update({'DQA_VERS' : (version, 'KOA: Data quality assess code version')})
         return True
 
