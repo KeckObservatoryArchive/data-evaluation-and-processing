@@ -95,7 +95,7 @@ class ProgSplit:
                 'nirc2eng':'outdir', 'engineering':'observer',
                 'dmoseng':'outdir', 'lriseng':'outdir', 'esieng':'outdir',
                 'keck ipdm':'observer', 'nirspec':'observer',
-                'nireseng':'outdir'}
+                'nireseng':'outdir', 'moseng':'outdir'}
         self.fileList = []
         self.instrList = {'DEIMOS':2, 'ESI':2, 'HIRES':1, 
                 'KCWI':2, 'LRIS':1, 'MOSFIRE':1, 

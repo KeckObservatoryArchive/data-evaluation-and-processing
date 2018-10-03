@@ -48,33 +48,41 @@ class Instrument:
         """
 
         #class inputs
-        self.rootDir = rootDir
-        self.instr = instr
-        self.utDate = utDate
-        self.log = log
+        self.rootDir    = rootDir
+        self.instr      = instr
+        self.utDate     = utDate
+        self.log        = log
 
 
         # Keyword values to be used with a FITS file during runtime
-        #(NOTE: may be overwritten by instr-*.py)
-        self.instrume = 'INSTRUME'
-        self.utc = 'UTC'		# May be overwritten in instr_*.py
-        self.dateObs = 'DATE-OBS'
-        self.semester = 'SEMESTER'
-        self.ofName = 'OUTFILE'		# May be overwritten in instr_*.py
-        self.frameno = 'FRAMENO'	# May be overwritten in instr_*.py
-        self.outdir = 'OUTDIR'
-        self.ftype = 'INSTR'		# For instruments with two file types
+        # NOTE: array may be used to denote an ordered list of possible keywords to look for.
+        # NOTE: these may be overwritten by instr_*.py
+        self.keywordMap = {}
+        self.keywordMap['INSTRUME']     = ['INSTRUME', 'CURRINST']
+        self.keywordMap['UTC']          = 'UTC'
+        self.keywordMap['DATE-OBS']     = 'DATE-OBS'
+        self.keywordMap['SEMESTER']     = 'SEMESTER'
+        self.keywordMap['OFNAME']       = 'OUTFILE'
+        self.keywordMap['FRAMENO']      = 'FRAMENO'
+        self.keywordMap['OUTDIR']       = 'OUTDIR'
+        self.keywordMap['FTYPE']        = 'INSTR'       # For instruments with two file types
+
 
         # Other values that can be overwritten in instr-*.py
         self.endHour = '20:00:00'	# 24 hour period start/end time (UT)
 
 
         # Values to be populated by subclass
-        self.prefix = ''
-        self.rawfile = ''
-        self.koaid = ''
-        self.sdataList = []
-        self.extraMeta = {}
+        self.prefix         = ''
+        self.rawfile        = ''
+        self.koaid          = ''
+        self.sdataList      = []
+        self.extraMeta      = {}
+
+        #init fits specific vars
+        self.fitsHdu        = None
+        self.fitsHeader     = None
+        self.fitsFilepath   = None
 
 
         #other helpful vars
@@ -150,7 +158,6 @@ class Instrument:
 
 
 
-
     def set_fits_file(self, filename):
         '''
         Sets the current FITS file we are working on.  Clears out temp fits variables.
@@ -174,6 +181,70 @@ class Instrument:
         return True
 
 
+
+    def get_keyword(self, keyword, useMap=True):
+        '''
+        Gets keyword value from the FITS header as defined in keywordMap class variable.  
+        NOTE: FITS file must be loaded first with self.set_fits_file
+
+        @param keyword: keyword value or ordered list of keyword values to search for
+        @type instr: string or list
+        '''
+
+        # check for loaded fitsHeader
+        if not self.fitsHeader:
+             raise Exception('get_keyword: ERROR: no FITS header loaded')
+             return None
+
+        #use keyword mapping?
+        if useMap:
+    
+            #if keyword is mapped, then use mapped value(s)        
+            if isinstance(keyword, str) and keyword in self.keywordMap:
+                keyword = self.keywordMap[keyword]
+
+        #We allow an array of mapped keys, so if keyword is still a string then put in array
+        mappedKeys = keyword
+        if isinstance(mappedKeys, str):
+            mappedKeys = [mappedKeys]
+
+        #loop
+        for mappedKey in mappedKeys:
+            val = self.fitsHeader.get(mappedKey)
+            if val != None: return val
+
+        #return None if we didn't find it
+        return None
+
+
+
+    def set_keyword(self, keyword, value, comment='', useMap=False):
+        '''
+        Sets keyword value in FITS header.
+        NOTE: Mapped values are only used if "useMap" is set to True, otherwise keyword name is as provided.
+        NOTE: FITS file must be loaded first with self.set_fits_file
+        '''
+
+        # check for loaded fitsHeader
+        if not self.fitsHeader:
+             raise Exception('get_keyword: ERROR: no FITS header loaded')
+             return None
+
+        #use keyword mapping?
+        if useMap:
+            #NOTE: We allow an array of mapped keys, so if keyword is array, then use first value
+            if keyword in self.keywordMap:
+                keyword = self.keywordMap[keyword]
+
+        #NOTE: If keyword is mapped to an array of key values, the first value will be used.
+        if isinstance(keyword, list):
+            keyword = keyword[0]
+
+        #ok now we can update
+        self.fitsHeader.update({keyword : (value, comment)})
+
+
+
     def set_koaid(self):
         '''
         Create and add KOAID to header if it does not already exist
@@ -182,45 +253,39 @@ class Instrument:
         self.log.info('set_koaid: setting KOAID keyword value')
 
         #skip if it exists
-        if self.fitsHeader.get('KOAID') != None: return True
+        if self.get_keyword('KOAID', False) != None: return True
 
         #make it
-        koaid, result = self.make_koaid(self.fitsHeader)
+        koaid, result = self.make_koaid()
         if not result: 
             self.log.warning('set_koaid: Could not create KOAID.  UDF!')
             return False
 
         #save it
-        self.fitsHeader.update({'KOAID' : (koaid, 'KOA: Data file name')})
+        self.set_keyword('KOAID', koaid, 'KOA: Data file name')
         return True
 
 
 
-    def make_koaid(self, keys):
+    def make_koaid(self):
         """
-        Function to create the KOAID for a given FITS file
-        Returns the TRUE if the KOAID is successfully created
-        and stored in the KOAID member variable
-
-        @type keys: dictionary
-        @param keys: The header for the given FITS file
+        Function to create the KOAID for the current loaded FITS file
+        Returns the koaid and TRUE if the KOAID is successfully created
         """
 
         #TODO: see common.koaid() and make sure all logic is moved here or to instr_*.py
 
-
         # Get the prefix for the correct instrument and configuration
-        # Note: set_prefix() is a subclass method
-        self.prefix = self.set_prefix(keys)
+        self.prefix = self.get_prefix()
         if self.prefix == '':
             return '', False
 
         # Extract the UTC time and date observed from the header
-        try:
-            utc = keys[self.utc]
-            dateobs = keys[self.dateObs]
-        except KeyError:
-            return '', False
+        utc = self.get_keyword('UTC')
+        if utc == None: return '', False
+
+        dateobs = self.get_keyword('DATE-OBS')
+        if dateobs == None: return '', False
 
         # Create a timedate object using the string from the header
         try:
@@ -229,7 +294,7 @@ class Instrument:
             return '', False
 
         # Extract the hour, minute, and seconds from the UTC time
-        hour = utc.hour
+        hour   = utc.hour
         minute = utc.minute
         second = utc.second
 
@@ -241,18 +306,17 @@ class Instrument:
         dateobs = dateobs.replace('/','')
 
         # Create the KOAID from the parts
-        koaid = ''.join((self.prefix, '.', dateobs, '.', totalSeconds.zfill(5), '.fits'))
+        koaid = self.prefix + '.' + dateobs + '.' + totalSeconds.zfill(5) + '.fits'
         return koaid, True
 
-    def set_instr(self, keys):
+
+    def get_instr(self):
         """
         Method to extract the name of the instrument from the INSTRUME keyword value
         """
 
-        #todo: why is this named 'set'?  It is not setting anything
-
         # Extract the Instrume value from the header as lowercase
-        instr = keys.get(self.instrume)
+        instr = self.get_keyword('INSTRUME')
         if (instr == None) : return ''
         instr = instr.lower()
 
@@ -263,37 +327,30 @@ class Instrument:
         instr = instr[0].replace(':','')
         return instr
 
-    def set_raw_fname(self, keys):
-        """
-        Determines the original filename from the keywords given
 
-        @type keys: dictionary
-        @param keys: contains the FITS file header information
+    def get_raw_fname(self):
         """
+        Determines the original filename
+        """
+
+        #todo: is this function needed?
+
         # Get the root name of the file
-        try:
-            outfile = keys[self.ofName]
-        except KeyError:
-            return '', False
-       
+        outfile = self.get_keyword('OFNAME')
+        if outfile == None: return '', False
+
         # Get the frame number of the file
-        try:
-            frameno = keys[self.frameno]
-        except KeyError:
-            return '', False
+        frameno = self.get_keyword('FRAMENO')
+        if frameno == None: return '', False
 
         # Determine the necessary padding required
         zero = ''
-        if float(frameno) < 10:
-            zero = '000'
-        elif 10 <= float(frameno) < 100:
-            zero = '00'
-        elif 100 <= float(frameno) < 1000:
-            zero = '0'
+        if         float(frameno) < 10:   zero = '000'
+        elif 10 <= float(frameno) < 100:  zero = '00'
+        elif 100 <= float(frameno)< 1000: zero = '0'
 
         # Construct the original filename
-        seq = (outfile.strip(), zero, str(frameno).strip(), '.fits')
-        filename = ''.join(seq)
+        filename = outfile.strip() + zero + str(frameno).strip() + '.fits'
         return filename, True
 
  
@@ -303,33 +360,29 @@ class Instrument:
         (ported to python from check_instr.pro)
         '''
         #todo:  go over idl file again and pull out logic for other instruments
-        #todo: use class key vals instead
 
         self.log.info('check_instr: verifying this is a ' + self.instr + ' FITS file')
 
         ok = False
-        keys = self.fitsHeader
 
         #get val
-        #instrume = keys[self.instrume]
-        instrume = keys.get('INSTRUME')
-        if (instrume == None): instrume = keys.get('CURRINST')
+        instrume = self.get_keyword('INSTRUME')
 
         #direct match?
         if instrume:
             if (self.instr == instrume.strip()): ok = True
 
         #mira not ok
-        outdir = keys.get('OUTDIR')
+        outdir = self.get_keyword('OUTDIR')
         if (outdir and '/mira' in outdir) : ok = False
 
         #No DCS keywords, check others
         if (not ok):
-            filname = keys.get('FILNAME')
+            filname = self.get_keyword('FILNAME')
             if (filname and self.instr in filname): ok = True
 
             instrVal = self.instr.lower()
-            outdir = keys.get(self.outdir)
+            outdir = self.get_keyword('OUTDIR')
             if (outdir and instrVal in outdir): ok = True
 
         #log err
@@ -342,34 +395,46 @@ class Instrument:
 
     def set_dateObs(self):
         '''
-        Checks to see if we have a date obsv keyword, and if it needs to be fixed or created.
+        Checks to see if we have a DATE-OBS keyword, and if it needs to be fixed or created.
         '''
 
-        #try to get from header
-        keys = self.fitsHeader
-        dateObs = keys.get(self.dateObs)
+        #try to get from header (unmapped or mapped)
+        dateObs = self.get_keyword('DATE-OBS', False)
+        if dateObs == None: dateObs = self.get_keyword('DATE-OBS')
+
+        #validate
+        valid = False
         if dateObs: 
             dateObs = str(dateObs) #NOTE: sometimes we can get a number
             dateObs = dateObs.strip()
+            valid = re.search('^\d\d\d\d[-]\d\d[-]\d\d', dateObs)
 
-            #try match valid date
-            match = re.search('^\d\d\d\d[-]\d\d[-]\d\d', dateObs)
+            #fix slashes?
+            if not valid and '/' in dateObs:
+                orig = dateObs
+                day, month, year = dateObs.split('/')
+                if int(year)<50: year = '20' + year
+                else:            year = '19' + year
+                dateObs = year + '-' + month + '-' + day
+                self.set_keyword('DATE-OBS', dateObs, 'KOA: Value corrected (' + orig + ')')
+                self.log.warning('set_dateObs: fixed DATE-OBS format (orig: ' + orig + ')')
+                valid = True
 
         #if we couldn't match valid pattern, then build from file last mod time
         #note: converting to universal time (+10 hours)
-        if not dateObs or not match:
+        if not valid:
             filename = self.fitsFilepath
             lastMod = os.stat(filename).st_mtime
             dateObs = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             dateObs = dateObs.strftime('%Y-%m-%d')
-            keys.update({self.dateObs : (dateObs, 'KOA: Observing date')})
+            self.set_keyword('DATE-OBS', dateObs, 'KOA: Observing date')
             self.log.warning('set_dateObs: set DATE-OBS value from FITS file time')
 
         # If good match, just take first 10 chars (some dates have 'T' format and extra time)
         if len(dateObs) > 10:
             orig = dateObs
             dateObs = parts[0:10]
-            keys.update({self.dateObs : (dateObs, 'KOA: Value corrected (' + orig + ')')})
+            self.set_keyword('DATE-OBS', dateObs, 'KOA: Value corrected (' + orig + ')')
             self.log.warning('set_dateObs: fixed DATE-OBS format (orig: ' + orig + ')')
 
         return True
@@ -378,27 +443,28 @@ class Instrument:
 
     def set_utc(self):
         '''
-        Checks to see if we have a utc time keyword, and if it needs to be fixed or created.
+        Checks to see if we have a UTC time keyword, and if it needs to be fixed or created.
         '''
 
-        #try to get from header
-        keys = self.fitsHeader
-        utc = keys.get(self.utc)
+        #try to get from header (unmapped or mapped)
+        utc = self.get_keyword('UTC', False)
+        if utc == None: utc = self.get_keyword('UTC')
+
+        #validate
+        valid = False
         if utc: 
             utc = str(utc) #NOTE: sometimes we can get a number
             utc = utc.strip()
-
-            #try match valid date
-            match = re.search('^\d\d:\d\d:\d\d.\d\d', utc)
+            valid = re.search('^\d\d:\d\d:\d\d.\d\d', utc)
 
         #if we couldn't match valid pattern, then build from file last mod time
         #note: converting to universal time (+10 hours)
-        if not utc or not match:
+        if not valid:
             filename = self.fitsFilepath
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S.00')
-            keys.update({self.utc : (utc, 'KOA: Value corrected')})
+            self.set_keyword('UTC', utc, 'KOA: Value corrected')
             self.log.warning('set_utc: set UTC value from FITS file time')
 
         return True
@@ -407,19 +473,17 @@ class Instrument:
 
     def set_ut(self):
 
-        keys = self.fitsHeader
-
         #skip if it exists
-        if keys.get('UT') != None: return True
+        if self.get_keyword('UT', False) != None: return True
 
         #get utc from header
-        utc = keys.get(self.utc)
-        if (not utc): 
+        utc = self.get_keyword('UTC')
+        if utc == None: 
             self.log.warning('set_ut: Could not get UTC value.  UDF!')
             return False
 
         #copy to UT
-        keys.update({'UT' : (utc, 'KOA: Observing time')})
+        self.set_keyword('UT', utc, 'KOA: Observing time')
         return True
 
 
@@ -430,13 +494,12 @@ class Instrument:
         '''
 
         #return by keyword index if it exists
-        keys = self.fitsHeader
-        outdir = keys.get(self.outdir)
+        outdir = self.get_keyword('OUTDIR')
         if (outdir != None) : return outdir
-
 
         #Returns the OUTDIR associated with the filename, else returns None.
         #OUTDIR = [/s]/sdata####/account/YYYYmmmDD
+        #todo: do we want to update header?
         try:
             filename = self.fitsFilepath
             start = filename.find('/s')
@@ -450,7 +513,7 @@ class Instrument:
 
     def get_fileno(self):
 
-        #todo: do we need this function instead of using keyword index?
+        #todo: do we need this function instead of using keyword mapping?  see subclass set_frameno
         keys = self.fitsHeader
 
         fileno = keys.get('FILENUM')
@@ -481,19 +544,18 @@ class Instrument:
             self.log.warning('set_prog_info: Could not get program info.  UDF!')
             return False
 
-        #create keys
-        keys = self.fitsHeader
-        keys.update({'PROGID'  : (data['progid']  , 'KOA: Program ID')})
-        keys.update({'PROGINST': (data['proginst'], 'KOA: Program institution')})
-        keys.update({'PROGPI'  : (data['progpi']  , 'KOA: Program principal investigator')})
+        #create keywords
+        self.set_keyword('PROGID'  , data['progid']  , 'KOA: Program ID')
+        self.set_keyword('PROGINST', data['proginst'], 'KOA: Program institution')
+        self.set_keyword('PROGPI'  , data['progpi']  , 'KOA: Program principal investigator')
 
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:50]
         progtl2 = data['progtitl'][50:100]
         progtl3 = data['progtitl'][100:150]
-        keys.update({'PROGTL1': (progtl1, 'Program title 1')})
-        keys.update({'PROGTL2': (progtl2, 'Program title 2')})
-        keys.update({'PROGTL3': (progtl3, 'Program title 3')})
+        self.set_keyword('PROGTL1',  progtl1, 'Program title 1')
+        self.set_keyword('PROGTL2',  progtl2, 'Program title 2')
+        self.set_keyword('PROGTL3',  progtl3, 'Program title 3')
 
 
         #NOTE: PROGTITL goes in metadata but not in header so we store in temp dict for later
@@ -504,10 +566,40 @@ class Instrument:
 
 
     def set_semester(self):
+        """
+        Determines the Keck observing semester from the DATE-OBS keyword in header
+        and updates the SEMESTER keyword in header.
 
-        #TODO: move existing common.py semester() to Instrument?
-        keys = self.fitsHeader        
-        semester(keys)
+        semester('2017-08-01') --> 2017A
+        semester('2017-08-02') --> 2017B
+
+        A = Feb. 2 to Aug. 1 (UT)
+        B = Aug. 2 to Feb. 1 (UT)
+        """
+
+        dateObs = self.get_keyword('DATE-OBS')
+        if dateObs == None:
+            self.log.error('set_semester: Could not parse DATE-OBS')
+            return False
+
+        year, month, day = dateObs.split('-')
+        iyear  = int(year)
+        imonth = int(month)
+        iday   = int(day)
+
+        # Determine SEMESTER from DATE-OBS
+        semester = ''
+        sem = 'A'
+        if   imonth >  8 or imonth < 2 : sem = 'B'
+        elif imonth == 8 and iday > 1  : sem = 'B'
+        elif imonth == 2 and iday == 1 : sem = 'B'
+        if imonth == 1 or (imonth == 2 and iday == 1):
+            year = str(iyear-1)
+
+        semester = year + sem
+        semester = semester.strip();
+        self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from DATE-OBS')
+
         return True
 
 
@@ -515,6 +607,7 @@ class Instrument:
     def set_propint(self, progData):
         '''
         Set proprietary period length.
+        NOTE: This must come after set_semester() is called
         '''
 
         self.log.info('set_propint: determining PROPINT value')
@@ -549,8 +642,7 @@ class Instrument:
         '''
         Adds "DATLEVEL" keyword to header
         '''
-        keys = self.fitsHeader
-        keys.update({'DATLEVEL' : (datlevel, 'KOA: Data reduction level')})
+        self.set_keyword('DATLEVEL' , datlevel, 'KOA: Data reduction level')
         return True
 
 
@@ -558,9 +650,8 @@ class Instrument:
         """
         Adds date timestamp for when the DQA module was run
         """
-        keys = self.fitsHeader
         dqa_date = dt.strftime(dt.now(), '%Y-%m-%dT%H:%M:%S')
-        keys.update({'DQA_DATE' : (dqa_date, 'KOA: Data quality assess time')})
+        self.set_keyword('DQA_DATE', dqa_date, 'KOA: Data quality assess time')
         return True
 
 
@@ -568,14 +659,12 @@ class Instrument:
         '''
         Adds DQA version keyword to header
         '''
-        keys = self.fitsHeader
-
         import configparser
         config = configparser.ConfigParser()
         config.read('config.live.ini')
 
         version = config['INFO']['DEP_VERSION']
-        keys.update({'DQA_VERS' : (version, 'KOA: Data quality assess code version')})
+        self.set_keyword('DQA_VERS', version, 'KOA: Data quality assess code version')
         return True
 
 
@@ -586,16 +675,14 @@ class Instrument:
 
         self.log.info('set_image_stats_keywords: setting image statistics keyword values')
 
-        keys = self.fitsHeader
-
         image = self.fitsHdu[0].data     
         imageStd    = float("%0.2f" % np.std(image))
         imageMean   = float("%0.2f" % np.mean(image))
         imageMedian = float("%0.2f" % np.median(image))
 
-        keys.update({'IMAGEMN' : (imageMean,   'KOA: Image data mean')})
-        keys.update({'IMAGESD' : (imageStd,    'KOA: Image data standard deviation')})
-        keys.update({'IMAGEMD' : (imageMedian, 'KOA: Image data median')})
+        self.set_keyword('IMAGEMN' ,  imageMean,   'KOA: Image data mean')
+        self.set_keyword('IMAGESD' ,  imageStd,    'KOA: Image data standard deviation')
+        self.set_keyword('IMAGEMD' ,  imageMedian, 'KOA: Image data median')
 
         return True
 
@@ -607,13 +694,14 @@ class Instrument:
 
         self.log.info('set_npixsat: setting pixel saturation keyword value')
 
-        keys = self.fitsHeader
-        satVal = keys.get('SATURATE')
-
-        image = self.fitsHdu[0].data     
-        pixSat = image[np.where(image >= satVal)]
-        nPixSat = len(image[np.where(image >= satVal)])
-        keys.update({'NPIXSAT' : (nPixSat, 'KOA: Number of saturated pixels')})
+        satVal = self.get_keyword('SATURATE')
+        if satVal == None:
+            self.log.warning("set_npixsat: Could not find SATURATE keyword")
+        else:
+            image = self.fitsHdu[0].data     
+            pixSat = image[np.where(image >= satVal)]
+            nPixSat = len(image[np.where(image >= satVal)])
+            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
 
         return True
 
@@ -629,12 +717,12 @@ class Instrument:
         oa = None
         if len(obData) >= 1: oa = obData[0]['oa']
 
-        if oa != None:
-            keys = self.fitsHeader
-            keys.update({'OA' : (oa, 'KOA: Observing Assistant name')})
+        if oa == None:
+            self.log.warning("set_oa: Could not find OA data")
+        else:
+            self.set_keyword('OA', oa, 'KOA: Observing Assistant name')
 
         return True
-
 
 
 
@@ -647,28 +735,26 @@ class Instrument:
         self.log.info('set_weather_keywords: setting weather keyword values')
 
         #get input vars
-        keys = self.fitsHeader
-        dateobs = keys.get('DATE-OBS')
-        utc = keys.get('UTC')
-        telnr = self.get_telnr()
-
+        dateobs = self.get_keyword('DATE-OBS')
+        utc     = self.get_keyword('UTC')
+        telnr   = self.get_telnr()
 
         #read envMet.arT and write to header
         logFile = self.dirs['anc'] + '/nightly/envMet.arT'
-        data = envlog(logFile, 'envMet',   telnr, dateobs, utc)
+        data = envlog(logFile, 'envMet', telnr, dateobs, utc)
         if type(data) is not dict: 
             self.log.warning("Could not read envMet.arT data")
             return True
 
-        keys.update({'WXDOMHUM' : (data['wx_domhum'],    'KOA: Weather dome humidity')})
-        keys.update({'WXDOMTMP' : (data['wx_domtmp'],    'KOA: Weather dome temperature')})
-        keys.update({'WXDWPT'   : (data['wx_dewpoint'],  'KOA: Weather dewpoint')})
-        keys.update({'WXOUTHUM' : (data['wx_outhum'],    'KOA: Weather outside humidity')})
-        keys.update({'WXOUTTMP' : (data['wx_outtmp'],    'KOA: Weather outside temperature')})
-        keys.update({'WXPRESS'  : (data['wx_pressure'],  'KOA: Weather pressure')})
-        keys.update({'WXTIME'   : (data['time'],         'KOA: Weather measurement time')})
-        keys.update({'WXWNDIR'  : (data['wx_winddir'],   'KOA: Weather wind direction')})
-        keys.update({'WXWNDSP'  : (data['wx_windspeed'], 'KOA: Weather wind speed')})
+        self.set_keyword('WXDOMHUM' , data['wx_domhum'],    'KOA: Weather dome humidity')
+        self.set_keyword('WXDOMTMP' , data['wx_domtmp'],    'KOA: Weather dome temperature')
+        self.set_keyword('WXDWPT'   , data['wx_dewpoint'],  'KOA: Weather dewpoint')
+        self.set_keyword('WXOUTHUM' , data['wx_outhum'],    'KOA: Weather outside humidity')
+        self.set_keyword('WXOUTTMP' , data['wx_outtmp'],    'KOA: Weather outside temperature')
+        self.set_keyword('WXPRESS'  , data['wx_pressure'],  'KOA: Weather pressure')
+        self.set_keyword('WXTIME'   , data['time'],         'KOA: Weather measurement time')
+        self.set_keyword('WXWNDIR'  , data['wx_winddir'],   'KOA: Weather wind direction')
+        self.set_keyword('WXWNDSP'  , data['wx_windspeed'], 'KOA: Weather wind speed')
 
 
         #read envFocus.arT and write to header
@@ -678,8 +764,8 @@ class Instrument:
             self.log.warning("Could not read envFocus.arT data")
             return True
 
-        keys.update({'GUIDFWHM' : (data['guidfwhm'],     'KOA: Guide star FWHM value')})
-        keys.update({'GUIDTIME' : (data['time'],         'KOA: Guide star FWHM measure time')})
+        self.set_keyword('GUIDFWHM' , data['guidfwhm'],     'KOA: Guide star FWHM value')
+        self.set_keyword('GUIDTIME' , data['time'],         'KOA: Guide star FWHM measure time')
 
         return True
 
@@ -701,8 +787,7 @@ class Instrument:
     def write_lev0_fits_file(self):
 
         #make sure we have a koaid
-        keys = self.fitsHeader
-        koaid = keys.get('KOAID')
+        koaid = self.get_keyword('KOAID')
         if (not koaid):
             self.log.error('write_lev0_fits_file: Could not find KOAID for output filename.')
             return False
@@ -780,12 +865,42 @@ class Instrument:
 
     def get_semid(self):
 
-        keys = self.fitsHeader
-        semester = keys.get('SEMESTER')
-        progid   = keys.get('PROGID')
+        semester = self.get_keyword('SEMESTER')
+        progid   = self.get_keyword('PROGID')
 
         if (semester == None or progid == None): 
             return None
 
         semid = semester + '_' + progid
         return semid
+
+
+    def fix_datetime(self, fname):
+
+        # Temp fix for bad file times (NIRSPEC legacy)
+        #todo: test this
+        #todo: is this needed?
+
+        datefile = ''.join(('/home/koaadmin/fixdatetime/', self.utDateDir, '.txt'))
+        datefile = '/home/koaadmin/fixdatetime/20101128.txt'
+        if os.path.isfile(datefile) is False:
+            return
+
+        fileroot = fname.split('/')
+        fileroot = fileroot[-1]
+        output = ''
+
+        with open(datefile, 'r') as df:
+            for line in df:
+                if fileroot in line:
+                    output = line
+                    break
+
+        if output != '':
+            dateobs = self.get_keyword('DATE-OBS')
+            if 'Error' not in dateobs and dateobs.strip() != '':
+                return
+            vals = output.split(' ')
+            self.set_keyword('DATE-OBS', vals[1], ' Original value missing - added by KOA')
+            self.set_keyword('UTC',      vals[2], 'Original value missing - added by KOA')
+

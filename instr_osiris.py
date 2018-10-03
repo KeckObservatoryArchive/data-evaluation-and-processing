@@ -45,8 +45,8 @@ class Osiris(instrument.Instrument):
             dirs.append(''.join(seq))
         return dirs
 
-    def set_prefix(self, keys):
-        instr = self.set_instr(keys)
+    def get_prefix(self, keys):
+        instr = self.get_instr(keys)
         if instr == 'osiris':
             try:
                 outdir = keys[self.outdir]
@@ -63,18 +63,3 @@ class Osiris(instrument.Instrument):
            prefix = ''
         return prefix
 
-    def set_raw_fname(self, keys):
-        """
-        Overloaded method to retrieve the raw filename for
-        the OSIRIS FITS files. OSIRIS stores the raw filename
-        in the DATAFILE keyword.
-
-        @type keys: dictionary
-        @param keys: Values of the header for a FITS file
-        """
-        try:
-            filename = keys[self.ofName]
-        except KeyError:
-            return '', False
-        else:
-            return filename, True

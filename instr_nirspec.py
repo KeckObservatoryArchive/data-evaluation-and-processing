@@ -49,8 +49,8 @@ class Nirspec(instrument.Instrument):
             dirs.append(path3)
         return dirs
 
-    def set_prefix(self, keys):
-        instr = self.set_instr(keys)
+    def get_prefix(self, keys):
+        instr = self.get_instr(keys)
         if instr == 'nirspec':
             try:
                 outdir = keys[self.outdir]
@@ -67,19 +67,3 @@ class Nirspec(instrument.Instrument):
             prefix = ''
        return prefix
 
-   def set_raw_fname(self, keys):
-       """
-       Overloaded method to retrieve the raw filename for
-       the given FITS file. NIRSPEC uses two different keys
-       for the frameno so we'll save a lot of headaches by
-       using DATAFILE where it stores the raw filename.
-
-       @type keys: dictionary
-       @param keys: the header keys from a given FITS file
-       """
-       try:
-           filename = keys[self.ofName]
-       except KeyError:
-           return '', False
-       else:
-           return filename, True

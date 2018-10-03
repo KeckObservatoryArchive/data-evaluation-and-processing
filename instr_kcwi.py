@@ -42,8 +42,8 @@ class Kcwi(instrument.Instrument):
         dirs.append(path2)
         return dirs
 
-    def set_prefix(self, keys):
-        instr = self.set_instr(keys)
+    def get_prefix(self, keys):
+        instr = self.get_instr(keys)
         if instr == 'kcwi':
             try:
                 camera = keys['CAMERA'].lower()
@@ -61,18 +61,3 @@ class Kcwi(instrument.Instrument):
             prefix = ''
         return prefix
 
-    def set_raw_fname(self, keys):
-        """
-        Overloaded method to retrieve the raw filename of the
-        KCWI FITS file. KCWI stores the raw filename in the
-        OFNAME keyword.
-
-        @type keys: dictionary
-        @param keys: Keys and values of the header for the FITS file
-        """
-        try:
-            filename = keys[self.ofName]
-        except KeyError:
-            return '', False
-        else:
-            return filename, True

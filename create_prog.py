@@ -1,4 +1,3 @@
-from common import fixdatetime
 from astropy.io import fits
 from urllib.request import urlopen
 from dep_obtain import get_obtain_data
@@ -55,8 +54,8 @@ def create_prog(instrObj):
             fileList.append(item.strip())
 
 
+    # loop through files and add data to createprog.txt
     badValues = ['Usage', 'error']
-    # Open output file
     outfile = stageDir + '/createprog.txt'
     with open(outfile, 'w') as ofile:
         for filename in fileList:
@@ -70,28 +69,27 @@ def create_prog(instrObj):
                     log.info(filename + ': file ends with x')
                     continue
 
-            #get header
+            #load fits into instrObj
             #todo: Move all keyword fixes as standard steps done upfront?
             instrObj.set_fits_file(filename)
-            header = instrObj.fitsHeader
 
-            # Temp fix for bad file times(NIRSPEC legacy)
-            fixdatetime(utDate, filename, header)
+            # Temp fix for bad file times (NIRSPEC legacy)
+            instrObj.fix_datetime(filename)
 
             #get image type
             instrObj.set_koaimtyp()
-            imagetyp = header.get('KOAIMTYP')
+            imagetyp = instrObj.get_keyword('KOAIMTYP')
 
             #get date-obs
             instrObj.set_dateObs()
-            dateObs = header.get(instrObj.dateObs)
+            dateObs = instrObj.get_keyword('DATE-OBS')
 
             #get utc
             instrObj.set_utc()
-            utc = header.get(instrObj.utc)
+            utc = instrObj.get_keyword('UTC')
 
             #get observer
-            observer = header.get('OBSERVER')
+            observer = instrObj.get_keyword('OBSERVER')
             if observer == None: observer = 'None'
             observer = observer.strip()
 
@@ -117,11 +115,8 @@ def create_prog(instrObj):
             ofile.write(imagetyp+'\n')
 
             #if PROGNAME exists, use that to populate the following
-            try:
-                progname = header.get('PROGNAME')
-                if progname == None:
-                    progname = header['PROGID']
-            except KeyError:
+            progname = instrObj.get_keyword(['PROGNAME', 'PROGID'])
+            if progname == None:
                 ofile.write('PROGNAME\n')
                 ofile.write('PROGPI\n')
                 ofile.write('PROGINST\n')
@@ -132,7 +127,8 @@ def create_prog(instrObj):
 
                 # Get the viewing semester from obs-date
                 instrObj.set_semester()
-                sem = header['SEMESTER'].strip()
+                sem = instrObj.get_keyword('SEMESTER')
+                sem = sem.strip()
 
                 # Get the program ID
                 ktn = ''.join((sem, '_', progname))
