@@ -37,8 +37,8 @@ class Lris(instrument.Instrument):
             dirs.append(path2 + 'eng')
         return dirs
 
-    def set_prefix(self, keys):
-        instr = self.set_instr(keys)
+    def get_prefix(self, keys):
+        instr = self.get_instr(keys)
         if instr == 'lrisblue':
             prefix = 'LB'
         elif instr == 'lris':

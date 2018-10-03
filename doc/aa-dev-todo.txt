@@ -2,21 +2,14 @@
 (NOTE: High level todos also listed in github projects page.)  
 
 
-
 ===MISC===
+
 - MOSFIRE full keywords
-  - define spreadsheet standards (Keyword, DataType, ColSize, AllowNull) (KOAID first row)
-  - spreadsheet export util, steps
-  - DEP class 
   - util to find distinct values for keywords
   - Do we want a DEP check for values in header that are not in metadata.format.<instr>??!!
 
-- Keyword mapping
-  - Could we create a master list of keywords that is a superset of all instruments.  When a new instrument is defined, it has a spreadsheet of keywords in its header and another column that, if filled in, has the actual keyword.  This info would be transferred to the instr_<instr>.py file.
-
 - make get_dir_list more readable (use asterisk?) (just list them) (put in config)
 - Should 24-hour cutoff hour be a config/input and not hard-coded into instrument class?
-- We are not using the keyword mapping code as designed.  What should we do here?
 - add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
 - Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?
 - convenience prompt for dir removal and tpx removal if running manually?
@@ -66,7 +59,4 @@
 - always do instrObj header fix up front so we can just refer to things in the header as header['name']?
 - have log raise exception on log.error?
 - global singleton log object?
-- Should we change the instrument.<keyword name> index variables so they stand out from those that are not for that use?  '.keyDateObs', '.kDateObs'?  '.keyIndexes{}'?  Or come up with a master table mapping instruments to key indexes?  'kmap'.  instrument.setKeyVal(), instrument.getKeyVal()
-
-
 

@@ -41,8 +41,8 @@ class Esi(instrument.Instrument):
                 dirs.append(path3)
         return dirs
 
-    def set_prefix(self, keys):
-        instr = self.set_prefix(keys)
+    def get_prefix(self, keys):
+        instr = self.get_prefix(keys)
         if instr == 'esi':
             prefix = 'EI'
         else:

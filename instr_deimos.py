@@ -49,8 +49,8 @@ class Deimos(instrument.Instrument):
             dirs.append(''.join(seq))
         return dirs
 
-    def set_prefix(self, keys):
-        self.instr = self.set_instr(keys)
+    def get_prefix(self, keys):
+        self.instr = self.get_instr(keys)
         if '/fcs' in keys[self.outdir]:
             prefix = 'DF'
         elif self.instr == 'deimos':

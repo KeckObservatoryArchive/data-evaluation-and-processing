@@ -18,8 +18,8 @@ class Nires(instrument.Instrument):
 
 
         # Set any unique keyword index values here
-        self.ofName = 'DATAFILE'        
-        self.frameno = 'FRAMENUM'
+        self.keywordMap['OFNAME']       = 'DATAFILE'        
+        self.keywordMap['FRAMENO']      = 'FRAMENUM'
 
 
         # Other vars that subclass can overwrite
@@ -82,50 +82,21 @@ class Nires(instrument.Instrument):
         return dirs
 
 
-    def set_prefix(self, keys):
+    def get_prefix(self):
         '''
-        Sets the KOAID prefix
-        Defaults to empty string
+        Sets the KOAID prefix. Defaults to empty string
         '''
-        #todo: why is this named 'set'?  It is not setting anything
 
-        instr = self.set_instr(keys)
+        instr = self.get_instr()
         if instr == 'nires':
-            try:
-                ftype = keys['INSTR']
-            except KeyError:
-                prefix = ''
-            else:
-                if ftype == 'imag':
-                    prefix = 'NI'
-                elif ftype == 'spec':
-                    prefix = 'NR'
-                else:
-                    prefix = ''
+            ftype = self.get_keyword('FTYPE')
+            if   ftype == 'imag': prefix = 'NI'
+            elif ftype == 'spec': prefix = 'NR'
+            else                : prefix = ''
         else:
             prefix = ''
         return prefix
 
-
-    def set_raw_fname(self, keys):
-        """
-        Overloaded method to create the NIRES rawfile name
-        NIRES uses DATAFILE to retrieve the filename without
-        the FITS extension, so we have to add that back on
-
-        @type keys: dictionary
-        @param keys: FITS header keys for the given file
-        """
-        #todo: why is this named 'set'?  It is not setting anything
-
-        try:
-            outfile = keys[self.ofName]
-        except KeyError:
-            return '', False
-        else:
-            filename = outfile
-            if (filename.endsWith('.fits') == False) : filename += '.fits'
-            return filename, True
 
 
     def set_frameno(self):
@@ -137,15 +108,14 @@ class Nires(instrument.Instrument):
         self.log.info('set_frameno: setting FRAMNO keyword value from FRAMENUM')
 
         #skip if it exists
-        keys = self.fitsHeader
-        if keys.get('FRAMENO') != None: return True
+        if self.get_keyword('FRAMENO', False) != None: return True
 
         #get value
         #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
-        frameno = keys.get('FRAMENUM')
+        frameno = self.get_keyword('FRAMENUM')
         if (frameno == None): 
 
-            datafile = keys.get('DATAFILE')
+            datafile = self.get_keyword('DATAFILE')
             if (datafile == None): 
                 self.log.error('set_frameno: cannot find value for FRAMENO')
                 return False
@@ -155,24 +125,20 @@ class Nires(instrument.Instrument):
             frameno = frameno[num:]
             frameno = int(frameno)
 
-            keys.update({'FRAMENUM' : (frameno, 'KOA: Image frame number')})
-
         #update
-        keys.update({'FRAMENO' : (frameno, 'KOA: Image frame number')})
+        self.set_keyword('FRAMENO', frameno, 'KOA: Image frame number')
         return True
-
 
 
     def set_ofName(self):
         """
-        Adds OFNAME keyword to header (copy of DATAFILE)
+        Adds OFNAME keyword to header 
         """
 
         self.log.info('set_ofName: setting OFNAME keyword value')
 
         #get value
-        keys = self.fitsHeader
-        ofName = keys.get(self.ofName)
+        ofName = self.get_keyword('OFNAME')
         if (ofName == None): 
             self.log.error('set_ofName: cannot find value for OFNAME')
             return False
@@ -181,7 +147,7 @@ class Nires(instrument.Instrument):
         if (ofName.endswith('.fits') == False) : ofName += '.fits'
 
         #update
-        keys.update({'OFNAME' : (ofName, 'KOA: Original file name')})
+        self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
         return True
 
 
@@ -192,21 +158,19 @@ class Nires(instrument.Instrument):
 
         self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
 
-        keys = self.fitsHeader
-
         #skip if it exists
-        if keys.get('ELAPTIME') != None: return True
+        if self.get_keyword('ELAPTIME', False) != None: return True
 
         #get necessary keywords
-        itime  = keys.get('ITIME')
-        coadds = keys.get('COADDS')
+        itime  = self.get_keyword('ITIME')
+        coadds = self.get_keyword('COADDS')
         if (itime == None or coadds == None):
-            self.log.error('ITIME and COADDS values needed to set ELAPTIME')
+            self.log.error('set_elaptime: ITIME and COADDS values needed to set ELAPTIME')
             return False
 
         #update val
         elaptime = itime * coadds
-        keys.update({'ELAPTIME' : (elaptime, 'KOA: Total integration time')})
+        self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         return True
         
 
@@ -219,20 +183,19 @@ class Nires(instrument.Instrument):
 
         self.log.info('set_wavelengths: setting wavelength keyword values')
 
-        keys = self.fitsHeader
-        instr = keys.get('INSTR')
+        instr = self.get_keyword('FTYPE')
 
         #imaging (K-filter always on):
         if (instr == 'imag'):
-            keys.update({'WAVERED' : (22950, 'KOA: Red end wavelength')})
-            keys.update({'WAVECNTR': (21225, 'KOA: Center wavelength')})
-            keys.update({'WAVEBLUE': (19500, 'KOA: Blue end wavelength')})
+            self.set_keyword('WAVERED' , 22950, 'KOA: Red end wavelength')
+            self.set_keyword('WAVECNTR', 21225, 'KOA: Center wavelength')
+            self.set_keyword('WAVEBLUE', 19500, 'KOA: Blue end wavelength')
 
         #spec:
         elif (instr == 'spec'):
-            keys.update({'WAVERED' : (24500, 'KOA: Red end wavelength')})
-            keys.update({'WAVECNTR': (16950, 'KOA: Center wavelength')})
-            keys.update({'WAVEBLUE': ( 9400, 'KOA: Blue end wavelength')})
+            self.set_keyword('WAVERED' , 24500, 'KOA: Red end wavelength')
+            self.set_keyword('WAVECNTR', 16950, 'KOA: Center wavelength')
+            self.set_keyword('WAVEBLUE',  9400, 'KOA: Blue end wavelength')
 
         return True
 
@@ -244,10 +207,10 @@ class Nires(instrument.Instrument):
 
         self.log.info('set_specres: setting SPECRES keyword values')
 
-        keys = self.fitsHeader
-        if (keys.get('INSTR') == 'spec'):
+        instr = self.get_keyword('FTYPE')
+        if (instr == 'spec'):
             specres = 2700.0
-            keys.update({'SPECRES' : (specres,  'KOA: Nominal spectral resolution')})
+            self.set_keyword('SPECRES' , specres,  'KOA: Nominal spectral resolution')
         return True
 
 
@@ -256,11 +219,10 @@ class Nires(instrument.Instrument):
         Adds CCD pixel scale, dispersion (arcsec/pixel) keyword to header.
         '''
 
-        keys = self.fitsHeader
-        instr = keys.get('INSTR')
+        instr = self.get_keyword('FTYPE')
         if   (instr == 'imag'): dispscal = 0.12
         elif (instr == 'spec'): dispscal = 0.15
-        keys.update({'DISPSCAL' : (dispscal, 'KOA: CCD pixel scale, dispersion')})
+        self.set_keyword('DISPSCAL' , dispscal, 'KOA: CCD pixel scale, dispersion')
         return True
 
 
@@ -269,11 +231,10 @@ class Nires(instrument.Instrument):
         Adds spatial scale keyword to header.
         '''
 
-        keys = self.fitsHeader
-        instr = keys.get('INSTR')
+        instr = self.get_keyword('FTYPE')
         if   (instr == 'imag'): spatscal = 0.12
         elif (instr == 'spec'): spatscal = 0.15
-        keys.update({'SPATSCAL' : (spatscal, 'KOA: CCD pixel scale, spatial')})
+        self.set_keyword('SPATSCAL' , spatscal, 'KOA: CCD pixel scale, spatial')
         return True
 
 
@@ -283,11 +244,11 @@ class Nires(instrument.Instrument):
         '''
 
         #add keyword for 'imag' only
-        keys = self.fitsHeader
-        if (keys.get('INSTR') == 'imag'):
+        instr = self.get_keyword('FTYPE')
+        if (instr == 'imag'):
             self.log.info('set_filter: setting FILTER keyword value')
             filt = 'Kp'
-            keys.update({'FILTER' : (filt, 'KOA: Filter')})
+            self.set_keyword('FILTER' , filt, 'KOA: Filter')
         return True
 
 
@@ -297,13 +258,13 @@ class Nires(instrument.Instrument):
         '''
 
         #add keywords for 'spec' only
-        keys = self.fitsHeader
-        if (keys.get('INSTR') == 'spec'):
+        instr = self.get_keyword('FTYPE')
+        if (instr == 'spec'):
             self.log.info('set_slit_dims: setting slit keyword values')
             slitlen  = 18.1
             slitwidt = 0.5
-            keys.update({'SLITLEN'  : (slitlen,  'KOA: Slit length projected on sky')})
-            keys.update({'SLITWIDT' : (slitwidt, 'KOA: Slit width projected on sky')})
+            self.set_keyword('SLITLEN'  , slitlen,  'KOA: Slit length projected on sky')
+            self.set_keyword('SLITWIDT' , slitwidt, 'KOA: Slit width projected on sky')
         return True
 
 
@@ -316,8 +277,7 @@ class Nires(instrument.Instrument):
         self.log.info('set_koaimtyp: setting KOAIMTYP keyword value from OBSTYPE')
 
         #get obstype value
-        keys = self.fitsHeader
-        obstype = keys.get('OBSTYPE')
+        obstype = self.get_keyword('OBSTYPE')
 
         #map to KOAIMTYP value 
         koaimtyp = 'undefined'
@@ -341,7 +301,7 @@ class Nires(instrument.Instrument):
             self.log.warning('set_koaimtyp: Could not determine KOAIMTYP from OBSTYPE value of "' + obstype + '"')
 
         #update keyword
-        keys.update({'KOAIMTYP' : (koaimtyp,  'KOA: Image type')})
+        self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
         return True
 
 
@@ -351,8 +311,7 @@ class Nires(instrument.Instrument):
         (KOAIMTYP='object')
         '''
 
-        keys = self.fitsHeader
-        koaimtyp = keys.get('KOAIMTYP')
+        koaimtyp = self.get_keyword('KOAIMTYP')
         if koaimtyp == 'object' : return True
         else                    : return False
     
