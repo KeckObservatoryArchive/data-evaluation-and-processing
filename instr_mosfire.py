@@ -207,9 +207,9 @@ class Mosfire(instrument.Instrument):
         mdcname = self.get_keyword('MDCNAME')
 
         # Dome lamp keyword values
-        flatspec = self.keyword('FLATSPEC')
-        flimagin = self.keyword('FLIMAGIN')
-        flspectr = self.keyword('FLSPECTR')
+        flatspec = self.get_keyword('FLATSPEC')
+        flimagin = self.get_keyword('FLIMAGIN')
+        flspectr = self.get_keyword('FLSPECTR')
         flatOn = 0
         if flatspec == 1 or flimagin == 'on' or flspectr == 'on':
             flatOn = 1
