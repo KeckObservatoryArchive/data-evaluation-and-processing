@@ -191,7 +191,7 @@ class Mosfire(instrument.Instrument):
 
         self.log.info('set_koaimtyp: setting KOAIMTYP keyword value')
 
-        # Default KOAIMTYPE value
+        # Default KOAIMTYP value
         koaimtyp = 'undefined'
 
         # Telescope and dome keyword values
@@ -243,7 +243,7 @@ class Mosfire(instrument.Instrument):
                 # This is an object unless a flatlamp is on
                 koaimtyp = 'object'
                 if flatOn:
-                    koaimtyp = 'flatlmp'
+                    koaimtyp = 'flatlamp'
                 else:
                     if flatlampPos:
                         koaimtyp = 'flatlampoff'
@@ -273,7 +273,7 @@ class Mosfire(instrument.Instrument):
         # https://www.keck.hawaii.edu/realpublic/inst/mosfire/genspecs.html
         """
 
-#        self.log.info('set_wavelengths: setting wavelength keyword values')
+        self.log.info('set_wavelengths: setting wavelength keyword values')
 
         # Filter lookup (filter: [central, fwhm])
 
