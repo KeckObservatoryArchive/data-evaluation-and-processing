@@ -97,21 +97,6 @@ class Mosfire(instrument.Instrument):
         return prefix
 
 
-    def set_koaimtyp(self):
-        '''
-        Fixes missing KOAIMTYP keyword.
-        '''
-
-        #todo
-
-        koaimtyp = 'undefined'
-
-
-        #update keyword
-        self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
-        return True
-
-
     def set_elaptime(self):
         '''
         Fixes missing ELAPTIME keyword.
