@@ -52,7 +52,7 @@ class Mosfire(instrument.Instrument):
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
-        # if ok: ok = self.set_wavelengths()
+        if ok: ok = self.set_wavelengths()
         # if ok: ok = self.set_specres()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_datlevel(0)
@@ -264,5 +264,47 @@ class Mosfire(instrument.Instrument):
 
         # Update keyword
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
+        return True
+
+
+    def set_wavelengths(self):
+        """
+        Adds wavelength keywords.
+        # https://www.keck.hawaii.edu/realpublic/inst/mosfire/genspecs.html
+        """
+
+#        self.log.info('set_wavelengths: setting wavelength keyword values')
+
+        # Filter lookup (filter: [central, fwhm])
+
+        wave = {}
+        wave['Y'] = [1.048, 0.152]
+        wave['J'] = [1.253, 0.200]
+        wave['H'] = [1.637, 0.341]
+        wave['K'] = [2.162, 0.483]
+        wave['Ks'] = [2.147, 0.314]
+        wave['J2'] = [1.181, 0.129]
+        wave['J3'] = [1.288, 0.122]
+        wave['H1'] = [1.556, 0.165]
+        wave['H2'] = [1.709, 0.167]
+
+        # Default null values
+        wavered = wavecntr = waveblue = 'null'
+
+        filter = self.get_keyword('FILTER')
+
+        if filter in wave.keys():
+            fwhm = wave[filter][1] / 2.0
+            wavecntr = wave[filter][0]
+            waveblue = wavecntr - fwhm
+            wavered = wavecntr + fwhm
+            waveblue = float('%.3f' % waveblue)
+            wavecntr = float('%.3f' % wavecntr)
+            wavered = float('%.3f' % wavered)
+
+        self.set_keyword('WAVERED' , wavered, 'KOA: Red end wavelength')
+        self.set_keyword('WAVECNTR', wavecntr, 'KOA: Center wavelength')
+        self.set_keyword('WAVEBLUE', waveblue, 'KOA: Blue end wavelength')
+
         return True
 
