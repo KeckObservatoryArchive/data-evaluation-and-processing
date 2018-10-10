@@ -105,6 +105,10 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log):
     #get header object using astropy
     header = fits.getheader(fitsFile)
 
+    #check keywords
+    #todo: put this check back in once all keyword issues are sorted out
+    #check_keyword_existance(header, keyDefs, log)
+
     #write all keywords vals for image to a line
     with open(metaOutFile, 'a') as out:
 
@@ -129,6 +133,26 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log):
 
         out.write("\n")
  
+
+
+def check_keyword_existance(header, keyDefs, log):
+
+    #get simple list of keywords
+    keyDefList = []
+    for index, row in keyDefs.iterrows():
+        keyDefList.append(row['keyword'])        
+
+    #find all keywords in header that are not in metadata file
+    skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3']
+    for keywordHdr in header:
+        if keywordHdr not in keyDefList and keywordHdr not in skips:
+            if log: log.warning('metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
+
+    #find all keywords in metadata def file that are not in header
+    for keywordDef in keyDefList:
+        if keywordDef not in header:
+            if log: log.warning('metadata.py: metadata keyword "{}" not found in header.'.format(keywordDef))
+
 
 
 def check_keyword_val(keyword, val, fmt, warns, log=None):
@@ -217,4 +241,6 @@ def truncate_float(f, n):
 
     n -= len(exp)
     return s[:n] + exp
+
+
 
