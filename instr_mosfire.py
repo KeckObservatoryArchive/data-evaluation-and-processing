@@ -108,10 +108,10 @@ class Mosfire(instrument.Instrument):
         if self.get_keyword('ELAPTIME', False) != None: return True
 
         #get necessary keywords
-        itime  = self.get_keyword('ITIME')
+        itime  = self.get_keyword('TRUITIME')
         coadds = self.get_keyword('COADDS')
         if (itime == None or coadds == None):
-            self.log.error('set_elaptime: ITIME and COADDS values needed to set ELAPTIME')
+            self.log.error('set_elaptime: TRUITIME and COADDS values needed to set ELAPTIME')
             return False
 
         #update val
@@ -207,9 +207,9 @@ class Mosfire(instrument.Instrument):
         mdcname = self.get_keyword('MDCNAME')
 
         # Dome lamp keyword values
-        flatspec = self.keyword('FLATSPEC')
-        flimagin = self.keyword('FLIMAGIN')
-        flspectr = self.keyword('FLSPECTR')
+        flatspec = self.get_keyword('FLATSPEC')
+        flimagin = self.get_keyword('FLIMAGIN')
+        flspectr = self.get_keyword('FLSPECTR')
         flatOn = 0
         if flatspec == 1 or flimagin == 'on' or flspectr == 'on':
             flatOn = 1
