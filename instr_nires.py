@@ -99,37 +99,6 @@ class Nires(instrument.Instrument):
 
 
 
-    def set_frameno(self):
-        """
-        Adds FRAMENO keyword to header if it doesn't exist
-        #NOTE: keyword FRAMENUM added in Apr 2018
-        """
- 
-        self.log.info('set_frameno: setting FRAMNO keyword value from FRAMENUM')
-
-        #skip if it exists
-        if self.get_keyword('FRAMENO', False) != None: return True
-
-        #get value
-        #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
-        frameno = self.get_keyword('FRAMENUM')
-        if (frameno == None): 
-
-            datafile = self.get_keyword('DATAFILE')
-            if (datafile == None): 
-                self.log.error('set_frameno: cannot find value for FRAMENO')
-                return False
-
-            frameno = datafile.replace('.fits', '')
-            num = frameno.rfind('_') + 1
-            frameno = frameno[num:]
-            frameno = int(frameno)
-
-        #update
-        self.set_keyword('FRAMENO', frameno, 'KOA: Image frame number')
-        return True
-
-
     def set_ofName(self):
         """
         Adds OFNAME keyword to header 
@@ -304,14 +273,3 @@ class Nires(instrument.Instrument):
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
         return True
 
-
-    def is_science(self):
-        '''
-        Returns true if header indicates science data was taken.
-        (KOAIMTYP='object')
-        '''
-
-        koaimtyp = self.get_keyword('KOAIMTYP')
-        if koaimtyp == 'object' : return True
-        else                    : return False
-    
