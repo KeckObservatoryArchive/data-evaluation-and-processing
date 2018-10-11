@@ -18,6 +18,15 @@
 - to set file mod time: touch -t <yyyymmddhhmm> <file>
 
 
+===keyword map explained===
+- instrument.py contains a dictionary var self.keywordMap with key value pairs.  
+- An entry's key is how we will reference a certain keyword in the code.
+- An entry's value is the actual keyword string to look for in the FITS header.  
+- An entry's value can instead be an array denoting an order list of possible keyword strings to look for.
+- An instrument subclass (ie instr_nires.py) can add or overwrite keywordMap entires
+- Instrument.py now has a get_keyword and set_keyword functions that use keywordMap to access and modify keywords.
+- get_keyword: 
+
 
 
 ===DB: koatpx ===
