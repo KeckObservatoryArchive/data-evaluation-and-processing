@@ -904,3 +904,43 @@ class Instrument:
             self.set_keyword('DATE-OBS', vals[1], ' Original value missing - added by KOA')
             self.set_keyword('UTC',      vals[2], 'Original value missing - added by KOA')
 
+
+    def set_frameno(self):
+        """
+        Adds FRAMENO keyword to header if it doesn't exist
+        """
+
+        self.log.info('set_frameno: setting FRAMNO keyword value from FRAMENUM')
+
+        #skip if it exists
+        if self.get_keyword('FRAMENO', False) != None: return True
+
+        #get value
+        #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
+        frameno = self.get_keyword('FRAMENUM')
+        if (frameno == None): 
+
+            datafile = self.get_keyword('DATAFILE')
+            if (datafile == None): 
+                self.log.error('set_frameno: cannot find value for FRAMENO')
+                return False
+
+            frameno = datafile.replace('.fits', '')
+            num = frameno.rfind('_') + 1
+            frameno = frameno[num:]
+            frameno = int(frameno)
+
+        #update
+        self.set_keyword('FRAMENO', frameno, 'KOA: Image frame number')
+        return True
+
+
+    def is_science(self):
+        '''
+        Returns true if header indicates science data was taken.
+        '''
+
+        koaimtyp = self.get_keyword('KOAIMTYP')
+        if koaimtyp == 'object' : return True
+        else                    : return False
+

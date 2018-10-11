@@ -2,16 +2,21 @@
 (NOTE: High level todos also listed in github projects page.)  
 
 
+
+
+===BUGS===
+- Is WX/weather keywords broken?  getting nulls on MOSFIRE test.
+
+20180919.40332
+
 ===MISC===
-
-- MOSFIRE full keywords
-  - util to find distinct values for keywords
-  - Do we want a DEP check for values in header that are not in metadata.format.<instr>??!!
-
+- CIT: Create test directory with collection of sample FITS files and corresponding "gold standard" DEP output for comparison.
+- CIT: Create test script to validate DEP against sample FITS test directory.
 - make get_dir_list more readable (use asterisk?) (just list them) (put in config)
 - Should 24-hour cutoff hour be a config/input and not hard-coded into instrument class?
-- add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
-- Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?
+- Add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
+- metadata.py needs a warning for header keywords found that are not in metadata definition file.
+- Q: Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?
 - convenience prompt for dir removal and tpx removal if running manually?
 - uber cron to ensure all instruments processing ran and completed?
 - review all koatpx columns vs which ones we touch and when (ie zero files)
@@ -22,10 +27,13 @@
 
 
 ===FULL KEYWORDS===
-- Add all instrument missing keywords that are in the primary header to metadata.
-- q: What about HDU secondary headers?
-- order of work: NIRES, (NIRSPEC?), MOSFIRE, DEIMOS, ESI
-- ***Need tool to search all headers from old data for a particular keyword and bin the values so we know what to expect for those with discrete lists?
+- MOSFIRE:
+ -- Fix data type and size issues in spreadsheet from metadata warnings
+ -- Search old DEP for MOSFIRE specific code
+- Create Python util to compare metadata.format.<instr> keywords list to headers from all past data.  Report on keywords found in one but not in the other.
+- Need util to search headers from all past data and report distinct values for a particular keyword.
+- Q: What about HDU secondary headers?
+- order of work: NIRES, MOSFIRE, (NIRSPEC?), DEIMOS, ESI
 - Don't forget WCS, slitmask plot and additional keywords from Mihseh (email).
 
 

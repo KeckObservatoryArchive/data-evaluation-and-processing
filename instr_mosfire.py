@@ -37,7 +37,6 @@ class Mosfire(instrument.Instrument):
         Run all DQA checks unique to this instrument.
         '''
 
-        #todo: finish this
         #todo: check that all of these do not need a subclass version if base class func was used.
         ok = True
         if ok: ok = self.check_instr()
@@ -53,13 +52,8 @@ class Mosfire(instrument.Instrument):
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
         if ok: ok = self.set_wavelengths()
-        # if ok: ok = self.set_specres()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_datlevel(0)
-        # if ok: ok = self.set_filter()
-        # if ok: ok = self.set_slit_dims()
-        # if ok: ok = self.set_spatscal()
-        # if ok: ok = self.set_dispscal()
         if ok: ok = self.set_image_stats_keywords()
         if ok: ok = self.set_npixsat()
         if ok: ok = self.set_oa()
@@ -117,49 +111,6 @@ class Mosfire(instrument.Instrument):
         #update val
         elaptime = itime * coadds
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
-        return True
-
-
-    def is_science(self):
-        '''
-        Returns true if header indicates science data was taken.
-        '''
-
-        #todo: is this right?
-
-        koaimtyp = self.get_keyword('KOAIMTYP')
-        if koaimtyp == 'object' : return True
-        else                    : return False
-
-
-    def set_frameno(self):
-        """
-        Adds FRAMENO keyword to header if it doesn't exist
-        """
-        # todo: Is all this needed for MOSFIRE too like NIRES?  If so, make commo?
-
-        self.log.info('set_frameno: setting FRAMNO keyword value from FRAMENUM')
-
-        #skip if it exists
-        if self.get_keyword('FRAMENO', False) != None: return True
-
-        #get value
-        #NOTE: If FRAMENO doesn't exist, derive from DATAFILE
-        frameno = self.get_keyword('FRAMENUM')
-        if (frameno == None): 
-
-            datafile = self.get_keyword('DATAFILE')
-            if (datafile == None): 
-                self.log.error('set_frameno: cannot find value for FRAMENO')
-                return False
-
-            frameno = datafile.replace('.fits', '')
-            num = frameno.rfind('_') + 1
-            frameno = frameno[num:]
-            frameno = int(frameno)
-
-        #update
-        self.set_keyword('FRAMENO', frameno, 'KOA: Image frame number')
         return True
 
 

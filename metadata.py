@@ -106,8 +106,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log):
     header = fits.getheader(fitsFile)
 
     #check keywords
-    #todo: put this check back in once all keyword issues are sorted out
-    #check_keyword_existance(header, keyDefs, log)
+    check_keyword_existance(header, keyDefs, log)
 
     #write all keywords vals for image to a line
     with open(metaOutFile, 'a') as out:
@@ -149,8 +148,9 @@ def check_keyword_existance(header, keyDefs, log):
             if log: log.warning('metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
 
     #find all keywords in metadata def file that are not in header
+    skips = ['PROGTITL', 'PROPINT']
     for keywordDef in keyDefList:
-        if keywordDef not in header:
+        if keywordDef not in header and keywordDef not in skips:
             if log: log.warning('metadata.py: metadata keyword "{}" not found in header.'.format(keywordDef))
 
 
