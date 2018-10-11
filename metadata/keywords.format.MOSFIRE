@@ -21,7 +21,7 @@ DETENDX	integer	8	Y
 DETSTRTY	integer	8	Y
 DETENDY	integer	8	Y
 DATASEC	char	24	Y
-TRUITIME	double	24	Y
+TRUITIME	double	16	Y
 RMPRESET	integer	8	Y
 RMPREADS	integer	8	Y
 RMPDROP	integer	8	Y
@@ -42,12 +42,12 @@ DETGAIN	double	24	Y
 SYSGAIN	double	24	Y
 VRESET	double	24	Y
 DSUB	double	24	Y
-BVIASGAT	double	24	Y
+VBIASGAT	double	24	Y
 VBIASPWR	double	24	Y
 CELLDRAN	integer	8	Y
 DRAIN	integer	8	Y
 VDDA	double	24	Y
-VDDA	double	24	Y
+VDD	double	24	Y
 VREFMAIN	double	24	Y
 VPREMDRF	double	24	Y
 VPRAMRF1	double	24	Y
@@ -55,7 +55,7 @@ HXRGCFG1	char	48	Y
 HXRGCFG2	char	48	Y
 HXRGVERS	char	32	Y
 OBJECT	char	32	Y
-FRAMEDESC	char	32	Y
+FRAMDESC	char	32	Y
 DATAFILE	char	32	Y
 FRAMENUM	integer	8	N
 RESETS	integer	8	Y
@@ -92,7 +92,7 @@ CRVAL2	double	24	Y
 CRPIX1	double	24	Y
 CRPIX2	double	24	Y
 RADECSYS	char	32	Y
-TRARGTMP1	integer	8	Y
+TARGTMP1	integer	8	Y
 REGTMP1	double	24	Y
 TMPACT1	integer	8	Y
 CTMP1LOC	char	32	Y
@@ -192,12 +192,12 @@ FCSLOC2	double	24	Y
 FCSLOC3	double	24	Y
 FCPA_EL	char	32	Y
 FCTHETXY	char	32	Y
-FCANAMOR	integer	8	Y
+FCANAMOR	double	24	Y
 FCK	double	24	Y
 FCBETA	double	24	Y
 FCPH	double	24	Y
 FCA	double	24	Y
-FCY01	double	24	Y
+FCY02	double	24	Y
 FCX02	double	24	Y
 FCCENTRX	integer	8	Y
 FCCENTRY	double	24	Y
@@ -234,7 +234,6 @@ B27POS	double	16	Y
 B28POS	double	16	Y
 B29POS	double	16	Y
 B30POS	double	16	Y
-B31POS	double	16	Y
 B31POS	double	16	Y
 B32POS	double	16	Y
 B33POS	double	16	Y
@@ -400,7 +399,7 @@ YOFFSET	integer	8	Y
 DTHCOORD	char	32	Y
 FRAME	integer	8	Y
 FRAMES	integer	8	Y
-FRAMID	char	32	Y
+FRAMEID	char	32	Y
 PATTERN	char	32	Y
 REPEAT	integer	8	Y
 REPEATS	integer	8	Y
@@ -418,7 +417,7 @@ TVANGL	double	24	Y
 TUBETEMP	double	24	Y
 TELFOCUS	double	24	Y
 TELESCOP	char	32	Y
-TARGWARE	double	24	Y
+TARGWAVE	double	24	Y
 TARGRADV	double	24	Y
 TARGRA	double	24	Y
 TARGPMRA	double	24	Y
@@ -432,7 +431,7 @@ TARGDEC	double	24	Y
 ST	char	32	Y
 SIMULATE	char	32	Y
 SECTHETY	double	24	Y
-SECTHEYX	double	24	Y
+SECTHETX	double	24	Y
 SECFOCUS	double	24	Y
 ROTZERO	double	24	Y
 ROTSTST	char	32	Y
@@ -516,7 +515,6 @@ AXESTAT	char	32	Y
 AIRMASS	double	16	Y
 UTC	char	16	N
 DATLEVEL	integer	8	Y
-DISPSCAL	double	16	Y
 DQA_DATE	char	32	Y
 DQA_VERS	char	32	Y
 ELAPTIME	integer	24	Y
@@ -536,13 +534,9 @@ PROGPI	char	32	N
 PROGTITL	char	210	Y
 PROPINT	integer	16	N
 SEMESTER	char	8	N
-SLITLEN	double	24	Y
-SLITWIDT	double	24	Y
-SPATSCAL	double	24	Y
-SPECRES	double	24	Y
-WAVEBLUE	integer	16	Y
-WAVECNTR	integer	16	Y
-WAVERED	integer	16	Y
+WAVEBLUE	double	24	Y
+WAVECNTR	double	24	Y
+WAVERED	double	24	Y
 WXDOMHUM	double	24	Y
 WXDOMTMP	double	24	Y
 WXDWPT	double	24	Y
