@@ -42,9 +42,13 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
 
 
     #add header to output file
-    #NOTE: alignment assumes the col width is at least as big is the keyword name
     if log: log.info('metadata.py writing to metadata table file: {}'.format(metaOutFile))
     with open(metaOutFile, 'w+') as out:
+
+        #check col width is at least as big is the keyword name
+        for index, row in keyDefs.iterrows():
+            if (len(row['keyword']) > row['colSize']):
+                raise Exception("metadata.py: Alignment issue: Keyword column name {} is bigger than column size of {}".format(row['keyword'], row['colSize']))            
 
         for index, row in keyDefs.iterrows():
             out.write('|' + row['keyword'].ljust(row['colSize']))
