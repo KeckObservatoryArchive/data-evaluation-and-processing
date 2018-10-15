@@ -25,7 +25,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 from PIL import Image
-from astropy.visualization import ZScaleInterval, SinhStretch
+from astropy.visualization import ZScaleInterval, AsinhStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
 
@@ -842,7 +842,7 @@ class Instrument:
                 image = self.fitsHdu[0].data
                 interval = ZScaleInterval()
                 vmin, vmax = interval.get_limits(image)
-                norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=SinhStretch())
+                norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
                 plt.imshow(image, cmap='gray', origin='lower', norm=norm)
                 plt.axis('off')
                 # save as png, then convert to jpg
