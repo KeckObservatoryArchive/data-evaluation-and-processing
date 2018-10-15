@@ -7,7 +7,6 @@
 ===BUGS===
 - Is WX/weather keywords broken?  getting nulls on MOSFIRE test.
 
-20180919.40332
 
 ===MISC===
 - CIT: Create test directory with collection of sample FITS files and corresponding "gold standard" DEP output for comparison.
@@ -28,7 +27,8 @@
 
 ===FULL KEYWORDS===
 - MOSFIRE:
- -- Fix data type and size issues in spreadsheet from metadata warnings
+ -- Add extended header tables to text file in lev0 dir.
+ -- Fix data type issues in spreadsheet from metadata warnings
  -- Search old DEP for MOSFIRE specific code
 - Create Python util to compare metadata.format.<instr> keywords list to headers from all past data.  Report on keywords found in one but not in the other.
 - Need util to search headers from all past data and report distinct values for a particular keyword.
@@ -40,6 +40,8 @@
 
 
 ===LOW PRIORITY===
+- send IPAC a pyServer demo code
+- look at old Missing Data tables usage
 - sort metadata by timestamp? (currently sorted by KOAID which has 'NR'/'NI' prefix sort first)
 - get rid of dqa info statements everywhere
 - convert all tab indentation to spaces
