@@ -5,13 +5,24 @@
 
 
 ===BUGS===
+- NIRES spreadsheet warnings NEW!
 - Is WX/weather keywords broken?  getting nulls on MOSFIRE test.
+
+-	24 time window bug
+-	Do we need NIRES ls -d commands in cron?
+-	Ok to clean up get_dir_list to use wildcards?
+/s/sdata150[0-3]/nires*
+/s/sdata1300/mosfire*
+/s/sdata1300/moseng
+-	- Put in config?
+-	How do we keep track of sdata dirs.?
 
 
 ===MISC===
+- put check for bad window vs start time?
 - CIT: Create test directory with collection of sample FITS files and corresponding "gold standard" DEP output for comparison.
 - CIT: Create test script to validate DEP against sample FITS test directory.
-- make get_dir_list more readable (use asterisk?) (just list them) (put in config)
+- make get_dir_list more readable (use glob function?) (just list them) (put in config)
 - Should 24-hour cutoff hour be a config/input and not hard-coded into instrument class?
 - Add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
 - metadata.py needs a warning for header keywords found that are not in metadata definition file.
@@ -20,7 +31,6 @@
 - uber cron to ensure all instruments processing ran and completed?
 - review all koatpx columns vs which ones we touch and when (ie zero files)
 - should check_instr set keyword self.instrume?
-- JPG issues: From Chris: "In looking at the NIRES quicklook JPEGS, the ones for the images look fine.  It's the ones for the spectra that are strange.  Some specific examples: NR.20180702.22971, NR.20180702.46965 and NR.20180702.53897.  In all of these, it seems like the dynamic range is too small since most of the spectra looks saturated. This is the main reason why I'd like to have the interactive viewer used for all files and not just the calibrated ones."
 
 
 

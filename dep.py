@@ -27,7 +27,7 @@ from send_email import send_email
 from common import *
 import re
 import datetime as dt
-
+from dateutil import parser
 
 class Dep:
     """
@@ -85,6 +85,11 @@ class Dep:
         #check koa for existing entry
         if fullRun and self.tpx:
             if not self.check_koa_db_entry(): return False
+
+
+        #check 24 time window vs runtime
+        if fullRun or True:
+            if not self.check_runtime_vs_window(): return False
 
 
         #write to tpx at dep start
@@ -151,7 +156,28 @@ class Dep:
 
         return True
 
- 
+
+    def check_runtime_vs_window(self):
+        '''
+        Verify that we are not starting a run within the 24 hour defined time window
+        NOTE: If we are after, that is ok.  If we are before, we are probably doing some cleanup work. 
+        '''
+
+        endTimeStr = self.instrObj.utDate + ' ' + self.instrObj.endTime
+        endTime = dt.datetime.strptime(endTimeStr, "%Y-%m-%d %H:%M:%S")
+        yesterTime = endTime - dt.timedelta(days=1)
+
+        curTime = dt.datetime.strftime(dt.datetime.now(), '%Y-%m-%s %H:%M:%S')
+        curTime = dt.datetime.utcnow()
+
+        #todo: error message but returning true for now.  Should we stop processing or just warn with big error?
+        if curTime > yesterTime and curTime < endTime:
+            self.instrObj.log.error('dep: Runtime is within 24 hour search window!')
+            return True
+
+
+
+
 
     def prompt_confirm_tpx(self):
 
