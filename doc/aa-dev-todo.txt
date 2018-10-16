@@ -7,15 +7,7 @@
 ===BUGS===
 - NIRES spreadsheet warnings NEW!
 - Is WX/weather keywords broken?  getting nulls on MOSFIRE test.
-
--	24 time window bug
--	Do we need NIRES ls -d commands in cron?
--	Ok to clean up get_dir_list to use wildcards?
-/s/sdata150[0-3]/nires*
-/s/sdata1300/mosfire*
-/s/sdata1300/moseng
--	- Put in config?
--	How do we keep track of sdata dirs.?
+- Do we need NIRES ls -d commands in cron?
 
 
 ===MISC===
@@ -31,6 +23,7 @@
 - uber cron to ensure all instruments processing ran and completed?
 - review all koatpx columns vs which ones we touch and when (ie zero files)
 - should check_instr set keyword self.instrume?
+- How do we keep track of sdata dirs.?
 
 
 
