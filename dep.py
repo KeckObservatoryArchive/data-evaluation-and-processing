@@ -175,8 +175,7 @@ class Dep:
             self.instrObj.log.error('dep: Runtime is within 24 hour search window!')
             return True
 
-
-
+        return True
 
 
     def prompt_confirm_tpx(self):
