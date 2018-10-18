@@ -11,19 +11,19 @@
 
 
 ===MISC===
-- put check for bad window vs start time?
+- add to nires spreadsheet?  Should we add these or ignore?: DISPNAME2, SCRIPTNAME, SCRIPTDIR, WIDTH, HEIGHT, XPOS, YPOS, ROIMAXDIM
+- How do we keep track of sdata dirs.?  A: These are added by Jchock and we aren't necessarily notified.  Need better system.
+- make get_dir_list more readable (use glob function?) (just list them) (put in config)
+- Q: Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?  Possibly not.
 - CIT: Create test directory with collection of sample FITS files and corresponding "gold standard" DEP output for comparison.
 - CIT: Create test script to validate DEP against sample FITS test directory.
-- make get_dir_list more readable (use glob function?) (just list them) (put in config)
 - Should 24-hour cutoff hour be a config/input and not hard-coded into instrument class?
 - Add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
 - metadata.py needs a warning for header keywords found that are not in metadata definition file.
-- Q: Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?
 - convenience prompt for dir removal and tpx removal if running manually?
 - uber cron to ensure all instruments processing ran and completed?
 - review all koatpx columns vs which ones we touch and when (ie zero files)
 - should check_instr set keyword self.instrume?
-- How do we keep track of sdata dirs.?
 
 
 

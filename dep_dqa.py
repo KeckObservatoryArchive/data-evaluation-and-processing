@@ -18,6 +18,9 @@ from common import *
 from datetime import datetime as dt
 import metadata
 import re
+import hashlib
+import configparser
+
 
 def dep_dqa(instrObj, tpx=0):
     """
@@ -116,6 +119,11 @@ def dep_dqa(instrObj, tpx=0):
         return
 
 
+    #read config vars
+    config = configparser.ConfigParser()
+    config.read('config.live.ini')
+
+
     #log num files passed DQA and write out list to file
     log.info('dep_dqa.py: {} files passed DQA'.format(len(procFiles)))
     with open(dqaFile, 'w') as f:
@@ -137,7 +145,7 @@ def dep_dqa(instrObj, tpx=0):
     ymd = utDate.replace('-', '')
     metaOutFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
     keywordsDefFile = tablesDir + '/keywords.format.' + instr
-    metadata.make_metadata(keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log)    
+    metadata.make_metadata(keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log, dev=int(config['RUNTIME']['DEV']))    
 
 
     #Create yyyymmdd.FITS.md5sum.table
@@ -200,11 +208,9 @@ def check_koapi_send(semids, utDate, log):
     '''
 
     #create needed api vars
-    import configparser
     config = configparser.ConfigParser()
     config.read('config.live.ini')
 
-    import hashlib
     user = os.getlogin()
     myHash = hashlib.md5(user.encode('utf-8')).hexdigest()
 

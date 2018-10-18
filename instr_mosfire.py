@@ -8,6 +8,7 @@ MOSFIRE specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 from common import *
+import numpy as np
 
 
 class Mosfire(instrument.Instrument):

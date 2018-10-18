@@ -20,7 +20,7 @@ from common import make_dir_md5_table
 import datetime
 import re
 
-def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=None):
+def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=None, dev=False):
     """
     Creates the archiving metadata file as part of the DQA process.
 
@@ -84,7 +84,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
                 if filename in extraData: extra = extraData[filename]
 
                 log.info("Creating metadata record for: " + fitsFile)
-                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log)
+                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, dev)
 
 
     #create md5 sum
@@ -101,7 +101,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
 
 
 
-def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log):
+def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, dev):
     """
     Adds a line to metadata file for one FITS file.
     """
@@ -110,7 +110,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log):
     header = fits.getheader(fitsFile)
 
     #check keywords
-    check_keyword_existance(header, keyDefs, log)
+    check_keyword_existance(header, keyDefs, log, dev)
 
     #write all keywords vals for image to a line
     with open(metaOutFile, 'a') as out:
@@ -138,7 +138,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log):
  
 
 
-def check_keyword_existance(header, keyDefs, log):
+def check_keyword_existance(header, keyDefs, log, dev=False):
 
     #get simple list of keywords
     keyDefList = []
@@ -149,17 +149,17 @@ def check_keyword_existance(header, keyDefs, log):
     skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3']
     for keywordHdr in header:
         if keywordHdr not in keyDefList and keywordHdr not in skips:
-            if log: log.warning('metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
+            log_msg(log, dev, 'metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
 
     #find all keywords in metadata def file that are not in header
     skips = ['PROGTITL', 'PROPINT']
-    for keywordDef in keyDefList:
-        if keywordDef not in header and keywordDef not in skips:
-            if log: log.warning('metadata.py: metadata keyword "{}" not found in header.'.format(keywordDef))
+    for index, row in keyDefs.iterrows():
+        keyword = row['keyword']
+        if keyword not in header and keyword not in skips and row['allowNull'] == "N":
+            log_msg(log, dev, 'metadata.py: non-null metadata keyword "{}" not found in header.'.format(keyword))
 
 
-
-def check_keyword_val(keyword, val, fmt, warns, log=None):
+def check_keyword_val(keyword, val, fmt, warns, log=None, dev=False):
     '''
     Checks keyword for correct type and proper value.
     '''
@@ -179,38 +179,40 @@ def check_keyword_val(keyword, val, fmt, warns, log=None):
 
     #check value type
     vtype = type(val).__name__
+
     if (fmt['dataType'] == 'char'):
         if (vtype == 'bool'):
             if   (val == True):  val = 'T'
             elif (val == False): val = 'F'
         elif (vtype == 'int' and val == 0):
             val = ''
-            if log: log.warning('metadata check: found integer 0, expected {}. KNOWN ISSUE. SETTING TO BLANK!'.format(fmt['dataType']))
+            log_msg(log, dev, 'metadata check: found integer 0, expected {}. KNOWN ISSUE. SETTING TO BLANK!'.format(fmt['dataType']))
         elif (vtype != "str"):
-            if log: log.warning('metadata check: var type {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
+            log_msg(log, dev, 'metadata check: var type {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
             warns['type'] += 1
+
     elif (fmt['dataType'] == 'integer'):
         if (vtype != "int"):
-            if log: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
+            log_msg(log, dev, 'metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
             warns['type'] += 1
 
     elif (fmt['dataType'] == 'double'):
         if (vtype != "float" and vtype != "int"):
-            if log: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
+            log_msg(log, dev, 'metadata check: var type of {}, expected {} ({}={}).'.format(vtype, fmt['dataType'], keyword, val))
             warns['type'] += 1
 
     elif (fmt['dataType'] == 'date'):
         try:
             datetime.datetime.strptime(val, '%Y-%m-%d')
         except ValueError:
-            if log: log.warning('metadata check: expected date format YYYY-mm-dd ({}={}).'.format(keyword, val))
+            log_msg(log, dev, 'metadata check: expected date format YYYY-mm-dd ({}={}).'.format(keyword, val))
             warns['type'] += 1
 
     elif (fmt['dataType'] == 'datetime'):
         try:
             datetime.datetime.strptime(val, '%Y-%m-%d %H:%i:%s')
         except ValueError:
-            if log: log.warning('metadata check: expected date format YYYY-mm-dd HH:ii:ss ({}={}).'.format(keyword, val))
+            log_msg(log, dev, 'metadata check: expected date format YYYY-mm-dd HH:ii:ss ({}={}).'.format(keyword, val))
             warns['type'] += 1
      
 
@@ -218,20 +220,26 @@ def check_keyword_val(keyword, val, fmt, warns, log=None):
     length = len(str(val))
     if (length > fmt['colSize']):
         if (fmt['dataType'] == 'double'): 
-            #todo: change this back to warning once this is fixed for good?
-            if log: log.info('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
+            log_msg(log, dev, 'metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
             warns['truncate'] += 1
             val = truncate_float(val, fmt['colSize'])
         else: 
-            if log: log.info('metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
+            log_msg(log, dev, 'metadata check: char length of {} greater than column size of {} ({}={}).  TRUNCATING.'.format(length, fmt['colSize'], keyword, val))
             warns['truncate'] += 1
             val = str(val)[:fmt['colSize']]
 
 
     #todo: check value range, discrete values?
 
-
     return val
+
+
+
+def log_msg (log, dev, msg):
+    if not log: return
+
+    if dev: log.warning(msg)
+    else  : log.info(msg)
 
 
 
