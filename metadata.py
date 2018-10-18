@@ -15,10 +15,12 @@
 import sys
 import os
 from astropy.io import fits
-import pandas
 from common import make_dir_md5_table
 import datetime
 import re
+import pandas as pd
+
+
 
 def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=None, dev=False):
     """
@@ -38,7 +40,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
     #open keywords format file and read data
     #NOTE: changed this file to tab-delimited
     if log: log.info('metadata.py reading keywords definition file: {}'.format(keywordsDefFile))
-    keyDefs = pandas.read_csv(keywordsDefFile, sep='\t')
+    keyDefs = pd.read_csv(keywordsDefFile, sep='\t')
 
 
     #add header to output file
@@ -256,3 +258,104 @@ def truncate_float(f, n):
 
 
 
+def compare_meta_files(filepaths):
+    '''
+    Takes an array of filepaths to metadata output files and compares them all to 
+    the first metadata file in a smart manner.
+    '''
+
+    #columns we always skip value check
+    skips = ['DQA_DATE', 'DQA_VERS']
+
+    #store list of columns to compare
+    compareCols = []
+    compareKoaids = []
+
+    #loop, parse and store dataframes
+    dfs = []
+    for filepath in filepaths:
+        data = load_metadata_file_as_df(filepath)
+        dfs.append(data)
+
+    #compare all to first df in list
+    baseDf = dfs[0]
+    baseColList = baseDf.columns.tolist()
+    for i, df in enumerate(dfs):
+        if i == 0: continue
+        print ('==> comparing (0){} to ({}){}:'.format(baseDf.name, i, df.name))
+
+        #basic two-way column name compare
+        colList = df.columns.tolist()
+        for col in colList:
+            if col not in baseColList:
+                #print ('WARN: MD{} col "{}" not in MD0 col list.'.format(i, col))
+                pass
+            else:
+                if col not in compareCols: compareCols.append(col)
+        for col in baseColList:
+            if col not in colList:
+                #print ('WARN: MD0 col "{}" not in MD{} col list.'.format(col, i))
+                pass
+            else:
+                if col not in compareCols: compareCols.append(col)
+
+
+        #basic two-way row find using KOAID value
+        for index, row in df.iterrows():
+            koaid = row['KOAID']
+            baseRow = baseDf[baseDf['KOAID'] == koaid]
+            if baseRow.empty: 
+                print ('WARN: CANNOT FIND KOAID "{}" in MD0'.format(koaid))
+                continue
+            else:
+                if koaid not in compareKoaids: compareKoaids.append(koaid)
+
+        for index, baseRow in baseDf.iterrows():
+            koaid = baseRow['KOAID']
+            row = df[df['KOAID'] == koaid]
+            if row.empty: 
+                print ('WARN: CANNOT FIND KOAID "{}" in MD{}'.format(koaid, i))
+                continue
+            else:
+                if koaid not in compareKoaids: compareKoaids.append(koaid)
+
+        #for koaids we found in both, compare those rows
+        for koaid in compareKoaids:
+            row0 = baseDf[baseDf['KOAID'] == koaid].iloc[0]
+            row1 = df[df['KOAID'] == koaid].iloc[0]
+
+            for col in compareCols:
+                val0 = row0[col]
+                val1 = row1[col]
+
+                if col == 'RA' or col == 'DEC':
+                    val0 = "{:.2f}".format(float(val0))
+                    val1 = "{:.2f}".format(float(val1))
+
+                if val0 != val1:
+                    print ('WARN: value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
+
+
+
+def load_metadata_file_as_df(filepath):
+
+    with open(filepath) as f:
+
+        # Read first line of header and find all column widths using '|' split
+        header = f.readline().strip()
+        cols = header.split('|')
+        colWidths = []
+        for col in cols:
+            w = len(col)
+            if w <= 1: continue;
+            colWidths.append(w+1)
+
+        #read fixed-width formatted metadata file using calculated col widths and remove garbage
+        data = pd.read_fwf(filepath, widths=colWidths, skiprows=range(1,4))
+        data.columns = data.columns.str.replace('|','')
+        data.columns = data.columns.str.strip()
+
+        data.name = os.path.basename(filepath)
+        return data
+
+    return None
