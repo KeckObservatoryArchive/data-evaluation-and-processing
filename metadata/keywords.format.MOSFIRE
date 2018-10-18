@@ -330,8 +330,8 @@ IMAGEMN	double	24	Y
 IMAGESD	double	24	Y
 INSTANGL	double	16	Y
 INSTFLIP	char	32	Y
-ITIME	integer	8	Y
-ITIME0	integer	8	Y
+ITIME	integer	9	Y
+ITIME0	integer	12	Y
 LATITUDE	double	16	Y
 LONGSTRN	char	24	Y
 LST	char	32	Y
