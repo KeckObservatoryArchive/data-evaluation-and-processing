@@ -170,7 +170,7 @@ class Mosfire(instrument.Instrument):
         pwstata7 = self.get_keyword('PWSTATA7')
         pwstata8 = self.get_keyword('PWSTATA8')
         power = 0
-        if pwstata7 == 1 and pwstata8 == 1:
+        if pwstata7 == 1 or pwstata8 == 1:
             power = 1
 
         # Is telescope in flatlamp position
@@ -184,7 +184,7 @@ class Mosfire(instrument.Instrument):
             dustCover = mdcname.lower()
 
         # Dark frame
-        if obsmode.lower() == 'dark' and not power:
+        if 'dark' in obsmode.lower() and not power:
             koaimtyp = 'dark'
         else:
             # Setup for arclamp
