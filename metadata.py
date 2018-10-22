@@ -258,7 +258,7 @@ def truncate_float(f, n):
 
 
 
-def compare_meta_files(filepaths):
+def compare_meta_files(filepaths, skipColCompareWarn=False):
     '''
     Takes an array of filepaths to metadata output files and compares them all to 
     the first metadata file in a smart manner.
@@ -288,14 +288,14 @@ def compare_meta_files(filepaths):
         colList = df.columns.tolist()
         for col in colList:
             if col not in baseColList:
-                #print ('WARN: MD{} col "{}" not in MD0 col list.'.format(i, col))
-                pass
+                if col not in skips:
+                    if not skipColCompareWarn: print ('WARN: MD{} col "{}" not in MD0 col list.'.format(i, col))
             else:
                 if col not in compareCols: compareCols.append(col)
         for col in baseColList:
             if col not in colList:
-                #print ('WARN: MD0 col "{}" not in MD{} col list.'.format(col, i))
-                pass
+                if col not in skips:
+                    if not skipColCompareWarn: print ('WARN: MD0 col "{}" not in MD{} col list.'.format(col, i))
             else:
                 if col not in compareCols: compareCols.append(col)
 
