@@ -58,7 +58,7 @@ class Instrument:
         # NOTE: array may be used to denote an ordered list of possible keywords to look for.
         # NOTE: these may be overwritten by instr_*.py
         self.keywordMap = {}
-        self.keywordMap['INSTRUME']     = ['INSTRUME', 'CURRINST']
+        self.keywordMap['INSTRUME']     = 'INSTRUME'
         self.keywordMap['UTC']          = 'UTC'
         self.keywordMap['DATE-OBS']     = 'DATE-OBS'
         self.keywordMap['SEMESTER']     = 'SEMESTER'
@@ -354,21 +354,19 @@ class Instrument:
         return filename, True
 
  
-    def check_instr(self):
+    def set_instr(self):
         '''
-        Check that value(s) in header indicates this is valid instrument and matches what we expect.
+        Check that value(s) in header indicates this is valid instrument and fixes if needed.
         (ported to python from check_instr.pro)
         '''
         #todo:  go over idl file again and pull out logic for other instruments
 
-        self.log.info('check_instr: verifying this is a ' + self.instr + ' FITS file')
+        self.log.info('set_instr: verifying this is a ' + self.instr + ' FITS file')
 
         ok = False
 
-        #get val
-        instrume = self.get_keyword('INSTRUME')
-
         #direct match?
+        instrume = self.get_keyword('INSTRUME')
         if instrume:
             if (self.instr == instrume.strip()): ok = True
 
@@ -381,13 +379,20 @@ class Instrument:
             filname = self.get_keyword('FILNAME')
             if (filname and self.instr in filname): ok = True
 
-            instrVal = self.instr.lower()
             outdir = self.get_keyword('OUTDIR')
-            if (outdir and instrVal in outdir): ok = True
+            if (outdir and self.instr in outdir.upper()): ok = True
+
+            currinst = self.get_keyword('CURRINST')
+            if (currinst and self.instr == currinst): ok = True
+
+            #if fixed, then update 'INSTRUME' in header
+            if ok:
+                self.set_keyword('INSTRUME', self.instr, 'KOA: Fixing missing INSTRUME keyword')
+                self.log.warning('set_instr: set INSTRUME-OBS value from FITS file time')
 
         #log err
         if (not ok):
-            self.log.warning('check_instr: cannot determine if file is from ' + self.instr + '.  UDF!')
+            self.log.warning('set_instr: cannot determine if file is from ' + self.instr + '.  UDF!')
 
         return ok
 

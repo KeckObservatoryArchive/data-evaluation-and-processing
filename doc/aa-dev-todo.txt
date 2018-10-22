@@ -3,9 +3,7 @@
 
 
 
-
 ===BUGS===
-- NIRES spreadsheet warnings NEW!
 - Is WX/weather keywords broken?  getting nulls on MOSFIRE test.
 - Do we need NIRES ls -d commands in cron?
 
@@ -23,7 +21,6 @@
 - convenience prompt for dir removal and tpx removal if running manually?
 - uber cron to ensure all instruments processing ran and completed?
 - review all koatpx columns vs which ones we touch and when (ie zero files)
-- should check_instr set keyword self.instrume?
 
 
 
