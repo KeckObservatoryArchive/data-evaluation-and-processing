@@ -388,7 +388,7 @@ class Instrument:
             #if fixed, then update 'INSTRUME' in header
             if ok:
                 self.set_keyword('INSTRUME', self.instr, 'KOA: Fixing missing INSTRUME keyword')
-                self.log.warning('set_instr: set INSTRUME-OBS value from FITS file time')
+                self.log.warning('set_instr: set missing INSTRUME value')
 
         #log err
         if (not ok):
