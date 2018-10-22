@@ -40,7 +40,7 @@ class Mosfire(instrument.Instrument):
 
         #todo: check that all of these do not need a subclass version if base class func was used.
         ok = True
-        if ok: ok = self.check_instr()
+        if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_utc()
         if ok: ok = self.set_elaptime()

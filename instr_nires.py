@@ -36,7 +36,7 @@ class Nires(instrument.Instrument):
         '''
 
         ok = True
-        if ok: ok = self.check_instr()
+        if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_utc()
         if ok: ok = self.set_elaptime()
