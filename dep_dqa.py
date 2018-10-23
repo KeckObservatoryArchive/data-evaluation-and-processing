@@ -221,7 +221,7 @@ def check_koapi_send(semids, utDate, log):
         if semid in processed: continue
 
         #check if we should update koapi_send
-        semester, progid = semid.split('_')
+        semester, progid = semid.upper().split('_')
         if progid == 'NONE' or progid == 'null' or progid == 'ENG' or progid == '':
             continue;
         if progid == None or semester == None:
