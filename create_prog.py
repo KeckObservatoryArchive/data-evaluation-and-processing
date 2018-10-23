@@ -122,7 +122,7 @@ def create_prog(instrObj):
                 ofile.write('PROGINST\n')
                 ofile.write('PROGTITL\n')
             else:
-                progname = progname.strip()
+                progname = progname.strip().upper()
                 ofile.write(progname + '\n')
 
                 # Get the viewing semester from obs-date
