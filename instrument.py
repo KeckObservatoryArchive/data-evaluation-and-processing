@@ -550,6 +550,9 @@ class Instrument:
             return False
 
         #create keywords
+        assert 'progid'   in data and data['progid'],   'Blank PROGID not allowed.'
+        assert 'proginst' in data and data['proginst'], 'Blank PROGINST not allowed.'
+        assert 'progpi'   in data and data['progpi'],   'Blank PROGPI not allowed.'
         self.set_keyword('PROGID'  , data['progid']  , 'KOA: Program ID')
         self.set_keyword('PROGINST', data['proginst'], 'KOA: Program institution')
         self.set_keyword('PROGPI'  , data['progpi']  , 'KOA: Program principal investigator')
