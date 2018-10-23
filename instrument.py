@@ -626,7 +626,7 @@ class Instrument:
 
 
         # Default to 18 for ENG data (***verify with SAs***)
-        progid = self.fitsHeader.get('PROGID')
+        progid = self.fitsHeader.get('PROGID').upper()
         if progid == 'ENG':
             propint = 18
         else:
