@@ -59,7 +59,7 @@ class Esi(instrument.Instrument):
 
         self.log.info('set_koaimtyp: setting KOAIMTYP keyword value')
 
-        koaimtyp = self.get_koaimtyp(self)
+        koaimtyp = self.get_koaimtyp()
 
         # Warn if undefined
         if koaimtyp == 'undefined':
@@ -93,10 +93,9 @@ class Esi(instrument.Instrument):
         lampne2 = self.get_keyword('LAMPNE2').lower()
         prismnam = self.get_keyword('PRISMNAM').lower()
         imfltnam = self.get_keyword('IMFLTNAM').lower()
-        idfltnam = self.get_keyword('IDFLTNAM').lower()
         axestat = self.get_keyword('AXESTAT').lower()
         domestat = self.get_keyword('DOMESTAT').lower()
-        el = self.get_keyword('EL').lower()
+        el = self.get_keyword('EL')
         dwfilnam = self.get_keyword('DWFILNAM').lower()
 
         # Hatch
@@ -138,7 +137,8 @@ class Esi(instrument.Instrument):
                     if not axeTracking and not domeTracking and flatPos: return 'focus'
                     if obstype == 'dmflat' and not axeTracking and not domeTracking and flatPos: return 'focus'
                     if obstype == 'dmflat' and not axeTracking and flatPos: return 'focus'
-            if prismnam == 'out' and infltnam == 'in' and ldfltnam == 'out': return 'focus'
+            idfltnam = self.get_keyword('IDFLTNAM').lower()
+            if prismnam == 'out' and infltnam == 'in' and idfltnam == 'out': return 'focus'
             if prismnam == 'in' and infltnam == 'out' and dwfilnam == 'clear_s': return 'focus'
         else:
             if not hatchOpen:
@@ -149,6 +149,6 @@ class Esi(instrument.Instrument):
                 if not axeTracking and not domeTracking and flatPos: return 'flatlamp'
                 if obstype == 'dmflat' and not axeTracking and not domeTracking: return 'flatlamp'
                 if obstype == 'dmflat' and not axeTracking and flatPos: return 'flatlamp'
-                if not lamp and not arc: return 'object'
+                if not flat and not arc: return 'object'
 
         return 'undefined'
