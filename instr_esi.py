@@ -116,9 +116,9 @@ class Esi(instrument.Instrument):
             arc = 1
 
         # Dome/Axes tracking
-        axeTracking = domeTracking = 1
-        if axestat == 'not tracking': axeTracking = 0
-        if domestat == 'not tracking': domeTracking = 0
+        axeTracking = domeTracking = 0
+        if axestat == 'tracking': axeTracking = 1
+        if domestat == 'tracking': domeTracking = 1
 
         # This is a trace or focus
         if 'hole' in slmsknam:
