@@ -545,5 +545,5 @@ WXPRESS	double	24	Y
 WXTIME	char	16	Y
 WXWNDIR	double	24	Y
 WXWNDSP	double	24	Y
-XOFFSET	integer	8	Y
-YOFFSET	integer	8	Y
+XOFFSET	double	24	Y
+YOFFSET	double	24	Y
