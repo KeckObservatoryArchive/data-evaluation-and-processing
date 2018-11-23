@@ -148,6 +148,7 @@ class Mosfire(instrument.Instrument):
 
         # Telescope and dome keyword values
         el = self.get_keyword('EL')
+        if not isinstance(el, float): el = 0.0
         domestat = self.get_keyword('DOMESTAT')
         axestat = self.get_keyword('AXESTAT')
 
