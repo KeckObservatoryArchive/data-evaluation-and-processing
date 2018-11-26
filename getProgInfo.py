@@ -219,7 +219,6 @@ class ProgSplit:
                             self.fileList[count]['progpi'] = 'ToO'
                             self.fileList[count]['progtitl'] = 'ToO'
                             garbage, progid = self.fileList[count][value].split('_ToO_')
-                            progid, garbage = sem.split('/')
                             progpi = self.get_prog_pi(self.semester, progid)
                             progtitl = self.get_prog_title(self.semester, progid)
                             self.fileList[count]['proginst'] = 'KECK'
