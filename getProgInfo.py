@@ -219,6 +219,7 @@ class ProgSplit:
                             self.fileList[count]['progpi'] = 'ToO'
                             self.fileList[count]['progtitl'] = 'ToO'
                             garbage, progid = self.fileList[count][value].split('_ToO_')
+#                            progid, garbage = sem.split('/')
                             progpi = self.get_prog_pi(self.semester, progid)
                             progtitl = self.get_prog_title(self.semester, progid)
                             self.fileList[count]['proginst'] = 'KECK'
@@ -315,12 +316,12 @@ class ProgSplit:
         req = url.urlopen(''.join((self.api, 'metrics.php?date=', self.utDate)))
         suntimes = req.read().decode()
         suntimes = json.loads(suntimes)
-        rise = suntimes['dawn_12deg']
-        sset = suntimes['dusk_12deg']
-        risHr, risMin, risSec = rise.split(':')
-        setHr, setMin, setSec = sset.split(':')
-        self.sunrise = float(risHr)+float(risMin)/60.0+float(risSec)/3600.0
-        self.sunset = float(setHr)+float(setMin)/60.0+float(setSec)/3600.0
+        rise = suntimes[0]['dawn_12deg']
+        sset = suntimes[0]['dusk_12deg']
+        risHr, risMin = rise.split(':')
+        setHr, setMin = sset.split(':')
+        self.sunrise = float(risHr)+float(risMin)/60.0/3600.0
+        self.sunset = float(setHr)+float(setMin)/60.0/3600.0
         self.splitTime = (self.sunrise+self.sunset)/2.0
 
 #------------------------------END GET SUN TIMES------------------------------------------------
