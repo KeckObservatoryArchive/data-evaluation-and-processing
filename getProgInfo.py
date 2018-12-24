@@ -12,7 +12,7 @@ import time
 import create_log as cl
 from common import url_get
 from dep_obtain import get_obtain_data
-
+from datetime import datetime, timedelta
 
 class ProgSplit:
     """
@@ -279,7 +279,7 @@ class ProgSplit:
         if (self.fileList[filenum]['progpi'] != 'PROGPI'
                 and self.fileList[filenum]['progpi'] != ''):
             return
-        num -= 1
+#        num -= 1
         save = ('oa', 'proginst', 'progpi', 'progid')
         if len(self.programs) == 1 and num == 1:
             num = 0
@@ -302,9 +302,14 @@ class ProgSplit:
         @type col: string
         @param col: the key for the value to extract from the database
         """
+
+        # Need to use HST
+        date = datetime.strptime(self.utDate, '%Y-%m-%d') + timedelta(days=-1)
+        date = date.strftime('%Y-%m-%d')
+
         telno = self.instrList[self.instrument]
         req = ''.join((self.api, 'telSchedule.php?cmd=getSchedule&date=',
-                str(self.utDate), '&telnr=', str(telno),
+                str(date), '&telnr=', str(telno),
                 '&instr=', self.instrument, '&column=', col))
         val = url.urlopen(req).read().decode()
         val = json.loads(val)
@@ -367,30 +372,32 @@ class ProgSplit:
 #--------------------- END GET PROG TITLE-----------------------------------------------
 
     def get_outdir(self, times, num_splits):
-        splitTimes = []
-        for split in times:
-            splitTimes.append((t.strptime(split['StartTime'], '%H:%M:%S').
-                t.strptime(split['EndTime'], '%H:%M:%S')))
-        for key, val in self.fileList:
+        splitTimes = {}
+        for key, split in enumerate(times):
+            splitTimes[key] = []
+            splitTimes[key].append(datetime.strptime(split['StartTime'], '%H:%M:%S'))
+            splitTimes[key].append(datetime.strptime(split['EndTime'], '%H:%M:%S'))
+        for val in self.fileList:
             splits = list(range(1,num_splits+1))
             fdir = self.fix_outdir(val['outdir'])
             eng = 0
-            for engname, name in self.engineering:
+            for engname, name in self.engineering.items():
                 if engname in fdir:
                     eng = 1
 
             # Add new outdirs to the outdir list
-            if fdir not in self.outdir and eng != 0 and fdir != '0':
+            if fdir not in self.outdir and eng == 0 and fdir != '0':
                 if 'fcs' in fdir:
                     continue
-                self.outdir.append([fdir, times['ProjCode']])
+                self.outdir.append(fdir)#[fdir, times['ProjCode']])
                 self.sciFiles[fdir] = {}
                 for index in splits:
                     self.sciFiles[fdir][index] = 0
             if val['imagetyp']=='object':
+                if not self.sciFiles[fdir]: self.sciFiles[fdir] = 0
+                thistime = datetime.strptime(val['utc'], '%H:%M:%S.%f')
                 for i in range(len(splitTimes)):
-                    if (splitTimes[i][0] <= t.strptime(val['utc'], '%H:%M:%S')
-                            < splitTimes[i][1]):
+                    if splitTimes[i][0] <= thistime and splitTimes[i][1] > thistime:
                         self.sciFiles[fdir][splits[i]] += 1
                         break
 
@@ -457,9 +464,16 @@ class ProgSplit:
         """
         if '/fcs' in outdir:
             outdir.replace('/fcs', '')
-        rep = ['/s/', '//', '/scam/', '/spec/', '/scam', '/spec']
-        for subdir in rep:
-            oudir = outdir.replace(subdir, '/')
+        rep = ['/s/', '/scam/', '/spec/', '/scam', '/spec', '//']
+        # This isn't working for some reason
+#        for subdir in rep:
+#            oudir = outdir.replace(subdir, '/')
+        outdir = outdir.replace('/s/', '/')
+        outdir = outdir.replace('/scam/', '/')
+        outdir = outdir.replace('/spec/', '/')
+        outdir = outdir.replace('/scam', '/')
+        outdir = outdir.replace('/spec', '/')
+        outdir = outdir.replace('//', '/')
         return outdir
 
 #-----------------------------END FIX SUBDIR--------------------------------
@@ -589,7 +603,7 @@ def getProgInfo(utdate, instrument, stageDir, log=None):
         progSplit.sort_by_time(codeStartEnd)
         progSplit.get_sun_times()
         progSplit.get_outdir(codeStartEnd, splitNight)
-        msg = ''.join(('getProgInfo: ', len(progSplit.outdir), ' OUTDIRs found'))
+        msg = ''.join(('getProgInfo: ', str(len(progSplit.outdir)), ' OUTDIRs found'))
         progSplit.log.info(msg)
 
         # Split the stuff
@@ -597,13 +611,15 @@ def getProgInfo(utdate, instrument, stageDir, log=None):
         for setNum in range(len(codeStartEnd)):
             # fileNum is the number of the file from createprog
             for fileNum in range(len(progSplit.fileList)):
+                outdirFix = progSplit.fileList[fileNum]['outdir'].replace('//', '/')
                 try:
-                    if progSplit.fileList[fileNum]['outdir'] == progSplit.outdir[setNum][0]:
+#                    if progSplit.fileList[fileNum]['outdir'] == progSplit.outdir[setNum]:
+                    if outdirFix == progSplit.outdir[setNum]:
                         progSplit.assign_single_to_pi(fileNum, setNum)
                 except KeyError:
-                    if (t.strptime(codeStartEnd[setNum]['StartTime'],'%H:%M:%S')
-                            <= t.strptime(progSplit.fileList[fileNum]['utc'],'%H:%M:%S')
-                            <= t.strptime(codeStartEnd[setNum]['EndTime'],'%H:%M:%S')):
+                    if (datetime.strptime(codeStartEnd[setNum]['StartTime'],'%H:%M:%S')
+                            <= datetime.strptime(progSplit.fileList[fileNum]['utc'],'%H:%M:%S')
+                            <= datetime.strptime(codeStartEnd[setNum]['EndTime'],'%H:%M:%S')):
                         progSplit.assign_single_to_pi(fileNum,setNum)
     else:
         print('No project code was found!!!')
