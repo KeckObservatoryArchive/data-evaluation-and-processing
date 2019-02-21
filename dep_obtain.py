@@ -42,7 +42,7 @@ def dep_obtain(instrObj):
                     oa = oaData['Alias']
             else:
                 for entry in oaData:
-                    if entry['Type'] == 'oa':
+                    if entry['Type'] == 'oa' or entry['Type'] == 'oar':
                         oa = entry['Alias']
 
         # Read the telescope schedul URL

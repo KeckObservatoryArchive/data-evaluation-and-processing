@@ -21,10 +21,10 @@ config.read('config.live.ini')
 
 parser = argparse.ArgumentParser(description='DEP input parameters')
 parser.add_argument('instr', type=str, help='Instrument name')
-parser.add_argument('utDate', type=str, nargs='?', default=None, help='UTC Date to search for FITS files in prior 24 hours.')
-parser.add_argument('tpx', type=int, nargs='?', default=1, help='Update TPX databse?')
-parser.add_argument('processStart', type=str, nargs='?', default=None, help='Name of process to start.  Default is "obtain"')
-parser.add_argument('processStop', type=str, nargs='?', default=None, help='Name of process to stop.  Default is "koaxfr"')
+parser.add_argument('utDate', type=str, nargs='?', default=None, help='UTC Date (yyyy-mm-dd) to search for FITS files in prior 24 hours. Default is current date.')
+parser.add_argument('tpx', type=int, nargs='?', default=0, help='Update TPX database?  [0, 1].  Default is 0.')
+parser.add_argument('processStart', type=str, nargs='?', default=None, help='Name of process to start at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "obtain".')
+parser.add_argument('processStop', type=str, nargs='?', default=None, help='Name of process to stop at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "koaxfr".')
 args = parser.parse_args()
 
 instr  = args.instr.upper()
@@ -37,7 +37,7 @@ pstop  = args.processStop
 
 if (utDate == None): utDate = datetime.utcnow().strftime('%Y-%m-%d')
 
-# Create and run Dep
+# Create and run Dep (wrap in try to catch any runtime errors and email them)
 
 try:
     dep = Dep(instr, utDate, config[instr]['ROOTDIR'], tpx)

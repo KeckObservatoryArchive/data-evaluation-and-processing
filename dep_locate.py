@@ -421,6 +421,11 @@ def find_24hr_fits(useDirs, utDate, endTime, modtimeOverride=0):
                      or modtimeOverride == 1):
                     filePaths.append(fullPath)
 
+    #sort all files by mod time
+    #NOTE: This is important for getProgInfo to assign programs for split nights
+    #(and ensuring latter duplicates are kicked out instead of first original)
+    filePaths.sort(key=lambda p: os.stat(p).st_mtime)
+
     return filePaths
 
 
