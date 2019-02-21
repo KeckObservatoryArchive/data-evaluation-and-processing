@@ -148,6 +148,10 @@ def dep_dqa(instrObj, tpx=0):
     metadata.make_metadata(keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log, dev=int(config['RUNTIME']['DEV']))    
 
 
+    #Create the extension files
+    make_fits_extension_metadata_files(dirs['lev0']+ '/', md5Prepend=utDateDir+'.', log=log)
+
+
     #Create yyyymmdd.FITS.md5sum.table
     md5Outfile = dirs['lev0'] + '/' + utDateDir + '.FITS.md5sum.table'
     log.info('dep_dqa.py creating {}'.format(md5Outfile))
@@ -198,6 +202,87 @@ def dep_dqa(instrObj, tpx=0):
 
     #log success
     log.info('dep_dqa.py DQA Successful for {}'.format(instr))
+
+
+def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits', log=None, md5Prepend=''):
+
+    #todo: put in warnings for empty ext headers
+
+
+    if log: log.info('dep_dqa.py: making FITS extension metadata files from dir: ' + inDir)
+
+    #outdir is indir?
+    if outDir == None: outDir = inDir
+
+    #remove existing *.ext*.table files and md5sum file
+    removeFilesByWildcard(outDir +'*.ext*.table')
+
+    #find all FITS files in inDir
+    filepaths = []
+    for file in sorted(os.listdir(inDir)):
+        if (file.endswith(endsWith)): 
+            filepaths.append(inDir + '/' + file)
+
+    #for each file, read extensions and write to file
+    hduNames = []
+    for filepath in filepaths:
+        file = os.path.basename(filepath)
+        hdus = fits.open(filepath)
+        for i in range(0, len(hdus)):
+            hdu = hdus[i]
+            if 'TableHDU' not in str(type(hdu)): continue;
+
+            #keep track of hdu names processed
+            if hdu.name not in hduNames: hduNames.append(hdu.name)
+
+            #calc col widths
+            dataStr = ''
+            colWidths = []
+            for idx, colName in enumerate(hdu.data.columns.names):
+                fmtWidth = int(hdu.data.formats[idx][1:])
+                colWidth = max(fmtWidth, len(colName))
+                colWidths.append(colWidth)
+
+            #add hdu name as comment
+            dataStr += '\ Header Name: ' + hdu.name + "\n"
+
+            #add header
+            #TODO: NOTE: Found that all ext data is stored as strings regardless of type it seems to hardcoding to 'char' for now.
+            for idx, cw in enumerate(colWidths):
+                dataStr += '|' + hdu.data.columns.names[idx].ljust(cw)
+            dataStr += "|\n"
+            for idx, cw in enumerate(colWidths):
+                dataStr += '|' + 'char'.ljust(cw)
+            dataStr += "|\n"
+            for idx, cw in enumerate(colWidths):
+                dataStr += '|' + ''.ljust(cw)
+            dataStr += "|\n"
+            for idx, cw in enumerate(colWidths):
+                dataStr += '|' + ''.ljust(cw)
+            dataStr += "|\n"
+
+            #add data rows
+            for j in range(0, len(hdu.data)):
+                row = hdu.data[j]
+                for idx, cw in enumerate(colWidths):
+                    valStr = row[idx]
+                    dataStr += '|' + valStr.ljust(cw)
+                dataStr += "|\n"
+
+            #write to outfile
+            #outFile = file.replace(endsWith, '.ext.' + hdu.name + '.table')
+            outFile = file.replace(endsWith, '.ext' + str(i) + '.table')
+            outFilepath = outDir + outFile
+            with open(outFilepath, 'w') as f:
+                f.write(dataStr)
+
+
+    #Create ext.md5sum.table
+    for hduName in hduNames:
+        search = ".ext." + hduName + ".table"
+        md5Outfile = outDir + '/' + md5Prepend + 'ext.' + hduName + '.md5sum.table'
+        if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
+        make_dir_md5_table(outDir, search, md5Outfile)
 
 
 

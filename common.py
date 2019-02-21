@@ -5,7 +5,7 @@ import urllib
 import json
 from send_email import send_email
 import configparser
-
+import glob
 
 
 def get_root_dirs(rootDir, instr, utDate):
@@ -49,6 +49,12 @@ def make_dir_md5_table(readDir, endswith, outfile):
         for file in files:
             md5 = hashlib.md5(open(file, 'rb').read()).hexdigest()
             fp.write(md5 + '  ' + os.path.basename(file) + "\n")
+
+
+
+def removeFilesByWildcard(wildcardPath):
+    for file in glob.glob(wildcardPath):
+        os.remove(file)
 
 
 
