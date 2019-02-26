@@ -604,12 +604,13 @@ def getProgInfo(utdate, instrument, stageDir, log=None, test=False):
     if test: fname += '.TEST'
     with open(fname, 'w') as ofile:
         for progfile in progSplit.fileList:
-            line = ''.join((progfile['file'], ' ',
-                            progfile['outdir'], ' ',
-                            progfile['proginst'],' ',
-                            progfile['progid'], ' ',
-                            progfile['progpi'], ' ',
-                            progfile['progtitl'], '\n'))
+            line =         progfile['file']
+            line += "\t" + progfile['outdir']
+            line += "\t" + progfile['proginst']
+            line += "\t" + progfile['progid']
+            line += "\t" + progfile['progpi']
+            line += "\t" + progfile['progtitl']
+            line += "\n"
             ofile.writelines(line)
 
     #return data written for convenience
