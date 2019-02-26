@@ -191,8 +191,8 @@ NAXIS2	integer	16	Y
 NPIXSAT	integer	16	N
 NUMREADS	integer	8	Y
 OA	char	32	Y
-OBSERVER	char	32	Y
-OUTDIR	char	64	Y
+OBSERVER	char	68	Y
+OUTDIR	char	68	Y
 OUTPTMP1	double	24	Y
 OUTPTMP2	double	24	Y
 PARANG	double	16	Y
