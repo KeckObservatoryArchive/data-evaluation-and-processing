@@ -60,7 +60,7 @@ def dep_obtain(instrObj):
                 fp.write('{} not scheduled'.format(instrObj.instr))
 
             with open(obtainFile, 'w') as fp:
-                fp.write('{} {} NONE NONE NONE NONE NONE'.format(hstDate, oa))
+                fp.write("{}\t{}\tNONE\tNONE\tNONE\tNONE\tNONE".format(hstDate, oa))
 
         # Entries found: Create stageDir/dep_obtainINSTR.txt
 
@@ -77,8 +77,8 @@ def dep_obtain(instrObj):
                     else                           : observers = 'None'
 
                     if num > 0: fp.write('\n')
-                    fp.write('{} {} {} {} {} {} {}'.format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
-                    log.info('dep_obtain: {} {} {} {} {} {} {}'.format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
+                    fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}".format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
+                    log.info("dep_obtain: {}\t{}\t{}\t{}\t{}\t{}\t{}".format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
 
                     num += 1
 
@@ -102,11 +102,13 @@ def get_obtain_data(file):
         return
 
     #read each line and create key-value pair rows from col list names
+    #NOTE: splitting by tabs is new format method, but we handle old spaces case too
     data = []
     cols = ['utdate', 'oa','account', 'proginst', 'progpi', 'progid', 'observer']
     with open(file, 'r') as rfile:
         for line in rfile:
-            vals = line.strip().split(' ')
+            if "\t" in line: vals = line.strip().split("\t")
+            else           : vals = line.strip().split(' ')
             row = {}
             for i in range(0, len(cols)):
                 row[cols[i]] = vals[i]
