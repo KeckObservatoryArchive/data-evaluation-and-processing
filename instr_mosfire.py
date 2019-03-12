@@ -26,6 +26,7 @@ class Mosfire(instrument.Instrument):
 
         # Other vars that subclass can overwrite
         self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
+        self.keywordSkips   = ['B\d+STAT', 'B\d+POS']
 
 
         # Generate the paths to the NIRES datadisk accounts
