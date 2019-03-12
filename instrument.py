@@ -30,7 +30,7 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 
 class Instrument:
-    def __init__(self, instr, utDate, rootDir, log=None):
+    def __init__(self, instr, utDate, config, log=None):
         """
         Base Instrument class to hold all the values common between
         instruments. Contains default values where possible
@@ -41,17 +41,17 @@ class Instrument:
         @type instr: string
         @param utDate: UT date of observation
         @type utDate: string (YYYY-MM-DD)
-        @param rootDir: root directory to write processed files
-        @type rootDir: string
+        @param config: config object containing configration variables
+        @type config: config object
         @type log: Logger Object
         @param log: The log handler for the script. Writes to the logfile
         """
 
         #class inputs
-        self.rootDir    = rootDir
-        self.instr      = instr
-        self.utDate     = utDate
-        self.log        = log
+        self.instr    = instr
+        self.utDate   = utDate
+        self.config   = config
+        self.log      = log
 
 
         # Keyword values to be used with a FITS file during runtime
@@ -78,6 +78,7 @@ class Instrument:
         self.koaid          = ''
         self.sdataList      = []
         self.extraMeta      = {}
+        self.keywordSkips   = []
 
         #init fits specific vars
         self.fitsHdu        = None
@@ -86,6 +87,7 @@ class Instrument:
 
 
         #other helpful vars
+        self.rootDir = self.config[self.instr]['ROOTDIR']
         self.utDateDir = self.utDate.replace('/', '-').replace('-', '')
 
 
@@ -96,7 +98,7 @@ class Instrument:
 
 
 
-    def dep_init(self, config, fullRun=True):
+    def dep_init(self, fullRun=True):
         '''
         Perform specific initialization tasks for DEP processing.
         '''
@@ -105,10 +107,9 @@ class Instrument:
         
 
         #store config
-        self.config = config
-        self.koaUrl = config['API']['KOAAPI']
-        self.telUrl = config['API']['TELAPI']
-        self.metadataTablesDir = config['MISC']['METADATA_TABLES_DIR']
+        self.koaUrl = self.config['API']['KOAAPI']
+        self.telUrl = self.config['API']['TELAPI']
+        self.metadataTablesDir = self.config['MISC']['METADATA_TABLES_DIR']
 
 
         #create log if it does not exist
@@ -505,6 +506,7 @@ class Instrument:
         #Returns the OUTDIR associated with the filename, else returns None.
         #OUTDIR = [/s]/sdata####/account/YYYYmmmDD
         #todo: do we want to update header?
+        #todo: should we look for '/s/' and subtract one from index?
         try:
             filename = self.fitsFilepath
             start = filename.find('/s')
@@ -549,13 +551,20 @@ class Instrument:
             self.log.warning('set_prog_info: Could not get program info.  UDF!')
             return False
 
-        #create keywords
-        assert 'progid'   in data and data['progid'],   'Blank PROGID not allowed.'
-        assert 'proginst' in data and data['proginst'], 'Blank PROGINST not allowed.'
-        assert 'progpi'   in data and data['progpi'],   'Blank PROGPI not allowed.'
+        #create keywords, deal with blank/undefined vals
+        assert 'progid'   in data and data['progid'],   'PROGID not found.'
+        assert 'progpi'   in data and data['progpi'],   'PROGPI not found.'
+        assert 'proginst' in data and data['proginst'], 'PROGINST not found.'
+        assert 'progtitl' in data and data['progtitl'], 'PROGTITLPI not found.'
+
+        if data['progid']   == 'PROGID'  : data['progid']   = 'NONE'
+        if data['progpi']   == 'PROGPI'  : data['progpi']   = 'NONE'
+        if data['proginst'] == 'PROGINST': data['proginst'] = 'NONE'
+        if data['progtitl'] == 'PROGTITL': data['progtitl'] = ''
+
         self.set_keyword('PROGID'  , data['progid']  , 'KOA: Program ID')
-        self.set_keyword('PROGINST', data['proginst'], 'KOA: Program institution')
         self.set_keyword('PROGPI'  , data['progpi']  , 'KOA: Program principal investigator')
+        self.set_keyword('PROGINST', data['proginst'], 'KOA: Program institution')
 
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:50]
@@ -667,11 +676,7 @@ class Instrument:
         '''
         Adds DQA version keyword to header
         '''
-        import configparser
-        config = configparser.ConfigParser()
-        config.read('config.live.ini')
-
-        version = config['INFO']['DEP_VERSION']
+        version = self.config['INFO']['DEP_VERSION']
         self.set_keyword('DQA_VERS', version, 'KOA: Data quality assess code version')
         return True
 
