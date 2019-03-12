@@ -20,6 +20,7 @@ import metadata
 import re
 import hashlib
 import configparser
+from astropy.io import fits
 
 
 def dep_dqa(instrObj, tpx=0):
@@ -145,7 +146,9 @@ def dep_dqa(instrObj, tpx=0):
     ymd = utDate.replace('-', '')
     metaOutFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
     keywordsDefFile = tablesDir + '/keywords.format.' + instr
-    metadata.make_metadata(keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log, dev=int(config['RUNTIME']['DEV']))    
+    metadata.make_metadata( keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log, 
+                            dev=int(config['RUNTIME']['DEV']),
+                            instrKeywordSkips=instrObj.keywordSkips)    
 
 
     #Create the extension files
@@ -205,7 +208,9 @@ def dep_dqa(instrObj, tpx=0):
 
 
 def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits', log=None, md5Prepend=''):
-
+    '''
+    Creates IPAC ASCII formatted data files for any extended header data found.
+    '''
     #todo: put in warnings for empty ext headers
 
 
@@ -230,7 +235,7 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
         hdus = fits.open(filepath)
         for i in range(0, len(hdus)):
             hdu = hdus[i]
-            if 'TableHDU' not in str(type(hdu)): continue;
+            if 'TableHDU' not in str(type(hdu)): continue
 
             #keep track of hdu names processed
             if hdu.name not in hduNames: hduNames.append(hdu.name)

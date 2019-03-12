@@ -1,15 +1,10 @@
 #-------------------------------------------------------------------------------
-# dep.py instr utDate rootDir [tpx]
+# dep.py instr utDate [tpx]
 #
 # This is the backbone process for KOA operations at WMKO.
 #
 # instr = Instrument name (e.g. HIRES)
 # utDate = UT date of observation (YYYY-MM-DD)
-# rootDir = Root directory for output and staging files (e.g. /koadata99)
-#
-# Directories created:
-#   stage directory = rootDir/stage/instr/utDate
-#   output directory = rootDir/instr/utDate/[anc,lev0,lev1]
 #
 #-------------------------------------------------------------------------------
 
@@ -37,29 +32,34 @@ class Dep:
     @type instr: string
     @param utDate: UT date of observation
     @type utDate: string (YYYY-MM-DD)
-    @param rootDir: root directory to write processed files
-    @type rootDir: string
     """
-    def __init__(self, instr, utDate, rootDir, tpx=0):
+    def __init__(self, instr, utDate, tpx=0, configArgs=[]):
         """
         Setup initial parameters.
         Create instrument object.
         """
         self.instr = instr.upper()
         self.utDate = utDate
-        self.rootDir = rootDir
         self.tpx = tpx
         if self.tpx != 1: self.tpx = 0
-        
+
+        #parse config file
         self.config = configparser.ConfigParser()
         self.config.read('config.live.ini')
+
+        #config args?
+        for c in configArgs:
+            section = c['section']
+            key     = c['key']
+            val     = c['val']
+            self.config[section][key] = val
 
         # Create instrument object
         moduleName = ''.join(('instr_', self.instr.lower()))
         className = self.instr.capitalize()
         module = importlib.import_module(moduleName)
         instrClass = getattr(module, className)
-        self.instrObj = instrClass(self.instr, self.utDate, self.rootDir)
+        self.instrObj = instrClass(self.instr, self.utDate, self.config)
         
         
     def go(self, processStart=None, processStop=None):
@@ -79,7 +79,7 @@ class Dep:
 
         # Init DEP process (verify inputs, create the logger and create directories)
         # NOTE: A full run assert fails if dirs exist, otherwise assumes you know what you are doing.
-        self.instrObj.dep_init(self.config, fullRun)
+        self.instrObj.dep_init(fullRun)
 
 
         #check koa for existing entry

@@ -4,63 +4,98 @@
 
 
 ===BUGS===
+- [DONE?] Need to change staging output files to use tab-sep so we can deal with institution names like 'Notre Dame'.  Also 'van Dokkum' for PI name in dep_obtain, etc (see mosfire 2019-02-24)
 - Is WX/weather keywords broken?  getting nulls on MOSFIRE test.
 - Do we need NIRES ls -d commands in cron?
 
 
+===Improve Useability===
+- Improve command line help, defaults.
+- convenience prompt for dir removal and tpx removal if running manually?
+- Processing instructions for sub-steps (ie just running make_fits_extension_metadata_files)
+
+
+===CIT===
+- Create test directory with collection of sample FITS files and corresponding "gold standard" DEP output for comparison.
+- Create test script to validate DEP against sample FITS test directory.
+
+
 ===MISC===
+- Make more functions as independent processing steps.
+- DEP look for optional semid in progid?  (ie 2019A_C123)
 - add to nires spreadsheet?  Should we add these or ignore?: DISPNAME2, SCRIPTNAME, SCRIPTDIR, WIDTH, HEIGHT, XPOS, YPOS, ROIMAXDIM
 - How do we keep track of sdata dirs.?  A: These are added by Jchock and we aren't necessarily notified.  Need better system.
 - make get_dir_list more readable (use glob function?) (just list them) (put in config)
 - Q: Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?  Possibly not.
-- CIT: Create test directory with collection of sample FITS files and corresponding "gold standard" DEP output for comparison.
-- CIT: Create test script to validate DEP against sample FITS test directory.
 - Should 24-hour cutoff hour be a config/input and not hard-coded into instrument class?
 - Add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
 - metadata.py needs a warning for header keywords found that are not in metadata definition file.
-- convenience prompt for dir removal and tpx removal if running manually?
 - uber cron to ensure all instruments processing ran and completed?
 - review all koatpx columns vs which ones we touch and when (ie zero files)
-
+- Should a make_jpg failure result in UDF?
+- DATE-OBS: I created a check_keyword_dateobs function based on a dateobs check in create_prog.  But I see other, more extensive checks, like in the semester() function.  
+- Check correctness of NIRES processing of old data for NIRES instr splits? (2018-09-22, 2018-11-25)
+- How do we deal with the fact that if calib data is taken after DEP runs the next morning, that it will get assigned to the wrong program if PROGNAME is not in the header?  
+- What do we do when it gets assigned to NONE?
 
 
 
 ===FULL KEYWORDS===
+
+>>> metadata.compare_meta_files(['/koadata21/MOSFIRE/20190121/lev0/20190121.metadata.table', '/koadata21/test/MOSFIRE/20190121/lev0/20190121.metadata.table'])
+WARN: value mismatch: koaid "MF.20190121.14021.fits": col "PROGID": (0)"C329" != (1)"C292"
+
+[
+WARN: value mismatch: koaid "MF.20190121.12381.fits": col "PROGID": (0)"C329" != (1)"C292"
+m190121_0175.fits MF.20190121.12381.fits
+]
+
+- Found an instance where current DEP dropped a file in the dqa step but it wasn't put in udf (m190118_0003.fits MF.20190118.07090.fits).  Error in koalog was "KOAID could not be created".  New DEP kept it:
+>>> metadata.compare_meta_files(['/koadata21/MOSFIRE/20190118/lev0/20190118.metadata.table', '/koadata21/test/MOSFIRE/20190118/lev0/20190118.metadata.table'])
+WARN: CANNOT FIND KOAID "MF.20190118.07090.fits" in MD0
+
 - MOSFIRE:
+ -- spot check processing some old data (1 per month)
+   -- gather this data now /net/storageserver/koastorage02/MOSFIRE
+ -- Q: stage data only goes back to 2015 for mosfire
+ -- investigate no data in some ext headers
+ -- will order of ext headers be reliable or should we use name instead?
+ -- See spreadsheet where Chris marked which ones to remove.
+ -- Grep for "could not determine KOAIMTYP" in logs.
  -- Add extended header tables to text file in lev0 dir.
+ -- ??? OBSERVER      char    72      Y
  -- Fix data type issues in spreadsheet from metadata warnings
  -- Search old DEP for MOSFIRE specific code
+ -- See processing for 2018-12-23: Problems with PROGID, PROGINST, detecting split night, getproginfo, etc ( see compare)
+ -- Need to re-process ALL MOSFIRE runs.
+ -- Should we leave program assignment as it is in old processed data? and/or just do a compare after every run?
+
 - Create Python util to compare metadata.format.<instr> keywords list to headers from all past data.  Report on keywords found in one but not in the other.
 - Need util to search headers from all past data and report distinct values for a particular keyword.
-- Q: What about HDU secondary headers?
 - order of work: NIRES, MOSFIRE, (NIRSPEC?), DEIMOS, ESI
 - Don't forget WCS, slitmask plot and additional keywords from Mihseh (email).
 
+MOSFIRE data from 2012 has these extra keywords:
+
+GRPSDONE=                    2 / Groups actually completed in this coadd        
+TIME-OBS= '21:34:26.953'       / UT start time of exposure                      
+TIME-END= '21:34:33.718'       / UT end time of exposure (after last read)      
 
 
 
 ===LOW PRIORITY===
-- send IPAC a pyServer demo code
 - look at old Missing Data tables usage
 - sort metadata by timestamp? (currently sorted by KOAID which has 'NR'/'NI' prefix sort first)
 - get rid of dqa info statements everywhere
 - convert all tab indentation to spaces
 - metadata graph demo with Pyviz + jupyter notebook
 - rename graveyard/ to old/
-
-
-
-===QUESTIONS===
-- Should a make_jpg failure result in UDF?
-- DATE-OBS: I created a check_keyword_dateobs function based on a dateobs check in create_prog.  But I see other, more extensive checks, like in the semester() function.  
+- Improve logging and reporting more.
 
 
 
 ===IDEAS===
-- Improve logging and reporting more.
 - Rename dep_tar to dep_package.  Move fits gzip step to dep_package (but this would make koatpx.size incorrect so move that to dep_package as well).
-- Runtime option to auto remove stage/run dirs and remove tpx entry?
-- Clean up stage/fits files?
 - Move dep.check_koa_db_entry() to koaxfr.py so that we can always run DEP up to that point? (see koaxfrSetup.php)
 - Pull out metadata from DQA so it can be run as independent step after DQA? 
 - change back to instrument.py and subclasses as a service class (ie not holding current fits file etc)
@@ -70,3 +105,16 @@
 - have log raise exception on log.error?
 - global singleton log object?
 
+
+
+===Processing Notes===
+
+How to run DEP on test data:
+- Copy fits data to a test directory (use -p option to preserve timestamps)
+- Clone DEP from git
+- Create config.live.ini
+ -- Edit ROOTDIR to point to your output directory for these test runs.
+ -- Edit LOCATE_DIR to point to the test directory to search for FITS files
+ -- Edit ADMIN_EMAIL to go to you.
+ -- Optional: If you don't have appropriate timestamps on the fits files, turn on LOCATE_MODTIME_OVERRIDE.
+- Run DEP with TPX flag off and up to tar step (don't koaxfr): python dep_go.py MOSFIRE 2019-01-20 0 obtain tar

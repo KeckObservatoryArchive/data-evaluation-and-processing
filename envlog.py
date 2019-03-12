@@ -55,7 +55,14 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 	#
 	if 'UNIXDate' in data.keys():
 		hstKeys = ['HSTdate', 'HSTtime']
-		keys = [' "k0:met:dewpointRaw"', ' "k0:met:humidityRaw"', ' "k0:met:tempRaw"', ' "k'+telnr+':met:tempRaw"', ' "k'+telnr+':met:humidityRaw"', ' "k0:met:pressureRaw"', ' "k'+telnr+':met:windSpeedRaw"', ' "k'+telnr+':met:windAzRaw"']
+		keys = [' "k0:met:dewpointRaw"', 
+				' "k0:met:humidityRaw"', 
+				' "k0:met:tempRaw"', 
+				' "k'+telnr+':met:tempRaw"', 
+				' "k'+telnr+':met:humidityRaw"', 
+				' "k0:met:pressureRaw"', 
+				' "k'+telnr+':met:windSpeedRaw"', 
+				' "k'+telnr+':met:windAzRaw"']
 		if logType == 'envFocus':
 			keys = [' "k'+telnr+':dcs:pnt:cam0:fwhm"']
 	else:
@@ -100,7 +107,7 @@ def envlog(logFile, logType, telnr, dateObs, utc):
 		try:
 #			value = float(round(data[key][envIndex[0]], 2))
 			value = float("%0.2f" % float(data[key][envIndex[0]]))
-		except ValueError:
+		except (ValueError, KeyError):
 			value = 'null'
 		values[output[index]] = value
 

@@ -12,26 +12,33 @@ import os
 baseCodeDir = sys.argv[0].replace('dep_go.py', '')
 if (baseCodeDir != ""): os.chdir(baseCodeDir)
 
-# Parse the configuration file
-
-config = configparser.ConfigParser()
-config.read('config.live.ini')
-
-# Input parameters
+# Define Input parameters
 
 parser = argparse.ArgumentParser(description='DEP input parameters')
-parser.add_argument('instr', type=str, help='Instrument name')
-parser.add_argument('utDate', type=str, nargs='?', default=None, help='UTC Date (yyyy-mm-dd) to search for FITS files in prior 24 hours. Default is current date.')
-parser.add_argument('tpx', type=int, nargs='?', default=0, help='Update TPX database?  [0, 1].  Default is 0.')
-parser.add_argument('processStart', type=str, nargs='?', default=None, help='Name of process to start at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "obtain".')
-parser.add_argument('processStop', type=str, nargs='?', default=None, help='Name of process to stop at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "koaxfr".')
-args = parser.parse_args()
+parser.add_argument('instr'			, type=str, 							help='Instrument name')
+parser.add_argument('utDate'		, type=str, nargs='?', default=None, 	help='UTC Date (yyyy-mm-dd) to search for FITS files in prior 24 hours. Default is current date.')
+parser.add_argument('tpx'			, type=int, nargs='?', default=0, 	 	help='Update TPX database?  [0, 1].  Default is 0.')
+parser.add_argument('procStart'		, type=str, nargs='?', default=None, 	help='(OPTIONAL) Name of process to start at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "obtain".')
+parser.add_argument('procStop'		, type=str, nargs='?', default=None, 	help='(OPTIONAL) Name of process to stop at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "koaxfr".')
+parser.add_argument('--searchDir'	, type=str, nargs='?', const=None, 		help='(OPTIONAL) Directory to search (recursively) for FITS files.  Default search dirs are defined in instrument class files.')
+parser.add_argument('--reprocess'	, type=str, nargs='?', const=None, 		help='(OPTIONAL) Set to "1" to indicate reprocessing old data (skips certain locate/search checks)')
+parser.add_argument('--modtimeOverride'	, type=str, nargs='?', const=None, 	help='(OPTIONAL) Set to "1" to ignore modtime on files during FITS locate search.')
 
+# Get input params
+
+args = parser.parse_args()
 instr  = args.instr.upper()
 utDate = args.utDate
 tpx    = args.tpx
-pstart = args.processStart
-pstop  = args.processStop
+pstart = args.procStart
+pstop  = args.procStop
+
+# Get Config overrides
+
+configArgs = []
+if args.searchDir      : configArgs.append({'section':'LOCATE', 'key':'SEARCH_DIR', 		'val': args.searchDir})
+if args.reprocess      : configArgs.append({'section':'LOCATE', 'key':'REPROCESS', 			'val': args.reprocess})
+if args.modtimeOverride: configArgs.append({'section':'LOCATE', 'key':'MODTIME_OVERRIDE',	'val': args.modtimeOverride})
 
 # Use the current UT date if none provided
 
@@ -40,7 +47,7 @@ if (utDate == None): utDate = datetime.utcnow().strftime('%Y-%m-%d')
 # Create and run Dep (wrap in try to catch any runtime errors and email them)
 
 try:
-    dep = Dep(instr, utDate, config[instr]['ROOTDIR'], tpx)
+    dep = Dep(instr, utDate, tpx=tpx, configArgs=configArgs)
     dep.go(pstart, pstop)
 except Exception as error:
     msg = traceback.format_exc()

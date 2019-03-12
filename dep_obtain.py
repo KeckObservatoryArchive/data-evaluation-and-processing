@@ -1,6 +1,8 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime as dt, timedelta
 from common import url_get
+import subprocess
+
 
 def dep_obtain(instrObj):
     """
@@ -18,9 +20,15 @@ def dep_obtain(instrObj):
 
     # Get HST from utDate
 
-    utDateObj = datetime.strptime(instrObj.utDate, '%Y-%m-%d')
+    utDateObj = dt.strptime(instrObj.utDate, '%Y-%m-%d')
     hstDateObj = utDateObj - timedelta(days=1)
     hstDate = hstDateObj.strftime('%Y-%m-%d')
+
+    # Check if we should run old dep_obtain
+
+    if dt.strptime(instrObj.utDate, "%Y-%m-%d") <= dt.strptime("2018-01-01", "%Y-%m-%d"):
+        run_old_dep_obtain(instrObj.instr, hstDate, instrObj.utDate, instrObj.dirs['stage'])
+        return
 
     # Output files
 
@@ -87,6 +95,18 @@ def dep_obtain(instrObj):
         return False
 
     return True
+
+
+
+def run_old_dep_obtain(instr, hstDate, utDate, stageDir):
+    '''
+    For dates before 2018-01-01, we have to run the old PHP version since new database does not contain data before then
+    '''
+
+    cmd = "dep_obtain.php " + instr + ' ' + hstDate.replace('-', '/') + ' ' + utDate.replace('-', '/') + ' ' + stageDir
+    print ("Running dep_obtain command: ", cmd)
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    script_response = proc.stdout.read()
 
 
 
