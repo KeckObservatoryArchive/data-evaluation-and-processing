@@ -6,6 +6,7 @@
 
 #TODO: add more code documentation
 #TODO: add more asserts/logging
+#TODO: change this to a class?
 
 """
 
@@ -22,7 +23,7 @@ import pandas as pd
 
 
 
-def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=None, dev=False):
+def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=None, dev=False, instrKeywordSkips=[]):
     """
     Creates the archiving metadata file as part of the DQA process.
 
@@ -86,7 +87,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
                 if filename in extraData: extra = extraData[filename]
 
                 log.info("Creating metadata record for: " + fitsFile)
-                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, dev)
+                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, dev, instrKeywordSkips)
 
 
     #create md5 sum
@@ -103,7 +104,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
 
 
 
-def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, dev):
+def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, dev, instrKeywordSkips):
     """
     Adds a line to metadata file for one FITS file.
     """
@@ -112,7 +113,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
     header = fits.getheader(fitsFile)
 
     #check keywords
-    check_keyword_existance(header, keyDefs, log, dev)
+    check_keyword_existance(header, keyDefs, log, dev, instrKeywordSkips)
 
     #write all keywords vals for image to a line
     with open(metaOutFile, 'a') as out:
@@ -140,7 +141,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
  
 
 
-def check_keyword_existance(header, keyDefs, log, dev=False):
+def check_keyword_existance(header, keyDefs, log, dev=False, instrKeywordSkips=[]):
 
     #get simple list of keywords
     keyDefList = []
@@ -148,9 +149,9 @@ def check_keyword_existance(header, keyDefs, log, dev=False):
         keyDefList.append(row['keyword'])        
 
     #find all keywords in header that are not in metadata file
-    skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3']
+    skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3'] + instrKeywordSkips
     for keywordHdr in header:
-        if keywordHdr not in keyDefList and keywordHdr not in skips:
+        if keywordHdr not in keyDefList and not is_keyword_skip(keywordHdr, skips):
             log_msg(log, dev, 'metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
 
     #find all keywords in metadata def file that are not in header
@@ -235,6 +236,12 @@ def check_keyword_val(keyword, val, fmt, warns, log=None, dev=False):
 
     return val
 
+
+def is_keyword_skip(keyword, skips):
+    for pattern in skips:
+        if re.search(pattern, keyword):
+            return True
+    return False
 
 
 def log_msg (log, dev, msg):
@@ -323,10 +330,12 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
         for koaid in compareKoaids:
             row0 = baseDf[baseDf['KOAID'] == koaid].iloc[0]
             row1 = df[df['KOAID'] == koaid].iloc[0]
-
             for col in compareCols:
                 val0 = row0[col]
                 val1 = row1[col]
+
+                if pd.isnull(val0): val0 = ''
+                if pd.isnull(val1): val1 = ''
 
                 if col == 'RA' or col == 'DEC':
                     val0 = "{:.2f}".format(float(val0))
