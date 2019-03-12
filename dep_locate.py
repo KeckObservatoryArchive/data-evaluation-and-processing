@@ -21,7 +21,10 @@ import os
 import shutil
 from sys import argv
 from datetime import datetime as dt, timedelta
-import configparser
+import gzip
+import shutil
+import subprocess
+
 
 
 def dep_locate(instrObj, tpx=0):
@@ -44,14 +47,9 @@ def dep_locate(instrObj, tpx=0):
     stageDir = instrObj.dirs['stage']
 
 
-    ##config for CIT
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
-
-
     #Find sdata dirs list. Return if none found.
-    if ('LOCATE_DIR' in config['CIT']): useDirs = [config['CIT']['LOCATE_DIR']]
-    else                              : useDirs = instrObj.get_dir_list()
+    if ('SEARCH_DIR' in instrObj.config['LOCATE']): useDirs = [instrObj.config['LOCATE']['SEARCH_DIR']]
+    else                                          : useDirs = instrObj.get_dir_list()
     if len(useDirs) == 0:
         log.warning('Did not find any sdata directories')
         return
@@ -65,8 +63,7 @@ def dep_locate(instrObj, tpx=0):
 
     # Find the files in the last 24 hours
     log.info('Looking for FITS files in {}'.format(useDirs))
-    modtimeOverride = 0
-    if ('LOCATE_MODTIME_OVERRIDE' in config['CIT']): modtimeOverride = int(config['CIT']['LOCATE_MODTIME_OVERRIDE'])
+    modtimeOverride = int(instrObj.config['LOCATE']['MODTIME_OVERRIDE']) if 'MODTIME_OVERRIDE' in instrObj.config['LOCATE'] else 0
     filePaths = find_24hr_fits(useDirs, instrObj.utDate, instrObj.endTime, modtimeOverride)
 
 
@@ -115,8 +112,9 @@ def dep_locate(instrObj, tpx=0):
 
 
     # Verify the files are valid - no corrupt headers, valid KOAID
+    isReprocess = int(instrObj.config['LOCATE']['REPROCESS']) if 'REPROCESS' in instrObj.config['LOCATE'] else 0
     locateFile = stageDir +'/dep_locate' + instr + '.txt'
-    dep_rawfiles(instr, utDate, presort2File, locateFile, ancDir, log)
+    dep_rawfiles(instr, utDate, presort2File, locateFile, ancDir, isReprocess, log)
 
 
     #log completion with count
@@ -153,7 +151,7 @@ def copy_file(source, destination):
         shutil.copy2(source, destination)
 
 
-def dep_rawfiles(instr, utDate, inFile, outFile, ancDir, log):
+def dep_rawfiles(instr, utDate, inFile, outFile, ancDir, isReprocess, log):
     """
     This function will remove empty, corrupt, and non-raw fits files
     and create a new outFile list.
@@ -186,57 +184,59 @@ def dep_rawfiles(instr, utDate, inFile, outFile, ancDir, log):
         for line in ffiles:
             fitsList.append(line.strip())
 
-    # Initialize lists with the number of fits files found
-    lsize = len(fitsList)
-    raw = [0]*lsize
-
     # Check the validity of each fits file (raw[i]=1 means good file)
-    for i in range(lsize):
-        raw[i] = 0
+    goodFiles = []
+    for i in range(len(fitsList)):
 
-        # check for empty file
-        if (os.path.getsize(fitsList[i]) == 0):
-            copy_bad_file(instr, fitsList[i], ancDir, 'Empty File', log)
-            continue
+        #only do these checks if not a reprocessing job
+        if not isReprocess:
 
-        # Get fits header (check for bad header)
-        try:
-            if instr == 'NIRC2':
-                header0 = fits.getheader(fitsList[i], ignore_missing_end=True)
-                header0['INSTRUME'] = 'NIRC2'
-            else:
-                header0 = fits.getheader(fitsList[i])
-        except:
-            copy_bad_file(instr, fitsList[i], ancDir, 'Unreadable Header', log)
-            continue
+          # check for empty file
+          if (os.path.getsize(fitsList[i]) == 0):
+              copy_bad_file(instr, fitsList[i], ancDir, 'Empty File', log)
+              continue
 
-        # Construct the original file name
-        filename, successful = construct_filename(instr, fitsList[i], ancDir, header0, log)
-        if not successful:
-            copy_bad_file(instr, fitsList[i], ancDir, 'Bad Header', log)
-            continue
+          # Get fits header (check for bad header)
+          try:
+              if instr == 'NIRC2':
+                  header0 = fits.getheader(fitsList[i], ignore_missing_end=True)
+                  header0['INSTRUME'] = 'NIRC2'
+              else:
+                  header0 = fits.getheader(fitsList[i])
+          except:
+              copy_bad_file(instr, fitsList[i], ancDir, 'Unreadable Header', log)
+              continue
 
-        # Make sure constructed filename matches basename.
-        basename = os.path.basename(fitsList[i])
-        if filename != basename:
-            copy_bad_file(instr, fitsList[i], ancDir, 'Mismatched filename', log)
-            continue
+          # Construct the original file name
+          filename, successful = construct_filename(instr, fitsList[i], ancDir, header0, log)
+          if not successful:
+              copy_bad_file(instr, fitsList[i], ancDir, 'Bad Header', log)
+              continue
 
-        #else good file!
-        else:
-            raw[i] = 1
+          # Make sure constructed filename matches basename.
+          basename = os.path.basename(fitsList[i])
+          if filename != basename:
+              print ("BAD: ", filename, basename)
+              copy_bad_file(instr, fitsList[i], ancDir, 'Mismatched filename', log)
+              continue
+
+        #if we make it here, it is a good good file!
+        goodFiles.append(fitsList[i])
+
+
+    #look for .gz fits to unzip
+    for i in range(len(goodFiles)):
+      filepath = goodFiles[i]
+      targetDir = os.path.dirname(filepath)
+      if filepath.endswith('.fits.gz'):
+            output = subprocess.Popen(['gunzip', filepath])
+            goodFiles[i] = filepath.replace(".fits.gz", ".fits")
 
 
     # Create final dqa_<instr>.txt file with only the good lines from dep_locateINSTR.txt
-    with open(inFile, 'r') as fhIn:
-      lines = fhIn.readlines()
     with open(outFile, 'w') as fhOut:
-        for line in lines:
-            if line.strip() in fitsList:
-                num = fitsList.index(line.strip())
-                if raw[num] == 1:
-                    fhOut.write(line)
-
+        for line in goodFiles:
+            fhOut.write(line+ '\n')
 
 #------------------END RAWFILES-----------------------------
 
@@ -417,8 +417,7 @@ def find_24hr_fits(useDirs, utDate, endTime, modtimeOverride=0):
                 # Check to see if the file is a fits file created/modified in the last day. 
                 # st_mtime needs to be greater than the minTimeSinceMod to be within the past 24 hours
                 modTime = os.stat(fullPath).st_mtime
-                if ( (modTime <= maxTimeSinceMod and modTime > minTimeSinceMod)
-                     or modtimeOverride == 1):
+                if ( (modTime <= maxTimeSinceMod and modTime > minTimeSinceMod) or modtimeOverride == 1):
                     filePaths.append(fullPath)
 
     #sort all files by mod time
