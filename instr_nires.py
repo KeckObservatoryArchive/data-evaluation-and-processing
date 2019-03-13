@@ -267,7 +267,7 @@ class Nires(instrument.Instrument):
 
         #warn if undefined
         if (koaimtyp == 'undefined'):
-            self.log.warning('set_koaimtyp: Could not determine KOAIMTYP from OBSTYPE value of "' + obstype + '"')
+            self.log.info('set_koaimtyp: Could not determine KOAIMTYP from OBSTYPE value of "' + obstype + '"')
 
         #update keyword
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')

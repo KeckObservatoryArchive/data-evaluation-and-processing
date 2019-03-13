@@ -566,6 +566,10 @@ class Instrument:
         self.set_keyword('PROGPI'  , data['progpi']  , 'KOA: Program principal investigator')
         self.set_keyword('PROGINST', data['proginst'], 'KOA: Program institution')
 
+        #extra warning for log
+        if data['progid'] == 'NONE':
+            self.log.warning('set_prog_info: PROGID is NONE for ' + self.fitsFilepath)
+
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:50]
         progtl2 = data['progtitl'][50:100]
@@ -642,9 +646,8 @@ class Instrument:
             #create url and get data
             url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
             data = url_get(url, getOne=True)
-#            assert (data and  data['propint']), 'set_proprint: Unable to set PROPINT keyword.'
             if not data:
-                self.log.warning('set_propint: PROPINT not found for ' + semid + ' and ' + self.utDate + ', defaulting to 18 months')
+                self.log.info('set_propint: PROPINT not found for ' + semid + ' and ' + self.utDate + ', defaulting to 18 months')
                 propint = 18
             else:
                 propint = int(data['propint'])
