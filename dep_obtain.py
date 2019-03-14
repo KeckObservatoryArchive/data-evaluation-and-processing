@@ -21,13 +21,13 @@ def dep_obtain(instrObj):
     # Get HST from utDate
 
     utDateObj = dt.strptime(instrObj.utDate, '%Y-%m-%d')
-    hstDateObj = utDateObj - timedelta(days=1)
-    hstDate = hstDateObj.strftime('%Y-%m-%d')
+    prevDateObj = utDateObj - timedelta(days=1)
+    prevDate = prevDateObj.strftime('%Y-%m-%d')
 
     # Check if we should run old dep_obtain
 
     if dt.strptime(instrObj.utDate, "%Y-%m-%d") <= dt.strptime("2018-01-01", "%Y-%m-%d"):
-        run_old_dep_obtain(instrObj.instr, hstDate, instrObj.utDate, instrObj.dirs['stage'])
+        run_old_dep_obtain(instrObj.instr, prevDate, instrObj.utDate, instrObj.dirs['stage'], log)
         return
 
     # Output files
@@ -40,7 +40,7 @@ def dep_obtain(instrObj):
         # Get OA
 
         telnr = instrObj.get_telnr()
-        oaUrl = ''.join((instrObj.telUrl, 'cmd=getNightStaff', '&date=', hstDate, '&telnr=', str(telnr), '&type=oa'))
+        oaUrl = ''.join((instrObj.telUrl, 'cmd=getNightStaff', '&date=', prevDate, '&telnr=', str(telnr), '&type=oa'))
         log.info('dep_obtain: retrieving night staff info: {}'.format(oaUrl))
         oaData = get_api_data(oaUrl)
         oa = 'None'
@@ -57,7 +57,7 @@ def dep_obtain(instrObj):
         # No entries found: Create stageDir/dep_notschedINSTR.txt and dep_obtainINSTR.txt
 
         instrBase = 'NIRSP' if (instrObj.instr == 'NIRSPEC') else instrObj.instr
-        schedUrl = ''.join((instrObj.telUrl, 'cmd=getSchedule', '&date=', hstDate, '&instr=', instrBase))
+        schedUrl = ''.join((instrObj.telUrl, 'cmd=getSchedule', '&date=', prevDate, '&instr=', instrBase))
         log.info('dep_obtain: retrieving telescope schedule info: {}'.format(schedUrl))
         schedData = get_api_data(schedUrl)
         if schedData and isinstance(schedData, dict): schedData = [schedData]
@@ -68,7 +68,7 @@ def dep_obtain(instrObj):
                 fp.write('{} not scheduled'.format(instrObj.instr))
 
             with open(obtainFile, 'w') as fp:
-                fp.write("{}\t{}\tNONE\tNONE\tNONE\tNONE\tNONE".format(hstDate, oa))
+                fp.write("{}\t{}\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE".format(prevDate, oa))
 
         # Entries found: Create stageDir/dep_obtainINSTR.txt
 
@@ -78,15 +78,30 @@ def dep_obtain(instrObj):
                 for entry in schedData:
 
                     if entry['Account'] == '': entry['Account'] = '-'
-                    obsUrl = ''.join((instrObj.telUrl, 'cmd=getObservers', '&schedid=', entry['SchedId']))
+
+                    obsUrl = instrObj.telUrl + 'cmd=getObservers' + '&schedid=' + entry['SchedId']
                     log.info('dep_obtain: retrieving observers info: {}'.format(obsUrl))
                     obsData = get_api_data(obsUrl)
                     if obsData and len(obsData) > 0: observers = obsData[0]['Observers']
                     else                           : observers = 'None'
 
                     if num > 0: fp.write('\n')
-                    fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}".format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
-                    log.info("dep_obtain: {}\t{}\t{}\t{}\t{}\t{}\t{}".format(hstDate, oa, entry['Account'], entry['Institution'], entry['Principal'], entry['ProjCode'], observers))
+
+                    line = ''
+                    line += prevDate
+                    line += "\t" + oa
+                    line += "\t" + entry['Account']
+                    line += "\t" + entry['Institution']
+                    line += "\t" + entry['Principal']
+                    line += "\t" + entry['ProjCode']
+                    line += "\t" + observers
+                    line += "\t" + entry['StartTime']
+                    line += "\t" + entry['EndTime']
+                    line += "\t" + entry['Instrument']
+                    line += "\t" + entry['TelNr']
+
+                    fp.write(line) 
+                    log.info("dep_obtain: " + line)
 
                     num += 1
 
@@ -98,13 +113,13 @@ def dep_obtain(instrObj):
 
 
 
-def run_old_dep_obtain(instr, hstDate, utDate, stageDir):
+def run_old_dep_obtain(instr, prevDate, utDate, stageDir, log):
     '''
     For dates before 2018-01-01, we have to run the old PHP version since new database does not contain data before then
     '''
 
-    cmd = "dep_obtain.php " + instr + ' ' + hstDate.replace('-', '/') + ' ' + utDate.replace('-', '/') + ' ' + stageDir
-    print ("Running dep_obtain command: ", cmd)
+    cmd = "/kroot/archive/dep/obtain/5-1-0/dep_obtain.php " + instr + ' ' + prevDate.replace('-', '/') + ' ' + utDate.replace('-', '/') + ' ' + stageDir
+    log.info("Running old dep_obtain.php: " + cmd)
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     script_response = proc.stdout.read()
 
@@ -124,14 +139,14 @@ def get_obtain_data(file):
     #read each line and create key-value pair rows from col list names
     #NOTE: splitting by tabs is new format method, but we handle old spaces case too
     data = []
-    cols = ['utdate', 'oa','account', 'proginst', 'progpi', 'progid', 'observer']
+    cols = ['utdate', 'oa','account', 'proginst', 'progpi', 'progid', 'observer', 'starttime', 'endtime', 'instrument', 'telnr']
     with open(file, 'r') as rfile:
         for line in rfile:
             if "\t" in line: vals = line.strip().split("\t")
             else           : vals = line.strip().split(' ')
             row = {}
             for i in range(0, len(cols)):
-                row[cols[i]] = vals[i]
+                row[cols[i]] = vals[i] if (i < len(vals)) else None
             data.append(row)
             del row
 
