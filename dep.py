@@ -126,6 +126,11 @@ class Dep:
             self.check_step_results(step)
 
 
+        #special metadata compare report for reprocessing?
+        if self.config['MISC']['META_COMPARE_DIR']: 
+            self.do_meta_compare()
+
+
         #email completion report
         if fullRun: self.do_process_report_email()
 
@@ -233,6 +238,27 @@ class Dep:
             if not os.path.exists(file):
                 self.do_fatal_error(step, 'Process post-check: ' + file + " not found!")
                 break
+
+
+    def do_meta_compare(self):
+
+        dirs = self.instrObj.dirs
+        utDateDir = self.instrObj.utDateDir
+
+        files = []
+        files.append(self.config['MISC']['META_COMPARE_DIR'] + '/lev0/' + utDateDir + '.metadata.table')
+        files.append(dirs['lev0'] + '/' + utDateDir + '.metadata.table')
+
+        import metadata
+        results = metadata.compare_meta_files(files , skipColCompareWarn=True)
+        if not results:
+            self.instrObj.log.error("Could not compare files: " + str(files))
+            return
+        else:
+            for result in results:
+                self.instrObj.log.info(result['compare'])
+                for warn in result['warnings']:
+                    self.instrObj.log.warning(warn)
 
 
     def do_process_report_email(self):
