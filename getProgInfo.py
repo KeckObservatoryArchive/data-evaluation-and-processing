@@ -32,7 +32,7 @@ import json
 import urllib.request as url
 import time
 import create_log as cl
-from common import url_get
+from common import get_api_data
 from dep_obtain import get_obtain_data
 from datetime import datetime, timedelta
 import re
@@ -300,16 +300,18 @@ class ProgSplit:
         req = self.api + 'telSchedule.php?cmd=getSchedule'
         req += '&date=' + str(date)
         req += '&instr=' + self.instrument
-        self.programs = url_get(req)
+        self.programs = get_api_data(req)
 
 #---------------------------------- END GET SCHEDULE VALUE------------------------------------
 
     def get_sun_times(self):
-        req = url.urlopen(''.join((self.api, 'metrics.php?date=', self.utDate)))
-        suntimes = req.read().decode()
-        suntimes = json.loads(suntimes)
-        rise = suntimes[0]['dawn_12deg']
-        sset = suntimes[0]['dusk_12deg']
+        url = self.api + 'metrics.php?date=' + self.utDate
+        suntimes = get_api_data(url, getOne=True)
+        if not suntimes:
+            self.log.error('getProgInfo: Could not get sun times via API call: ', url)
+            return
+        rise = suntimes['dawn_12deg']
+        sset = suntimes['dusk_12deg']
         risHr, risMin = rise.split(':')
         setHr, setMin = sset.split(':')
         self.sunrise = float(risHr)+float(risMin)/60.0
@@ -351,7 +353,7 @@ class ProgSplit:
 
         semid = sem + '_' + progid
         req = self.api + 'koa.php?cmd=getTitle&semid=' + semid
-        title = url_get(req, getOne=True)
+        title = get_api_data(req, getOne=True)
         if (title == None or 'progtitl' not in title): 
             self.log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
             return 'NONE'
@@ -372,7 +374,7 @@ class ProgSplit:
 
         semid = sem + '_' +progid
         req = self.api + 'koa.php?cmd=getPI&semid=' + semid
-        pi = url_get(req, getOne=True)
+        pi = get_api_data(req, getOne=True)
         if (pi == None or 'pi_lastname' not in pi): 
             self.log.warning('get_prog_pi: Could not find program PI for semid "{}"'.format(semid))
             return 'NONE'

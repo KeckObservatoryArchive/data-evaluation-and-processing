@@ -58,7 +58,7 @@ def removeFilesByWildcard(wildcardPath):
 
 
 
-def url_get(url, getOne=False):
+def get_api_data(url, getOne=False, isJson=True):
     '''
     Gets data for common calls to url API requests.
 
@@ -68,7 +68,7 @@ def url_get(url, getOne=False):
     try:
         data = urllib.request.urlopen(url)
         data = data.read().decode('utf8')
-        data = json.loads(data)
+        if isJson: data = json.loads(data)
 
         if (getOne and len(data) > 0):
             data = data[0]
@@ -125,24 +125,19 @@ def update_koatpx(instr, utDate, column, value, log=''):
     import hashlib
     myHash = hashlib.md5(user.encode('utf-8')).hexdigest()
 
-    # Database access URL
+    # Create database access URL
 
-    url = config['API']['koaapi']
-    sendUrl = ('cmd=updateTPX&instr=', instr.upper())
-    sendUrl = sendUrl + ('&utdate=', utDate.replace('/', '-'), '&')
-    sendUrl = sendUrl + ('column=', column, '&value=', value.replace(' ', '+'))
-    sendUrl = ''.join(sendUrl)
+    sendUrl = config['API']['koaapi']
+    sendUrl += 'cmd=updateTPX&instr=' + instr.upper()
+    sendUrl += '&utdate=' + utDate.replace('/', '-') + '&'
+    sendUrl += 'column=' + column + '&value=' + value.replace(' ', '+')
+    sendUrl += '&hash=' + myHash
+    if log: log.info('update_koatpx {} - {}'.format(user, sendUrl))
 
-    if log:
-        log.info('update_koatpx {} - {}'.format(user, sendUrl))
-
-    sendUrl = ''.join((url, sendUrl, '&hash=', myHash))
-
-    data = urllib.request.urlopen(sendUrl)
-    data = data.read().decode('utf8')       # Convert from byte to ascii
-    if data == 'false':
-        if log:
-            log.warning('update_koatpx failed! URL: ' + sendUrl)
+    # Call URL and check result 
+    data = get_api_data(sendUrl)
+    if not data:
+        if log: log.error('update_koatpx failed! URL: ' + sendUrl)
         return False
     return True
 

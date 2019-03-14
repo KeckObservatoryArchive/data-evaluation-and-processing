@@ -249,7 +249,7 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
                 colWidths.append(colWidth)
 
             #add hdu name as comment
-            dataStr += '\ Header Name: ' + hdu.name + "\n"
+            dataStr += '\ Extended Header Name: ' + hdu.name + "\n"
 
             #add header
             #TODO: NOTE: Found that all ext data is stored as strings regardless of type it seems to hardcoding to 'char' for now.
@@ -283,11 +283,18 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
 
 
     #Create ext.md5sum.table
-    for hduName in hduNames:
-        search = ".ext." + hduName + ".table"
-        md5Outfile = outDir + '/' + md5Prepend + 'ext.' + hduName + '.md5sum.table'
+    for i in range(0, len(hdus)):
+        hdu = hdus[i]
+        if 'TableHDU' not in str(type(hdu)): continue
+        search = ".ext" + str(i) + ".table"
+        md5Outfile = outDir + '/' + md5Prepend + 'ext' + str(i) + '.md5sum.table'
         if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
         make_dir_md5_table(outDir, search, md5Outfile)
+    # for hduName in hduNames:
+    #     search = ".ext." + hduName + ".table"
+    #     md5Outfile = outDir + '/' + md5Prepend + 'ext.' + hduName + '.md5sum.table'
+    #     if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
+    #     make_dir_md5_table(outDir, search, md5Outfile)
 
 
 
@@ -326,9 +333,9 @@ def check_koapi_send(semids, utDate, log):
 
         #call and check results
         log.info('check_koapi_send: calling koa api url: {}'.format(url))
-        result = url_get(url)
+        result = get_api_data(url)
         if result == None or result == 'false':
-            log.warning('check_koapi_send failed')
+            log.error('check_koapi_send failed')
 
         processed.append(semid)
 
