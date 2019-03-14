@@ -15,14 +15,15 @@ if (baseCodeDir != ""): os.chdir(baseCodeDir)
 # Define Input parameters
 
 parser = argparse.ArgumentParser(description='DEP input parameters')
-parser.add_argument('instr'			, type=str, 							help='Instrument name')
-parser.add_argument('utDate'		, type=str, nargs='?', default=None, 	help='UTC Date (yyyy-mm-dd) to search for FITS files in prior 24 hours. Default is current date.')
-parser.add_argument('tpx'			, type=int, nargs='?', default=0, 	 	help='Update TPX database?  [0, 1].  Default is 0.')
-parser.add_argument('procStart'		, type=str, nargs='?', default=None, 	help='(OPTIONAL) Name of process to start at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "obtain".')
-parser.add_argument('procStop'		, type=str, nargs='?', default=None, 	help='(OPTIONAL) Name of process to stop at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "koaxfr".')
-parser.add_argument('--searchDir'	, type=str, nargs='?', const=None, 		help='(OPTIONAL) Directory to search (recursively) for FITS files.  Default search dirs are defined in instrument class files.')
-parser.add_argument('--reprocess'	, type=str, nargs='?', const=None, 		help='(OPTIONAL) Set to "1" to indicate reprocessing old data (skips certain locate/search checks)')
-parser.add_argument('--modtimeOverride'	, type=str, nargs='?', const=None, 	help='(OPTIONAL) Set to "1" to ignore modtime on files during FITS locate search.')
+parser.add_argument('instr'         , type=str,                             help='Instrument name')
+parser.add_argument('utDate'        , type=str, nargs='?', default=None,    help='UTC Date (yyyy-mm-dd) to search for FITS files in prior 24 hours. Default is current date.')
+parser.add_argument('tpx'           , type=int, nargs='?', default=0,       help='Update TPX database?  [0, 1].  Default is 0.')
+parser.add_argument('procStart'     , type=str, nargs='?', default=None,    help='(OPTIONAL) Name of process to start at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "obtain".')
+parser.add_argument('procStop'      , type=str, nargs='?', default=None,    help='(OPTIONAL) Name of process to stop at. ["obtain", "locate", "add", "dqa", "lev1", "tar", "koaxfr"]. Default is "koaxfr".')
+parser.add_argument('--searchDir'   , type=str, nargs='?', const=None,      help='(OPTIONAL) Directory to search (recursively) for FITS files.  Default search dirs are defined in instrument class files.')
+parser.add_argument('--reprocess'   , type=str, nargs='?', const=None,      help='(OPTIONAL) Set to "1" to indicate reprocessing old data (skips certain locate/search checks)')
+parser.add_argument('--modtimeOverride' , type=str, nargs='?', const=None,  help='(OPTIONAL) Set to "1" to ignore modtime on files during FITS locate search.')
+parser.add_argument('--metaCompareDir'  , type=str, nargs='?', const=None,  help='(OPTIONAL) Directory to use for special metadata compare report for reprocessing old data.')
 
 # Get input params
 
@@ -33,12 +34,13 @@ tpx    = args.tpx
 pstart = args.procStart
 pstop  = args.procStop
 
-# Get Config overrides
+# Get Config args
 
 configArgs = []
-if args.searchDir      : configArgs.append({'section':'LOCATE', 'key':'SEARCH_DIR', 		'val': args.searchDir})
-if args.reprocess      : configArgs.append({'section':'LOCATE', 'key':'REPROCESS', 			'val': args.reprocess})
-if args.modtimeOverride: configArgs.append({'section':'LOCATE', 'key':'MODTIME_OVERRIDE',	'val': args.modtimeOverride})
+if args.searchDir      : configArgs.append({'section':'LOCATE', 'key':'SEARCH_DIR',         'val': args.searchDir})
+if args.reprocess      : configArgs.append({'section':'LOCATE', 'key':'REPROCESS',          'val': args.reprocess})
+if args.modtimeOverride: configArgs.append({'section':'LOCATE', 'key':'MODTIME_OVERRIDE',   'val': args.modtimeOverride})
+if args.metaCompareDir : configArgs.append({'section':'MISC',   'key':'META_COMPARE_DIR',   'val': args.metaCompareDir})
 
 # Use the current UT date if none provided
 

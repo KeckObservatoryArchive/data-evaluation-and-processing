@@ -270,6 +270,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
     Takes an array of filepaths to metadata output files and compares them all to 
     the first metadata file in a smart manner.
     '''
+    results = []
 
     #columns we always skip value check
     skips = ['DQA_DATE', 'DQA_VERS']
@@ -282,6 +283,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
     dfs = []
     for filepath in filepaths:
         data = load_metadata_file_as_df(filepath)
+        if not data: return False
         dfs.append(data)
 
     #compare all to first df in list
@@ -289,20 +291,25 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
     baseColList = baseDf.columns.tolist()
     for i, df in enumerate(dfs):
         if i == 0: continue
-        print ('==> comparing (0){} to ({}){}:'.format(baseDf.name, i, df.name))
+
+        result = {}
+        result['compare'] = '==> comparing (0){} to ({}){}:'.format(baseDf.name, i, df.name)
+        result['warnings'] = []
 
         #basic two-way column name compare
         colList = df.columns.tolist()
         for col in colList:
             if col not in baseColList:
                 if col not in skips:
-                    if not skipColCompareWarn: print ('WARN: MD{} col "{}" not in MD0 col list.'.format(i, col))
+                    if not skipColCompareWarn: 
+                        result.warnings.append('WARN: MD{} col "{}" not in MD0 col list.'.format(i, col))
             else:
                 if col not in compareCols: compareCols.append(col)
         for col in baseColList:
             if col not in colList:
                 if col not in skips:
-                    if not skipColCompareWarn: print ('WARN: MD0 col "{}" not in MD{} col list.'.format(col, i))
+                    if not skipColCompareWarn: 
+                        result.warnings.append('WARN: MD0 col "{}" not in MD{} col list.'.format(col, i))
             else:
                 if col not in compareCols: compareCols.append(col)
 
@@ -312,7 +319,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             koaid = row['KOAID']
             baseRow = baseDf[baseDf['KOAID'] == koaid]
             if baseRow.empty: 
-                print ('WARN: CANNOT FIND KOAID "{}" in MD0'.format(koaid))
+                result.warnings.append('WARN: CANNOT FIND KOAID "{}" in MD0'.format(koaid))
                 continue
             else:
                 if koaid not in compareKoaids: compareKoaids.append(koaid)
@@ -321,7 +328,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             koaid = baseRow['KOAID']
             row = df[df['KOAID'] == koaid]
             if row.empty: 
-                print ('WARN: CANNOT FIND KOAID "{}" in MD{}'.format(koaid, i))
+                result.warnings.append('WARN: CANNOT FIND KOAID "{}" in MD{}'.format(koaid, i))
                 continue
             else:
                 if koaid not in compareKoaids: compareKoaids.append(koaid)
@@ -342,11 +349,17 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
                     val1 = "{:.2f}".format(float(val1))
 
                 if val0 != val1:
-                    print ('WARN: value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
+                    result.warnings.append('WARN: value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
+
+        results.append(result)
+
+    return results
 
 
 
 def load_metadata_file_as_df(filepath):
+
+    if not os.path.isfile(filepath): return False
 
     with open(filepath) as f:
 
