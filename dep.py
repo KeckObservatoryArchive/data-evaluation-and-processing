@@ -127,7 +127,7 @@ class Dep:
 
 
         #special metadata compare report for reprocessing?
-        if self.config['MISC']['META_COMPARE_DIR']: 
+        if 'META_COMPARE_DIR' in self.config['MISC']: 
             self.do_meta_compare()
 
 
