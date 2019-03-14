@@ -1,6 +1,6 @@
 import os
 from datetime import datetime as dt, timedelta
-from common import url_get
+from common import get_api_data
 import subprocess
 
 
@@ -42,7 +42,7 @@ def dep_obtain(instrObj):
         telnr = instrObj.get_telnr()
         oaUrl = ''.join((instrObj.telUrl, 'cmd=getNightStaff', '&date=', hstDate, '&telnr=', str(telnr), '&type=oa'))
         log.info('dep_obtain: retrieving night staff info: {}'.format(oaUrl))
-        oaData = url_get(oaUrl)
+        oaData = get_api_data(oaUrl)
         oa = 'None'
         if oaData:
             if isinstance(oaData, dict):
@@ -59,7 +59,7 @@ def dep_obtain(instrObj):
         instrBase = 'NIRSP' if (instrObj.instr == 'NIRSPEC') else instrObj.instr
         schedUrl = ''.join((instrObj.telUrl, 'cmd=getSchedule', '&date=', hstDate, '&instr=', instrBase))
         log.info('dep_obtain: retrieving telescope schedule info: {}'.format(schedUrl))
-        schedData = url_get(schedUrl)
+        schedData = get_api_data(schedUrl)
         if schedData and isinstance(schedData, dict): schedData = [schedData]
         if not schedData:
             log.info('dep_obtain: no telescope schedule info found for {}'.format(instrObj.instr))
@@ -80,7 +80,7 @@ def dep_obtain(instrObj):
                     if entry['Account'] == '': entry['Account'] = '-'
                     obsUrl = ''.join((instrObj.telUrl, 'cmd=getObservers', '&schedid=', entry['SchedId']))
                     log.info('dep_obtain: retrieving observers info: {}'.format(obsUrl))
-                    obsData = url_get(obsUrl)
+                    obsData = get_api_data(obsUrl)
                     if obsData and len(obsData) > 0: observers = obsData[0]['Observers']
                     else                           : observers = 'None'
 

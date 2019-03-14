@@ -645,7 +645,7 @@ class Instrument:
         else:
             #create url and get data
             url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
-            data = url_get(url, getOne=True)
+            data = get_api_data(url, getOne=True)
             if not data:
                 self.log.info('set_propint: PROPINT not found for ' + semid + ' and ' + self.utDate + ', defaulting to 18 months')
                 propint = 18
@@ -794,7 +794,7 @@ class Instrument:
         '''
 
         url = self.telUrl + 'cmd=getTelnr&instr=' + self.instr.upper()
-        data = url_get(url, getOne=True)
+        data = get_api_data(url, getOne=True)
         telNr = int(data['TelNr'])
         assert telNr in [1, 2], 'telNr "' + telNr + '"" not allowed'
         return telNr

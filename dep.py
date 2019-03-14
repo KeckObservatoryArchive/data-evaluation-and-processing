@@ -146,7 +146,7 @@ class Dep:
         # Verify that there is no entry in koa.koatpx
         try:
             url = ''.join((self.instrObj.koaUrl, 'cmd=isInKoatpx&instr=', self.instr, '&utdate=', self.utDate))
-            data = url_get(url)
+            data = get_api_data(url)
             if data[0]['num'] != '0':
                 raise Exception('dep: entry already exists in database. EXITING!')
                 return False

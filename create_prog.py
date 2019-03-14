@@ -1,6 +1,7 @@
 from astropy.io import fits
 from urllib.request import urlopen
 from dep_obtain import get_obtain_data
+from common import *
 
 
 def create_prog(instrObj):
@@ -55,7 +56,6 @@ def create_prog(instrObj):
 
 
     # loop through files and add data to createprog.txt
-    badValues = ['Usage', 'error']
     outfile = stageDir + '/createprog.txt'
     with open(outfile, 'w') as ofile:
         for filename in fileList:
@@ -134,13 +134,14 @@ def create_prog(instrObj):
                 ktn = ''.join((sem, '_', progname))
 
                 # Get the program information from the program ID
-                progpi, proginst, progtitl = get_prog_info(ktn)                   
-                if any(x in progpi for x in badValues): ofile.write('PROGPI\n')
-                else                                  : ofile.write(progpi+'\n')
-                if any(x in proginst for x in badValues): ofile.write('PROGINST\n')
-                else                                    : ofile.write(proginst+'\n')
-                if any(x in progtitl for x in badValues): ofile.write('PROGTITL\n')
-                else                                    : ofile.write(progtitl+'\n')
+                badValues = ['Usage', 'error']
+                progpi, proginst, progtitl = get_prog_info(ktn, log)                   
+                if not progpi   or any(x in progpi   for x in badValues): ofile.write('PROGPI\n')
+                else                                                    : ofile.write(progpi+'\n')
+                if not proginst or any(x in proginst for x in badValues): ofile.write('PROGINST\n')
+                else                                                    : ofile.write(proginst+'\n')
+                if not progtitl or any(x in progtitl for x in badValues): ofile.write('PROGTITL\n')
+                else                                                    : ofile.write(progtitl+'\n')
 
             #write OA last
             ofile.write(oa + '\n')
@@ -148,7 +149,7 @@ def create_prog(instrObj):
     if log: log.info('create_prog: finished, {} created'.format(outfile))
 
 
-def get_prog_info(ktn):
+def get_prog_info(ktn, log):
     """
     Retrives the program PI, allocating institution,
     and title from the proposals database web API
@@ -157,13 +158,21 @@ def get_prog_info(ktn):
     @param ktn: the program ID - consists of semester and progname (ie 2017B_U428)
     """
     url = 'http://www.keck.hawaii.edu/software/db_api/proposalsAPI.php?ktn='+ktn+'&cmd='
-    progpi   = urlopen(url+'getPI').read().decode('utf8')
-    proginst = urlopen(url+'getAllocInst').read().decode('utf8')
-    progtitl = urlopen(url+'getTitle').read().decode('utf8')
+    progpi   = get_api_data(url+'getPI'       , isJson=False)
+    proginst = get_api_data(url+'getAllocInst', isJson=False)
+    progtitl = get_api_data(url+'getTitle'    , isJson=False)
 
     #remove whitespace from progpi str (this would mess up newproginfo.txt columns)
-    progpi = progpi.replace(' ','')
-    if (',' in progpi): 
-        progpi = progpi.split(',')[0]
+    #todo: whitespace is not an issue anymore; using tabs?
+    if progpi:
+        progpi = progpi.replace(' ','')
+        if (',' in progpi): progpi = progpi.split(',')[0]
+
+    if not progpi:
+        if log: log.error('create_prog: Unable to query API: ' + url+'getPI')
+    if not proginst:
+        if log: log.error('create_prog: Unable to query API: ' + url+'getAllocInst')
+    if not progtitl:
+        if log: log.error('create_prog: Unable to query API: ' + url+'getTitle')
 
     return progpi, proginst, progtitl
