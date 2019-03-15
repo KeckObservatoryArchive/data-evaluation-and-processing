@@ -68,7 +68,7 @@ def dep_obtain(instrObj):
                 fp.write('{} not scheduled'.format(instrObj.instr))
 
             with open(obtainFile, 'w') as fp:
-                fp.write("{}\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\t{}".format(prevDate, oa))
+                fp.write("{}\t{}\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE\tNONE".format(prevDate, oa))
 
         # Entries found: Create stageDir/dep_obtainINSTR.txt
 
@@ -89,16 +89,16 @@ def dep_obtain(instrObj):
 
                     line = ''
                     line += prevDate
+                    line += "\t" + oa
                     line += "\t" + entry['Account']
                     line += "\t" + entry['Institution']
                     line += "\t" + entry['Principal']
                     line += "\t" + entry['ProjCode']
+                    line += "\t" + observers
                     line += "\t" + entry['StartTime']
                     line += "\t" + entry['EndTime']
                     line += "\t" + entry['Instrument']
                     line += "\t" + entry['TelNr']
-                    line += "\t" + oa
-                    line += "\t" + observers
 
                     fp.write(line) 
                     log.info("dep_obtain: " + line)
@@ -139,7 +139,7 @@ def get_obtain_data(file):
     #read each line and create key-value pair rows from col list names
     #NOTE: splitting by tabs is new format method, but we handle old spaces case too
     data = []
-    cols = ['Date', 'Account', 'Institution', 'Principal', 'ProjCode', 'StartTime', 'EndTime', 'Instrument', 'TelNr', 'OA', 'Observer']
+    cols = ['Date', 'OA', 'Account', 'Institution', 'Principal', 'ProjCode', 'Observer', 'StartTime', 'EndTime', 'Instrument', 'TelNr']
     with open(file, 'r') as rfile:
         for line in rfile:
             if "\t" in line: vals = line.strip().split("\t")
