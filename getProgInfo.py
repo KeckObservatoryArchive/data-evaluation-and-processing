@@ -202,7 +202,7 @@ class ProgSplit:
 
 # ---------------- END READ FILE LIST--------------------------------------------------------
 
-    def assign_to_pi(self, num):
+   def assign_to_pi(self, num):
         """
         This method assigns program info to any file that does not already have assignment
 
@@ -211,8 +211,9 @@ class ProgSplit:
         """
 
         prog = self.programs[num]
+        self.log.info('getProgInfo: assign_to_pi: data: ' + str(prog))
 
-        for i in range(self.numFiles):
+        for i, tmpFile in enumerate(self.fileList):
 
             # If file already has PI, skip
             if self.fileList[i]['progpi'] != 'PROGPI':
@@ -228,7 +229,6 @@ class ProgSplit:
                 self.fileList[i]['progtitl'] = self.instrument + ' Engineering'
             else:
                 self.fileList[i]['progtitl'] = self.get_prog_title(self.semester, prog['ProjCode'])
-
 #--------------------------- END ASSIGN TO PI---------------------------------------------
 
     def assign_single_to_pi(self, filenum, num):
