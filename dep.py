@@ -55,9 +55,8 @@ class Dep:
             self.config[section][key] = val
 
         # Create instrument object
-        moduleName = ''.join(('instr_', self.instr.lower()))
         className = self.instr.capitalize()
-        module = importlib.import_module(moduleName)
+        module = importlib.import_module('instr_' + self.instr.lower())
         instrClass = getattr(module, className)
         self.instrObj = instrClass(self.instr, self.utDate, self.config)
         
@@ -99,7 +98,7 @@ class Dep:
 
 
         #process steps control (pair down ordered list if requested)
-        steps = ['obtain', 'locate', 'add', 'dqa', 'lev1', 'tar', 'koaxfr']
+        steps = ['obtain', 'locate', 'add', 'dqa', 'tar', 'koaxfr']
         if (processStart != None and processStart not in steps):
             raise Exception('Incorrect use of processStart: ' + processStart)
             return False
@@ -127,8 +126,7 @@ class Dep:
 
 
         #special metadata compare report for reprocessing?
-        if 'META_COMPARE_DIR' in self.config['MISC']: 
-            self.do_meta_compare()
+        if 'META_COMPARE_DIR' in self.config['MISC']: self.do_meta_compare()
 
 
         #email completion report
