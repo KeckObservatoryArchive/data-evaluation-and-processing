@@ -292,15 +292,13 @@ class ProgSplit:
 
     def get_programs(self):
 
-        # Need to use HST
-        date = datetime.strptime(self.utDate, '%Y-%m-%d') + timedelta(days=-1)
-        date = date.strftime('%Y-%m-%d')
+        """
+        This method obtains the data from the dep_obtain output file
+        """
 
-        # get programs from API
-        req = self.api + 'telSchedule.php?cmd=getSchedule'
-        req += '&date=' + str(date)
-        req += '&instr=' + self.instrument
-        self.programs = get_api_data(req)
+        obFile = self.stageDir + '/dep_obtain' + self.instrument + '.txt'
+        self.programs = get_obtain_data(obFile)
+
 
 #---------------------------------- END GET SCHEDULE VALUE------------------------------------
 
