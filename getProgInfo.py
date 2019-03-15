@@ -92,9 +92,7 @@ class ProgSplit:
         self.obsValues = []
         self.outdirs = {}
         self.programs = []
-        self.splitTime = 0.0
-        self.sunset = 0.0
-        self.sunrise = 0.0
+        self.suntimes = None
         self.semester = self.get_semester()
 
         #log
@@ -231,11 +229,6 @@ class ProgSplit:
             else:
                 self.fileList[i]['progtitl'] = self.get_prog_title(self.semester, prog['ProjCode'])
 
-            #still bad
-            if self.fileList[i]['progpi'] in ('PROGPI', '', 'NONE'):
-                pass
-                #todo: throw error/warn?
-
 #--------------------------- END ASSIGN TO PI---------------------------------------------
 
     def assign_single_to_pi(self, filenum, num):
@@ -280,43 +273,43 @@ class ProgSplit:
         self.log.warning('getProgInfo: assigning ' + file['file'] + ' by time')
 
         #look for program that file time falls within
-        for progIndex in range(len(self.programs)):
-            prog = self.programs[progIndex]
+        for idx in range(len(self.programs)):
+            prog = self.programs[idx]
+            if not prog['StartTime'] or not prog['EndTime']:
+                continue
             progStartTime = datetime.strptime(prog['StartTime'],'%H:%M')
             progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')
             if (progStartTime <= fileTime <= progEndTime):
-                self.assign_single_to_pi(filenum, progIndex)
+                self.assign_single_to_pi(filenum, idx)
                 break
 
 #---------------------------- END ASSIGN SINGLE BY TIME -------------------------------------------
 
     def get_programs(self):
 
-        # Need to use HST
-        date = datetime.strptime(self.utDate, '%Y-%m-%d') + timedelta(days=-1)
-        date = date.strftime('%Y-%m-%d')
+        """
+        This method obtains the data from the dep_obtain output file
+        """
 
-        # get programs from API
-        req = self.api + 'telSchedule.php?cmd=getSchedule'
-        req += '&date=' + str(date)
-        req += '&instr=' + self.instrument
-        self.programs = get_api_data(req)
+        obFile = self.stageDir + '/dep_obtain' + self.instrument + '.txt'
+        self.programs = get_obtain_data(obFile)
 
 #---------------------------------- END GET SCHEDULE VALUE------------------------------------
 
     def get_sun_times(self):
+        '''
+        Gets the sunrise and sunset times and calculates the two halves of the night
+        NOTE: We only bother with this because for legacy data, we did not have the start/end
+        times of the programs so we try to see which has the most data in either half.
+        This doesn't work in the rare case that there is a same instrument 3-way or more 
+        split because we couldn't predict if it was a 1/3,1/3,1/3 or a 1/2,1/4,1/4 etc.
+        '''
+
         url = self.api + 'metrics.php?date=' + self.utDate
-        suntimes = get_api_data(url, getOne=True)
-        if not suntimes:
+        self.suntimes = get_api_data(url, getOne=True)
+        if not self.suntimes:
             self.log.error('getProgInfo: Could not get sun times via API call: ', url)
             return
-        rise = suntimes['dawn_12deg']
-        sset = suntimes['dusk_12deg']
-        risHr, risMin = rise.split(':')
-        setHr, setMin = sset.split(':')
-        self.sunrise = float(risHr)+float(risMin)/60.0
-        self.sunset = float(setHr)+float(setMin)/60.0
-        self.splitTime = (self.sunrise+self.sunset)/2.0
 
 #------------------------------END GET SUN TIMES------------------------------------------------
 
@@ -387,10 +380,28 @@ class ProgSplit:
 
         #make array for easy time comparison
         splitTimes = {}
-        for key, split in enumerate(programs):
-            splitTimes[key] = []
-            splitTimes[key].append(datetime.strptime(split['StartTime'], '%H:%M'))
-            splitTimes[key].append(datetime.strptime(split['EndTime'], '%H:%M'))
+        isMissingTimes = False
+        for key, prog in enumerate(programs):
+
+            if not prog['StartTime'] or not prog['EndTime']:
+                isMissingTimes = True
+                sunset   = datetime.strptime(self.suntimes['sunset'], '%H:%M')
+                midpoint = datetime.strptime(self.suntimes['midpoint'], '%H:%M')
+                sunrise  = datetime.strptime(self.suntimes['sunrise'], '%H:%M')
+                t1 = sunset   if key == 0 else midpoint
+                t2 = midpoint if key == 0 else sunrise
+            else:
+                t1 = datetime.strptime(prog['StartTime'], '%H:%M')
+                t2 = datetime.strptime(prog['EndTime']  , '%H:%M')
+
+            splitTimes[key] = [t1, t2]
+        self.log.info('get_prog_pi: Split times: ' + str(splitTimes))
+
+
+        #throw an error if there are 3-way or more split and we don't have Start/End times
+        if len(programs) > 2 and isMissingTimes:
+            self.log.error('get_prog_pi: Three or more programs found this night but no Start/End time info found!!!')
+
 
         #Get list of unique outdirs from file list and keep count of where the science files are
         self.outdirs = {}
@@ -411,7 +422,7 @@ class ProgSplit:
                 self.outdirs[fdir] = data 
 
             #if image type is object, increment count for which program time range it falls within
-            if file['imagetyp'] == 'object':
+            if file['imagetyp'] == 'object' or True:
                 thistime = datetime.strptime(file['utc'], '%H:%M:%S.%f')
                 for i in range(len(splitTimes)):
                     if splitTimes[i][0] <= thistime and splitTimes[i][1] > thistime:
@@ -543,20 +554,26 @@ class ProgSplit:
 
 #-----------------------------END FIX SUBDIR--------------------------------
 
-    def sort_by_time(self, vals):
+    def sort_by_time(self, progs):
         """
         Simple Bubble Sort algorithm to reorder multiple nights by StartTime
         """
         cont = True
         while(cont):
             cont = False
-            for i in range(len(vals)-1):
-                if (time.strptime(vals[i]['StartTime'],'%H:%M') > time.strptime(vals[i+1]['StartTime'],'%H:%M')):
-                    temp = vals[i]
-                    vals[i] = vals[i+1]
-                    vals[i+1] = temp
+            for i in range(len(progs)-1):
+                if not progs[i]['StartTime']:
+                    cont = False
+                    break
+                if (time.strptime(progs[i]['StartTime'],'%H:%M') > time.strptime(progs[i+1]['StartTime'],'%H:%M')):
+                    temp = progs[i]
+                    progs[i] = progs[i+1]
+                    progs[i+1] = temp
                     del temp
                     cont = True
+
+
+
 
 #----------------------------------END SORT BY TIME----------------------------------
 

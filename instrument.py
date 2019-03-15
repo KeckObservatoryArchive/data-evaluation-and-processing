@@ -731,7 +731,7 @@ class Instrument:
         obFile = self.dirs['stage'] + '/dep_obtain' + self.instr + '.txt'
         obData = get_obtain_data(obFile)
         oa = None
-        if len(obData) >= 1: oa = obData[0]['oa']
+        if len(obData) >= 1: oa = obData[0]['OA']
 
         if oa == None:
             self.log.warning("set_oa: Could not find OA data")

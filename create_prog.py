@@ -44,7 +44,7 @@ def create_prog(instrObj):
     obFile = stageDir + '/dep_obtain' + instr + '.txt'
     obData = get_obtain_data(obFile)
     oa = ''
-    if len(obData) >= 1: oa = obData[0]['oa']
+    if len(obData) >= 1: oa = obData[0]['OA']
 
 
     # Get all files

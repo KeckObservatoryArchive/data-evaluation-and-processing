@@ -283,8 +283,8 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
     dfs = []
     for filepath in filepaths:
         data = load_metadata_file_as_df(filepath)
-        if not data: return False
-        dfs.append(data)
+        if isinstance(data, pd.DataFrame): dfs.append(data)
+        else                             : return False
 
     #compare all to first df in list
     baseDf = dfs[0]
@@ -302,14 +302,14 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             if col not in baseColList:
                 if col not in skips:
                     if not skipColCompareWarn: 
-                        result.warnings.append('WARN: MD{} col "{}" not in MD0 col list.'.format(i, col))
+                        result['warnings'].append('MD{} col "{}" not in MD0 col list.'.format(i, col))
             else:
                 if col not in compareCols: compareCols.append(col)
         for col in baseColList:
             if col not in colList:
                 if col not in skips:
                     if not skipColCompareWarn: 
-                        result.warnings.append('WARN: MD0 col "{}" not in MD{} col list.'.format(col, i))
+                        result['warnings'].append('MD0 col "{}" not in MD{} col list.'.format(col, i))
             else:
                 if col not in compareCols: compareCols.append(col)
 
@@ -319,7 +319,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             koaid = row['KOAID']
             baseRow = baseDf[baseDf['KOAID'] == koaid]
             if baseRow.empty: 
-                result.warnings.append('WARN: CANNOT FIND KOAID "{}" in MD0'.format(koaid))
+                result['warnings'].append('CANNOT FIND KOAID "{}" in MD0'.format(koaid))
                 continue
             else:
                 if koaid not in compareKoaids: compareKoaids.append(koaid)
@@ -328,7 +328,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             koaid = baseRow['KOAID']
             row = df[df['KOAID'] == koaid]
             if row.empty: 
-                result.warnings.append('WARN: CANNOT FIND KOAID "{}" in MD{}'.format(koaid, i))
+                result['warnings'].append('CANNOT FIND KOAID "{}" in MD{}'.format(koaid, i))
                 continue
             else:
                 if koaid not in compareKoaids: compareKoaids.append(koaid)
@@ -349,7 +349,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
                     val1 = "{:.2f}".format(float(val1))
 
                 if val0 != val1:
-                    result.warnings.append('WARN: value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
+                    result['warnings'].append('Value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
 
         results.append(result)
 
