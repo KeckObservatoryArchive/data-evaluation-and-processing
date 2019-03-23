@@ -163,22 +163,26 @@ def get_directory_size(dir):
     return str(total/1000000.0)
 
 
-def get_prog_inst(semid, default=None, log=None):
+def get_prog_inst(semid, default=None, log=None, isToO=False):
     """
     Query the proposalsAPI and get the program institution
-    NOTE: This is the only way to get ToO institution info
 
     @type semid: string
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
 
     #todo: get this url from config
-    api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
+    #TODO: NOTE: This is the only way to get ToO institution info (> 2017).  Do we need to backfill koa_program?
+    if isToO: 
+        api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
+    else:
+        api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
+
     url = api + '?ktn='+semid+'&cmd=getAllocInst'
     val = get_api_data(url, isJson=False)
 
     if not val or val.startswith('Usage') or val == 'error':
-        if log: log.error('create_prog: Unable to query API: ' + url)
+        if log: log.error('Unable to query API: ' + url)
         return default
     else:
         return val
@@ -192,15 +196,16 @@ def get_prog_pi(semid, default=None, log=None):
     """
 
     #todo: get this url from config
-    api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
-    url = api + '?ktn='+semid+'&cmd=getPI'
-    val = get_api_data(url, isJson=False)
+    api = 'https://www.keck.hawaii.edu/software/db_api/koa.php'
+    url = api + '?semid='+semid+'&cmd=getPI'
+    val = get_api_data(url, getOne=True)
 
-    if not val or val.startswith('Usage') or val == 'error':
-        if log: log.error('create_prog: Unable to query API: ' + url)
+    if (val == None or 'pi_lastname' not in val): 
+        if log: log.error('Unable to query API: ' + url)
         return default
     else:
         #remove whitespace and get last name only
+        val = val['pi_lastname']
         val = val.replace(' ','')
         if (',' in val): 
             val = val.split(',')[0]
