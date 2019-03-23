@@ -188,7 +188,7 @@ class ProgSplit:
                         if key in row[value]:
                             garbage, progid = row[value].split('_ToO_')
                             semid = self.semester+'_'+progid
-                            row['proginst'] = get_prog_inst(semid, 'NONE', self.log)
+                            row['proginst'] = get_prog_inst(semid, 'NONE', self.log, isToO=True)
                             row['progid']   = progid
                             row['progpi']   = get_prog_pi(semid, 'NONE', self.log)
                             row['progtitl'] = get_prog_title(semid, 'NONE', self.log)
