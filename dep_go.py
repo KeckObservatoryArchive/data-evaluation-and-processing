@@ -24,6 +24,7 @@ parser.add_argument('--searchDir'   , type=str, nargs='?', const=None,      help
 parser.add_argument('--reprocess'   , type=str, nargs='?', const=None,      help='(OPTIONAL) Set to "1" to indicate reprocessing old data (skips certain locate/search checks)')
 parser.add_argument('--modtimeOverride' , type=str, nargs='?', const=None,  help='(OPTIONAL) Set to "1" to ignore modtime on files during FITS locate search.')
 parser.add_argument('--metaCompareDir'  , type=str, nargs='?', const=None,  help='(OPTIONAL) Directory to use for special metadata compare report for reprocessing old data.')
+parser.add_argument('--useHdrProg'  , type=str, nargs='?', const=None,      help='(OPTIONAL) Set to "1" to look for PROGID already in header (useful for processing old data).')
 
 # Get input params
 
@@ -38,9 +39,10 @@ pstop  = args.procStop
 
 configArgs = []
 if args.searchDir      : configArgs.append({'section':'LOCATE', 'key':'SEARCH_DIR',         'val': args.searchDir})
-if args.reprocess      : configArgs.append({'section':'LOCATE', 'key':'REPROCESS',          'val': args.reprocess})
 if args.modtimeOverride: configArgs.append({'section':'LOCATE', 'key':'MODTIME_OVERRIDE',   'val': args.modtimeOverride})
+if args.reprocess      : configArgs.append({'section':'MISC',   'key':'REPROCESS',          'val': args.reprocess})
 if args.metaCompareDir : configArgs.append({'section':'MISC',   'key':'META_COMPARE_DIR',   'val': args.metaCompareDir})
+if args.useHdrProg     : configArgs.append({'section':'MISC',   'key':'USE_HDR_PROG',       'val': args.useHdrProg})
 
 # Use the current UT date if none provided
 

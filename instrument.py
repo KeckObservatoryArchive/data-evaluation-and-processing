@@ -560,7 +560,7 @@ class Instrument:
         if data['progid']   == 'PROGID'  : data['progid']   = 'NONE'
         if data['progpi']   == 'PROGPI'  : data['progpi']   = 'NONE'
         if data['proginst'] == 'PROGINST': data['proginst'] = 'NONE'
-        if data['progtitl'] == 'PROGTITL': data['progtitl'] = ''
+        if data['progtitl'] in ('PROGTITL', 'NONE'): data['progtitl'] = ''
 
         self.set_keyword('PROGID'  , data['progid']  , 'KOA: Program ID')
         self.set_keyword('PROGPI'  , data['progpi']  , 'KOA: Program principal investigator')

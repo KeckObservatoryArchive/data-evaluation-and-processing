@@ -38,6 +38,7 @@ def dep_dqa(instrObj, tpx=0):
     log    = instrObj.log
     dirs   = instrObj.dirs
     utDateDir = instrObj.utDateDir
+    isDev = int(instrObj.config['RUNTIME']['DEV'])
     sciFiles = 0
     inFiles = []
     outFiles = []
@@ -120,11 +121,6 @@ def dep_dqa(instrObj, tpx=0):
         return
 
 
-    #read config vars
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
-
-
     #log num files passed DQA and write out list to file
     log.info('dep_dqa.py: {} files passed DQA'.format(len(procFiles)))
     with open(dqaFile, 'w') as f:
@@ -147,7 +143,7 @@ def dep_dqa(instrObj, tpx=0):
     metaOutFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
     keywordsDefFile = tablesDir + '/keywords.format.' + instr
     metadata.make_metadata( keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log, 
-                            dev=int(config['RUNTIME']['DEV']),
+                            dev=isDev,
                             instrKeywordSkips=instrObj.keywordSkips)    
 
 
@@ -199,8 +195,9 @@ def dep_dqa(instrObj, tpx=0):
 
 
     #update koapi_send for all unique semids
-    if tpx:
-        check_koapi_send(semids, instrObj.utDate, log)
+    #NOTE: ensure this doesn't trigger during testing
+    if tpx and not isDev and utDate > '2019-01-01':
+        check_koapi_send(semids, instrObj.utDate, instrObj.config['API']['koaapi'], log)
 
 
     #log success
@@ -298,15 +295,11 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
 
 
 
-def check_koapi_send(semids, utDate, log):
+def check_koapi_send(semids, utDate, apiUrl, log):
     '''
     Sends all unique semids processed in DQA to KOA api to flag semids
     for needing an email sent to PI that there data has been archived
     '''
-
-    #create needed api vars
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
 
     user = os.getlogin()
     myHash = hashlib.md5(user.encode('utf-8')).hexdigest()
@@ -325,7 +318,7 @@ def check_koapi_send(semids, utDate, log):
             continue;
 
         #koa api url
-        url = config['API']['koaapi']
+        url = apiUrl
         url += 'cmd=updateKoapiSend'
         url += '&utdate=' + utDate
         url += '&semid='  + semid

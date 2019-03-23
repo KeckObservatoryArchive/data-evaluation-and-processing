@@ -32,7 +32,7 @@ import json
 import urllib.request as url
 import time
 import create_log as cl
-from common import get_api_data
+from common import *
 from dep_obtain import get_obtain_data
 from datetime import datetime, timedelta
 import re
@@ -187,10 +187,11 @@ class ProgSplit:
                     for key, value in self.too.items():
                         if key in row[value]:
                             garbage, progid = row[value].split('_ToO_')
-                            row['proginst'] = self.get_too_prog_inst(self.semester, progid)
+                            semid = self.semester+'_'+progid
+                            row['proginst'] = get_prog_inst(semid, 'NONE', self.log)
                             row['progid']   = progid
-                            row['progpi']   = self.get_prog_pi(self.semester, progid)
-                            row['progtitl'] = self.get_prog_title(self.semester, progid)
+                            row['progpi']   = get_prog_pi(semid, 'NONE', self.log)
+                            row['progtitl'] = get_prog_title(semid, 'NONE', self.log)
 
                     #add row to list
                     self.fileList.append(row)
@@ -202,32 +203,20 @@ class ProgSplit:
 
 # ---------------- END READ FILE LIST--------------------------------------------------------
 
-    def assign_to_pi(self, num):
+    def assign_to_pi(self, progIdx):
         """
         This method assigns program info to any file that does not already have assignment
 
-        @type num: int
-        @param num: index of program to assign files to
+        @type progIdx: int
+        @param progIdx: index of program to assign files to
         """
 
-        prog = self.programs[num]
+        prog = self.programs[progIdx]
+        self.log.info('getProgInfo: assign_to_pi: data: ' + str(prog))
 
-        for i in range(self.numFiles):
+        for i, tmpFile in enumerate(self.fileList):
 
-            # If file already has PI, skip
-            if self.fileList[i]['progpi'] != 'PROGPI':
-                continue
-
-            #update col values to those in program
-            self.fileList[i]['proginst'] = prog['Institution']
-            self.fileList[i]['progpi']   = prog['Principal']
-            self.fileList[i]['progid']   = prog['ProjCode']
-
-            #assign title
-            if self.fileList[i]['progid'] == 'ENG':
-                self.fileList[i]['progtitl'] = self.instrument + ' Engineering'
-            else:
-                self.fileList[i]['progtitl'] = self.get_prog_title(self.semester, prog['ProjCode'])
+            self.assign_single_to_pi(i, progIdx)
 
 #--------------------------- END ASSIGN TO PI---------------------------------------------
 
@@ -242,11 +231,12 @@ class ProgSplit:
         """
 
         # If file already has PI, skip
+        # NOTE: value is blank from create_prog if engineering
         if (self.fileList[filenum]['progpi'] != 'PROGPI' and self.fileList[filenum]['progpi'] != ''):
             return
 
-        #todo: is this unnecessary (should we do a greater than check instead)?
-        if len(self.programs) == 1 and num == 1:
+        #todo: Not sure why this is needed? legacy issue?
+        if len(self.programs) == 1 and num >= 1:
             num = 0
 
         #get prog
@@ -262,15 +252,18 @@ class ProgSplit:
         if self.fileList[filenum]['progid'] == 'ENG':
             self.fileList[filenum]['progtitl'] = self.instrument +' Engineering'
         else:
-            self.fileList[filenum]['progtitl'] = self.get_prog_title(self.semester, prog['ProjCode'])
+            semid = self.semester+'_'+prog['ProjCode']
+            self.fileList[filenum]['progtitl'] = get_prog_title(semid)
 
 #---------------------------- END ASSIGN SINGLE TO PI-------------------------------------------
 
     def assign_single_by_time(self, filenum):
+        ok = False
 
         file = self.fileList[filenum]
         fileTime = datetime.strptime(file['utc'],'%H:%M:%S.%f')
-        self.log.warning('getProgInfo: assigning ' + file['file'] + ' by time')
+
+        #todo: make sure each program has a start/end range (use sun times if need be)
 
         #look for program that file time falls within
         for idx in range(len(self.programs)):
@@ -280,10 +273,89 @@ class ProgSplit:
             progStartTime = datetime.strptime(prog['StartTime'],'%H:%M')
             progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')
             if (progStartTime <= fileTime <= progEndTime):
+                self.log.info('getProgInfo: Assigning ' + self.fileList[filenum]['file'] + ' by time.')
                 self.assign_single_to_pi(filenum, idx)
+                ok = True
                 break
 
+        return ok
+
 #---------------------------- END ASSIGN SINGLE BY TIME -------------------------------------------
+
+    def assign_single_by_observer(self, filenum):
+        '''
+        Looks for matching observer names in header keyword and program listing.
+        If good enough match and only one match to a program then it assigns it.
+        '''
+
+        ok = False
+
+        #get array of names (first filter out garbage chars)
+        file = self.fileList[filenum]
+        observers = self.get_observer_array(file['observer'])
+        if len(observers) == 0: return False
+
+        #look for program with at least 1/3 matching names both directions
+        matchIdx = -1
+        for idx in range(len(self.programs)):
+            prog = self.programs[idx]
+            progObservers = self.get_observer_array(prog['Observer'])
+            if len(progObservers) == 0: continue
+
+            diff1 = len(set(observers) - set(progObservers))
+            perc1 = diff1 / len(observers)
+            ok1 = True if perc1 < 0.67 else False
+
+            diff2 = len(set(progObservers) - set(observers))
+            perc2 = diff2 / len(progObservers) 
+            ok2 = True if perc2 < 0.67 else False
+
+            #If observers match good enough then assign, but check multi program matching not ok
+            if ok1 and ok2:
+                if matchIdx >= 0:
+                    matchIdx = -1
+                    break
+                else:
+                    matchIdx = idx
+
+        if matchIdx >= 0:
+            self.log.info('getProgInfo: Assigning ' + self.fileList[filenum]['file'] + ' by observer match.')
+            self.assign_single_to_pi(filenum, matchIdx)
+            ok = True
+
+        return ok
+
+    def get_observer_array(self, obsvStr):
+        '''
+        Returns a consistent array of observer names from a string of names. Examples include:
+            "Ellis Konidaris Newman Schenker Belli"
+            "Ellis et al.""
+            "unknown"
+            "Ellis, Konidaris, Belli, Newman, & Schenkar"
+        '''
+
+        #replace whitespace with comma
+        obsvStr = re.sub("\s+", ",", obsvStr.strip())
+
+        #get rid of other unwanted things
+        search  = ["_", "/", "&", ".", "and"]
+        for s in search:
+            obsvStr = obsvStr.replace(s, '')
+
+        #replace multi commas with comma
+        obsvStr = re.sub(",+" , ",", obsvStr.strip())
+
+        #just keep names of length > 2
+        observers = obsvStr.split(',' )
+        final = []
+        for name in observers:
+            name = name.strip().lower()
+            if len(name) <= 2: continue
+            final.append(name)
+        return final
+
+
+#---------------------------- END ASSIGN SINGLE BY OBSERVER -------------------------------------------
 
     def get_programs(self):
 
@@ -313,94 +385,35 @@ class ProgSplit:
 
 #------------------------------END GET SUN TIMES------------------------------------------------
 
-    def get_too_prog_inst(self, sem, progid):
-        """
-        Query the proposalsAPI and get the ToO program institution
-
-        @type sem: string
-        @param sem: semester of the observation
-        @type progid: string
-        @param progid: ID of the observation program
-        """
-        semid = sem + '_' + progid
-        req = self.api + 'proposalsAPI.php?cmd=getAllocInst&ktn=' + semid
-        data = url.urlopen(req)
-        inst = data.read().decode('utf8')
-        if (inst == None or inst == '' or inst == 'error'): 
-            self.log.warning('getProgInfo: Could not find ToO program institution for semid "{}"'.format(semid))
-            return 'NONE'
-        else : 
-            return inst
-
-#--------------------- END GET PROG TITLE-----------------------------------------------
-
-    def get_prog_title(self, sem, progid):
-        """
-        Query the DB and get the program title
-
-        @type sem: string
-        @param sem: semester of the observation
-        @type progid: string
-        @param progid: ID of the observation program
-        """
-
-        semid = sem + '_' + progid
-        req = self.api + 'koa.php?cmd=getTitle&semid=' + semid
-        title = get_api_data(req, getOne=True)
-        if (title == None or 'progtitl' not in title): 
-            self.log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
-            return 'NONE'
-        else : 
-            return title['progtitl']
-
-#--------------------- END GET PROG TITLE-----------------------------------------------
-
-    def get_prog_pi(self, sem, progid):
-        """
-        Query the DB and get the prog PI last name
-
-        @type sem: string
-        @param sem: semester of the observation
-        @type progid: string
-        @param progid: ID of the observation program
-        """
-
-        semid = sem + '_' +progid
-        req = self.api + 'koa.php?cmd=getPI&semid=' + semid
-        pi = get_api_data(req, getOne=True)
-        if (pi == None or 'pi_lastname' not in pi): 
-            self.log.warning('get_prog_pi: Could not find program PI for semid "{}"'.format(semid))
-            return 'NONE'
-        else : 
-            return pi['pi_lastname']
-
-#--------------------- END GET PROG TITLE-----------------------------------------------
-
     def get_outdirs(self, programs):
+        '''
+        Creates data array for each unique outdir which we will need if we are trying to figure out split nights.
+        '''
 
-        #make array for easy time comparison
+        #make timing array for easy time comparison
         splitTimes = {}
         isMissingTimes = False
         for key, prog in enumerate(programs):
 
+            #if split program does not have start/end (pre-keckOperations DB), then split time by sun times
             if not prog['StartTime'] or not prog['EndTime']:
                 isMissingTimes = True
-                sunset   = datetime.strptime(self.suntimes['sunset'], '%H:%M')
-                midpoint = datetime.strptime(self.suntimes['midpoint'], '%H:%M')
-                sunrise  = datetime.strptime(self.suntimes['sunrise'], '%H:%M')
-                t1 = sunset   if key == 0 else midpoint
-                t2 = midpoint if key == 0 else sunrise
-            else:
-                t1 = datetime.strptime(prog['StartTime'], '%H:%M')
-                t2 = datetime.strptime(prog['EndTime']  , '%H:%M')
+                sunset   = self.suntimes['sunset']
+                midpoint = self.suntimes['midpoint']
+                sunrise  = self.suntimes['sunrise']
+                prog['StartTime'] = sunset   if key == 0 else midpoint
+                prog['EndTime']   = midpoint if key == 0 else sunrise
+
+            t1 = datetime.strptime(prog['StartTime'], '%H:%M')
+            t2 = datetime.strptime(prog['EndTime']  , '%H:%M')
 
             splitTimes[key] = [t1, t2]
-        self.log.info('get_prog_pi: Split times: ' + str(splitTimes))
+        self.log.info('get_outdirs: Split times: ' + str(splitTimes))
 
 
         #throw an error if there are 3-way or more split and we don't have Start/End times
         if len(programs) > 2 and isMissingTimes:
-            self.log.error('get_prog_pi: Three or more programs found this night but no Start/End time info found!!!')
+            self.log.error('get_outdirs: Three or more split programs but no Start/End time info found! Program assignment may be incorrect.  Check manually.')
 
 
         #Get list of unique outdirs from file list and keep count of where the science files are
@@ -422,7 +435,7 @@ class ProgSplit:
                 self.outdirs[fdir] = data 
 
             #if image type is object, increment count for which program time range it falls within
-            if file['imagetyp'] == 'object' or True:
+            if file['imagetyp'] == 'object':
                 thistime = datetime.strptime(file['utc'], '%H:%M:%S.%f')
                 for i in range(len(splitTimes)):
                     if splitTimes[i][0] <= thistime and splitTimes[i][1] > thistime:
@@ -467,6 +480,11 @@ class ProgSplit:
         #program time range. If an outdir has a high % of one program time range like > 80%, 
         # then that outdir must belong to that program.  
         #NOTE: Sometimes programs take data during other program times.
+
+        #first check that we have multiple outdirs 
+        if len(self.outdirs) <= 1:
+            self.log.warning("getProgInfo: This is a split night but we do not have multiple outdirs.")
+
         self.log.info('getProgInfo: ' + str(len(self.outdirs)) + ' OUTDIRs found')
         for outdir, data in self.outdirs.items():
             self.log.info('outdir sci counts for : ' + outdir)
@@ -527,8 +545,10 @@ class ProgSplit:
                 progIndex = self.outdirs[fileOutdir]['assign']
                 if progIndex >= 0: 
                     self.assign_single_to_pi(key, progIndex)
-                else: 
-                    self.assign_single_by_time(key)
+                else:
+                    ok = False 
+                    if not ok: ok = self.assign_single_by_observer(key)
+                    if not ok: ok = self.assign_single_by_time(key)
             else:
                 self.log.error("getProgInfo: Could not find outdir match for: " + fileOutdir)
 
@@ -536,7 +556,7 @@ class ProgSplit:
             if self.fileList[key]['progpi'] in ('PROGPI', '', 'NONE'):
                 self.log.error("getProgInfo: Could not assign program for file: " + self.fileList[key]['file'])
 
-#---------------------END SPLIT MULTI BY SCIENCE---------------------------
+#---------------------END SPLIT MULTI ----------------------------------------
 
     def fix_outdir(self, outdir):
         """
@@ -565,14 +585,12 @@ class ProgSplit:
                 if not progs[i]['StartTime']:
                     cont = False
                     break
-                if (time.strptime(progs[i]['StartTime'],'%H:%M') > time.strptime(progs[i+1]['StartTime'],'%H:%M')):
+                elif (time.strptime(progs[i]['StartTime'],'%H:%M') > time.strptime(progs[i+1]['StartTime'],'%H:%M')):
                     temp = progs[i]
                     progs[i] = progs[i+1]
                     progs[i+1] = temp
                     del temp
                     cont = True
-
-
 
 
 #----------------------------------END SORT BY TIME----------------------------------
@@ -600,20 +618,19 @@ def getProgInfo(utdate, instrument, stageDir, log=None, test=False):
     #No split
     if numSplits == 1: 
         progSplit.log.info('getProgInfo: ' + utdate + ' is not a split night')
-        progSplit.log.info('getProgInfo: Assigning to ' + progSplit.instrument + ' PI')
+        progSplit.log.info('getProgInfo: Assigning to ' + progSplit.instrument + ' PI (' + progSplit.programs[0]['ProjCode'] + ')')
         progSplit.assign_to_pi(0)
 
     # Split night
     elif numSplits > 1: 
-        progSplit.log.info('getProgInfo: ' + utdate + ' is a split night with ' + str(len(progSplit.programs)) + ' programs')
         progSplit.sort_by_time(progSplit.programs)
+        progSplit.log.info('getProgInfo: ' + utdate + ' is a split night with ' + str(len(progSplit.programs)) + ' programs: ' + str(progSplit.programs))
         progSplit.get_sun_times()
         progSplit.get_outdirs(progSplit.programs)
         progSplit.assign_outdirs_to_programs()
         progSplit.split_multi()
 
     #no proj codes
-    # TODO: in this case, do we use old progInfo.php?
     # TODO: only throw error if there was some science files (ie this could be engineering)
     else:
         progSplit.log.warning('No ' + instrument + ' programs found this night.')

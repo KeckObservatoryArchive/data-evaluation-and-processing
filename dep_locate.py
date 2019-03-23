@@ -112,7 +112,7 @@ def dep_locate(instrObj, tpx=0):
 
 
     # Verify the files are valid - no corrupt headers, valid KOAID
-    isReprocess = int(instrObj.config['LOCATE']['REPROCESS']) if 'REPROCESS' in instrObj.config['LOCATE'] else 0
+    isReprocess = int(instrObj.config['MISC']['REPROCESS']) if 'REPROCESS' in instrObj.config['MISC'] else 0
     locateFile = stageDir +'/dep_locate' + instr + '.txt'
     dep_rawfiles(instr, utDate, presort2File, locateFile, ancDir, isReprocess, log)
 
