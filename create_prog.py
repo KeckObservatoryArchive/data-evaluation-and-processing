@@ -30,10 +30,11 @@ def create_prog(instrObj):
 
 
     #short vars
-    instr = instrObj.instr
-    utDate = instrObj.utDate
-    stageDir = instrObj.dirs['stage']
-    log = instrObj.log
+    instr      = instrObj.instr
+    utDate     = instrObj.utDate
+    stageDir   = instrObj.dirs['stage']
+    log        = instrObj.log
+    useHdrProg = int(instrObj.config['MISC']['USE_HDR_PROG']) if 'USE_HDR_PROG' in instrObj.config['MISC'] else 0
 
 
     #info
@@ -60,7 +61,7 @@ def create_prog(instrObj):
     with open(outfile, 'w') as ofile:
         for filename in fileList:
 
-        	#skip blank lines
+            #skip blank lines
             if filename.strip() == '': continue
 
             #skip OSIRIS files that end in 'x'
@@ -104,6 +105,11 @@ def create_prog(instrObj):
             if len(fileparts) > 1: newFile = '/sdata' + fileparts[-1]
             else                 : newFile = filename
 
+            # Get the semester
+            instrObj.set_semester()
+            sem = instrObj.get_keyword('SEMESTER')
+            sem = sem.strip()
+
             #write out vars to file, one line each var
             newFile = newFile.replace('//','/')
             ofile.write(newFile+'\n')
@@ -114,34 +120,34 @@ def create_prog(instrObj):
             ofile.write(str(fileno)+'\n')
             ofile.write(imagetyp+'\n')
 
-            #if PROGNAME exists, use that to populate the following
-            progname = instrObj.get_keyword(['PROGNAME', 'PROGID'])
+
+            #if PROGNAME exists, use that to populate the PROG* values
+            if useHdrProg: progname = instrObj.get_keyword(['PROGNAME', 'PROGID'])
+            else         : progname = instrObj.get_keyword('PROGNAME')
+
             if progname == None:
-                ofile.write('PROGNAME\n')
+                ofile.write('PROGID\n')  #NOTE: writing PROGID instead
                 ofile.write('PROGPI\n')
                 ofile.write('PROGINST\n')
                 ofile.write('PROGTITL\n')
             else:
                 progname = progname.strip().upper()
+                semid = sem + '_' + progname
+
+                #first see if it is already defined in header
+                progpi   = instrObj.get_keyword('PROGPI')   if useHdrProg else None
+                proginst = instrObj.get_keyword('PROGINST') if useHdrProg else None
+                progtitl = instrObj.get_keyword('PROGTITL') if useHdrProg else None
+
+                #try api
+                if not progpi  : progpi   = get_prog_pi   (semid, 'PROGPI'  , log)
+                if not proginst: proginst = get_prog_inst (semid, 'PROGINST', log)
+                if not progtitl: progtitl = get_prog_title(semid, 'PROGTITL', log)
+
                 ofile.write(progname + '\n')
-
-                # Get the viewing semester from obs-date
-                instrObj.set_semester()
-                sem = instrObj.get_keyword('SEMESTER')
-                sem = sem.strip()
-
-                # Get the program ID
-                ktn = ''.join((sem, '_', progname))
-
-                # Get the program information from the program ID
-                badValues = ['Usage', 'error']
-                progpi, proginst, progtitl = get_prog_info(ktn, log)                   
-                if not progpi   or any(x in progpi   for x in badValues): ofile.write('PROGPI\n')
-                else                                                    : ofile.write(progpi+'\n')
-                if not proginst or any(x in proginst for x in badValues): ofile.write('PROGINST\n')
-                else                                                    : ofile.write(proginst+'\n')
-                if not progtitl or any(x in progtitl for x in badValues): ofile.write('PROGTITL\n')
-                else                                                    : ofile.write(progtitl+'\n')
+                ofile.write(progpi   + '\n')
+                ofile.write(proginst + '\n')
+                ofile.write(progtitl + '\n')
 
             #write OA last
             ofile.write(oa + '\n')
@@ -149,30 +155,3 @@ def create_prog(instrObj):
     if log: log.info('create_prog: finished, {} created'.format(outfile))
 
 
-def get_prog_info(ktn, log):
-    """
-    Retrives the program PI, allocating institution,
-    and title from the proposals database web API
-
-    @type ktn: string
-    @param ktn: the program ID - consists of semester and progname (ie 2017B_U428)
-    """
-    url = 'http://www.keck.hawaii.edu/software/db_api/proposalsAPI.php?ktn='+ktn+'&cmd='
-    progpi   = get_api_data(url+'getPI'       , isJson=False)
-    proginst = get_api_data(url+'getAllocInst', isJson=False)
-    progtitl = get_api_data(url+'getTitle'    , isJson=False)
-
-    #remove whitespace from progpi str (this would mess up newproginfo.txt columns)
-    #todo: whitespace is not an issue anymore; using tabs?
-    if progpi:
-        progpi = progpi.replace(' ','')
-        if (',' in progpi): progpi = progpi.split(',')[0]
-
-    if not progpi:
-        if log: log.error('create_prog: Unable to query API: ' + url+'getPI')
-    if not proginst:
-        if log: log.error('create_prog: Unable to query API: ' + url+'getAllocInst')
-    if not progtitl:
-        if log: log.error('create_prog: Unable to query API: ' + url+'getTitle')
-
-    return progpi, proginst, progtitl
