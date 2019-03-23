@@ -253,7 +253,7 @@ class ProgSplit:
             self.fileList[filenum]['progtitl'] = self.instrument +' Engineering'
         else:
             semid = self.semester+'_'+prog['ProjCode']
-            self.fileList[filenum]['progtitl'] = get_prog_title(semid)
+            self.fileList[filenum]['progtitl'] = get_prog_title(semid, 'NONE', self.log)
 
 #---------------------------- END ASSIGN SINGLE TO PI-------------------------------------------
 
