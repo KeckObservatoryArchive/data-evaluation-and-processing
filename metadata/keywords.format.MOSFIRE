@@ -124,7 +124,7 @@ FLATSPEC	integer	8	Y
 FLIMAGIN	char	32	Y
 FLSPECTR	char	32	Y
 FOCALSTN	char	32	Y
-FRAMDESC	char	32	Y
+FRAMDESC	char	48	Y
 FRAME	integer	8	Y
 FRAMEID	char	32	Y
 FRAMENUM	integer	8	N
