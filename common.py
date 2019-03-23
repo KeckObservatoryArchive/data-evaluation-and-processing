@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import hashlib
-import urllib
+from urllib.request import urlopen
 import json
 from send_email import send_email
 import configparser
@@ -66,16 +66,16 @@ def get_api_data(url, getOne=False, isJson=True):
     '''
     
     try:
-        data = urllib.request.urlopen(url)
+        data = urlopen(url)
         data = data.read().decode('utf8')
         if isJson: data = json.loads(data)
 
-        if (getOne and len(data) > 0):
+        if getOne and len(data) > 0: 
             data = data[0]
 
         return data
 
-    except:
+    except Exception as e:
         return None
 
 
@@ -162,3 +162,65 @@ def get_directory_size(dir):
             total += os.path.getsize(fp)
     return str(total/1000000.0)
 
+
+def get_prog_inst(semid, default=None, log=None):
+    """
+    Query the proposalsAPI and get the program institution
+    NOTE: This is the only way to get ToO institution info
+
+    @type semid: string
+    @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
+    """
+
+    #todo: get this url from config
+    api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
+    url = api + '?ktn='+semid+'&cmd=getAllocInst'
+    val = get_api_data(url, isJson=False)
+
+    if not val or val.startswith('Usage') or val == 'error':
+        if log: log.error('create_prog: Unable to query API: ' + url)
+        return default
+    else:
+        return val
+
+def get_prog_pi(semid, default=None, log=None):
+    """
+    Query the proposalsAPI and get the PI last name
+
+    @type semid: string
+    @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
+    """
+
+    #todo: get this url from config
+    api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
+    url = api + '?ktn='+semid+'&cmd=getPI'
+    val = get_api_data(url, isJson=False)
+
+    if not val or val.startswith('Usage') or val == 'error':
+        if log: log.error('create_prog: Unable to query API: ' + url)
+        return default
+    else:
+        #remove whitespace and get last name only
+        val = val.replace(' ','')
+        if (',' in val): 
+            val = val.split(',')[0]
+        return val
+
+
+def get_prog_title(semid, default=None, log=None):
+    """
+    Query the DB and get the program title
+
+    @type semid: string
+    @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
+    """
+
+    #todo: get this url from config
+    api = 'https://www.keck.hawaii.edu/software/db_api/koa.php'
+    url = api + '?cmd=getTitle&semid=' + semid
+    title = get_api_data(url, getOne=True)
+    if (title == None or 'progtitl' not in title): 
+        if log: log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
+        return default
+    else : 
+        return title['progtitl']
