@@ -122,9 +122,7 @@ def create_prog(instrObj):
 
 
             #if PROGNAME exists, use that to populate the PROG* values
-            if useHdrProg: progname = instrObj.get_keyword(['PROGNAME', 'PROGID'])
-            else         : progname = instrObj.get_keyword('PROGNAME')
-
+            progname = instrObj.get_keyword('PROGNAME')
             if progname == None:
                 ofile.write('PROGID\n')  #NOTE: writing PROGID instead
                 ofile.write('PROGPI\n')
@@ -134,15 +132,10 @@ def create_prog(instrObj):
                 progname = progname.strip().upper()
                 semid = sem + '_' + progname
 
-                #first see if it is already defined in header
-                progpi   = instrObj.get_keyword('PROGPI')   if useHdrProg else None
-                proginst = instrObj.get_keyword('PROGINST') if useHdrProg else None
-                progtitl = instrObj.get_keyword('PROGTITL') if useHdrProg else None
-
                 #try api
-                if not progpi  : progpi   = get_prog_pi   (semid, 'PROGPI'  , log)
-                if not proginst: proginst = get_prog_inst (semid, 'PROGINST', log)
-                if not progtitl: progtitl = get_prog_title(semid, 'PROGTITL', log)
+                progpi   = get_prog_pi   (semid, 'PROGPI'  , log)
+                proginst = get_prog_inst (semid, 'PROGINST', log)
+                progtitl = get_prog_title(semid, 'PROGTITL', log)
 
                 ofile.write(progname + '\n')
                 ofile.write(progpi   + '\n')

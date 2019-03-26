@@ -273,7 +273,7 @@ class ProgSplit:
             progStartTime = datetime.strptime(prog['StartTime'],'%H:%M')
             progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')
             if (progStartTime <= fileTime <= progEndTime):
-                self.log.info('getProgInfo: Assigning ' + self.fileList[filenum]['file'] + ' by time.')
+                self.log.warning('getProgInfo: Assigning ' + self.fileList[filenum]['file'] + ' by time.')
                 self.assign_single_to_pi(filenum, idx)
                 ok = True
                 break
@@ -534,27 +534,29 @@ class ProgSplit:
             self.outdirs[outdir]['assign'] = assign
 
 
-    def split_multi(self):
-
-        #TODO: is this correct for eng data?
+    def split_multi(self, useHdrProg):
 
         # Loop thru all files and if we find an outdir match, assign to program
-        for key, file in enumerate(self.fileList):
+        for idx, file in enumerate(self.fileList):
             fileOutdir = self.fix_outdir(file['outdir'])
             if fileOutdir in self.outdirs:
                 progIndex = self.outdirs[fileOutdir]['assign']
                 if progIndex >= 0: 
-                    self.assign_single_to_pi(key, progIndex)
+                    self.assign_single_to_pi(idx, progIndex)
                 else:
                     ok = False 
-                    if not ok: ok = self.assign_single_by_observer(key)
-                    if not ok: ok = self.assign_single_by_time(key)
+                    if not ok: ok = self.assign_single_by_observer(idx)
+                    if not ok: ok = self.assign_single_by_time(idx)
             else:
                 self.log.error("getProgInfo: Could not find outdir match for: " + fileOutdir)
 
+            #special reprocessing check to look in header for PROG* info if all else fails
+            if useHdrProg: 
+                self.use_header_prog_vals(idx)
+
             #final check to see if assigned
-            if self.fileList[key]['progpi'] in ('PROGPI', '', 'NONE'):
-                self.log.error("getProgInfo: Could not assign program for file: " + self.fileList[key]['file'])
+            if self.fileList[idx]['progpi'] in ('PROGPI', '', 'NONE'):
+                self.log.error("getProgInfo: Could not assign program for file: " + self.fileList[idx]['file'])
 
 #---------------------END SPLIT MULTI ----------------------------------------
 
@@ -594,22 +596,27 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
-    def tryGetProgFromHeader(self):
+    def use_header_prog_vals(self, idx):
 
-        #for each fits file, if any of the PROG* data is not found, then use what is in header if exists
+        #read in fits file header only
+        file = self.fileList[idx]
+        header = fits.getheader(file['file'], 0)
+
+        #if any of the PROG* keywords don't match header, warn and use header values
         keywords = ['progid', 'proginst', 'progpi', 'progtitl']
-        for i, file in enumerate(self.fileList):
-            print ("FILE: ", file['file'])
+        for kw in keywords:
+            val = ''
+            if kw == 'progtitl':
+                if 'PROGTL1' in header: val += header['PROGTL1']
+                if 'PROGTL2' in header: val += header['PROGTL2']
+                if 'PROGTL3' in header: val += header['PROGTL3']
+            else:
+                if kw.upper() in header: 
+                    val = header[kw.upper()]
 
-            #read in header only and skip if no PROGID in header
-            header = fits.getheader(file['file'], 0)
-
-            for kw in keywords:
-                if not file[kw] or file[kw] in (kw.upper(), '', 'NONE'): 
-                    if kw.upper() in header: 
-                        self.fileList[i][kw] = header[kw.upper()]
-                        self.log.warning("getProgInfo: (reprocess) Assigning " + kw.upper() + " from header for: " + os.path.basename(file['file']))
-
+            if val and val != file[kw]:
+                self.fileList[idx][kw] = val
+                self.log.warning("getProgInfo: Value mismatch. Assigning " + kw.upper() + " from header for: " + os.path.basename(file['file']))
 
 #--------------------------------------------------------------------
 
@@ -647,17 +654,12 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, log=None, test=F
         progSplit.get_sun_times()
         progSplit.get_outdirs(progSplit.programs)
         progSplit.assign_outdirs_to_programs()
-        progSplit.split_multi()
+        progSplit.split_multi(useHdrProg)
 
     #no proj codes
     # TODO: only throw error if there was some science files (ie this could be engineering)
     else:
         progSplit.log.warning('No ' + instrument + ' programs found this night.')
-
-
-    #special reprocessing check to look in header for PROG* info if all else fails
-    if useHdrProg: progSplit.tryGetProgFromHeader()
-
 
     #write out result
     fname = stageDir + '/newproginfo.txt'
