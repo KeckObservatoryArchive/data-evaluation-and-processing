@@ -243,7 +243,7 @@ class ProgSplit:
 
         #get prog
         prog = self.programs[num]
-        self.log.info('assigning ' + self.fileList[filenum]['file'] + ' to progIndex: ' + str(num) + '('+prog['ProjCode']+').')
+        self.log.info('assigning ' + os.path.basename(self.fileList[filenum]['file']) + ' to progIndex: ' + str(num) + '('+prog['ProjCode']+').')
 
         #update col values to those in program
         self.fileList[filenum]['proginst'] = prog['Institution']
@@ -273,7 +273,7 @@ class ProgSplit:
             progStartTime = datetime.strptime(prog['StartTime'],'%H:%M')
             progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')
             if (progStartTime <= fileTime <= progEndTime):
-                self.log.warning('getProgInfo: Assigning ' + self.fileList[filenum]['file'] + ' by time.')
+                self.log.warning('getProgInfo: Assigning ' + os.path.basename(file['file']) + ' by time.')
                 self.assign_single_to_pi(filenum, idx)
                 ok = True
                 break
@@ -319,7 +319,7 @@ class ProgSplit:
                     matchIdx = idx
 
         if matchIdx >= 0:
-            self.log.info('getProgInfo: Assigning ' + self.fileList[filenum]['file'] + ' by observer match.')
+            self.log.info('getProgInfo: Assigning ' + os.path.basename(file['file']) + ' by observer match.')
             self.assign_single_to_pi(filenum, matchIdx)
             ok = True
 
@@ -556,7 +556,7 @@ class ProgSplit:
 
             #final check to see if assigned
             if self.fileList[idx]['progpi'] in ('PROGPI', '', 'NONE'):
-                self.log.error("getProgInfo: Could not assign program for file: " + self.fileList[idx]['file'])
+                self.log.error("getProgInfo: Could not assign program for file: " + os.path.basename(['file']))
 
 #---------------------END SPLIT MULTI ----------------------------------------
 
