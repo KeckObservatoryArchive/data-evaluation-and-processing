@@ -47,7 +47,7 @@ while curDate <= endDate:
         params = ['/usr/local/anaconda3-5.0.0.1/bin/python', 'dep_go.py', instr, curDateStr, tpx, 'obtain', 'tar', 
                     '--modtimeOverride', '1', 
                     '--reprocess', '1', 
-                    # '--useHdrProg', '1', 
+                    '--useHdrProg', '1', 
                     '--searchDir', searchDir,
                     '--metaCompareDir', metaDir]
         print ('COMMAND: ', ' '.join(params))
