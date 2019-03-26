@@ -46,6 +46,7 @@ def dep_dqa(instrObj, tpx=0):
     semids = []
     extraMeta = {}
     dqaFile = dirs['stage'] +'/dep_dqa' + instr +'.txt'
+    useHdrProg = int(instrObj.config['MISC']['USE_HDR_PROG']) if 'USE_HDR_PROG' in instrObj.config['MISC'] else 0
 
 
     #Log start
@@ -77,7 +78,7 @@ def dep_dqa(instrObj, tpx=0):
 
     #determine program info
     create_prog(instrObj)
-    progData = gpi.getProgInfo(utDate, instr, dirs['stage'], log)
+    progData = gpi.getProgInfo(utDate, instr, dirs['stage'], useHdrProg, log)
 
 
     # Loop through each entry in input_list

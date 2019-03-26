@@ -36,6 +36,7 @@ from common import *
 from dep_obtain import get_obtain_data
 from datetime import datetime, timedelta
 import re
+from astropy.io import fits
 
 
 class ProgSplit:
@@ -192,6 +193,7 @@ class ProgSplit:
                             row['progid']   = progid
                             row['progpi']   = get_prog_pi(semid, 'NONE', self.log)
                             row['progtitl'] = get_prog_title(semid, 'NONE', self.log)
+                            #todo: should default title be "ToO Program"
 
                     #add row to list
                     self.fileList.append(row)
@@ -263,8 +265,6 @@ class ProgSplit:
         file = self.fileList[filenum]
         fileTime = datetime.strptime(file['utc'],'%H:%M:%S.%f')
 
-        #todo: make sure each program has a start/end range (use sun times if need be)
-
         #look for program that file time falls within
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
@@ -295,7 +295,7 @@ class ProgSplit:
         observers = self.get_observer_array(file['observer'])
         if len(observers) == 0: return False
 
-        #look for program with at least 1/3 matching names both directions
+        #look for program with any matching names both directions
         matchIdx = -1
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
@@ -304,11 +304,11 @@ class ProgSplit:
 
             diff1 = len(set(observers) - set(progObservers))
             perc1 = diff1 / len(observers)
-            ok1 = True if perc1 < 0.67 else False
+            ok1 = True if perc1 < 1.0 else False
 
             diff2 = len(set(progObservers) - set(observers))
             perc2 = diff2 / len(progObservers) 
-            ok2 = True if perc2 < 0.67 else False
+            ok2 = True if perc2 < 1.0 else False
 
             #If observers match good enough then assign, but check multi program matching not ok
             if ok1 and ok2:
@@ -592,10 +592,29 @@ class ProgSplit:
                     del temp
                     cont = True
 
-
 #----------------------------------END SORT BY TIME----------------------------------
 
-def getProgInfo(utdate, instrument, stageDir, log=None, test=False):
+    def tryGetProgFromHeader(self):
+
+        #for each fits file, if any of the PROG* data is not found, then use what is in header if exists
+        keywords = ['progid', 'proginst', 'progpi', 'progtitl']
+        for i, file in enumerate(self.fileList):
+            print ("FILE: ", file['file'])
+
+            #read in header only and skip if no PROGID in header
+            header = fits.getheader(file['file'], 0)
+
+            for kw in keywords:
+                if not file[kw] or file[kw] in (kw.upper(), '', 'NONE'): 
+                    if kw.upper() in header: 
+                        self.fileList[i][kw] = header[kw.upper()]
+                        self.log.warning("getProgInfo: (reprocess) Assigning " + kw.upper() + " from header for: " + os.path.basename(file['file']))
+
+
+#--------------------------------------------------------------------
+
+
+def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, log=None, test=False):
 
     if test: 
         rootDir = stageDir.split('/stage')[0]
@@ -634,6 +653,11 @@ def getProgInfo(utdate, instrument, stageDir, log=None, test=False):
     # TODO: only throw error if there was some science files (ie this could be engineering)
     else:
         progSplit.log.warning('No ' + instrument + ' programs found this night.')
+
+
+    #special reprocessing check to look in header for PROG* info if all else fails
+    if useHdrProg: progSplit.tryGetProgFromHeader()
+
 
     #write out result
     fname = stageDir + '/newproginfo.txt'
