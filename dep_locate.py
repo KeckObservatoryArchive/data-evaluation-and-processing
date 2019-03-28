@@ -215,8 +215,8 @@ def dep_rawfiles(instr, utDate, inFile, outFile, ancDir, isReprocess, log):
 
           # Make sure constructed filename matches basename.
           basename = os.path.basename(fitsList[i])
+          basename = basename.replace(".fits.gz", ".fits")
           if filename != basename:
-              print ("BAD: ", filename, basename)
               copy_bad_file(instr, fitsList[i], ancDir, 'Mismatched filename', log)
               continue
 
