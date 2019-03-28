@@ -123,24 +123,30 @@ def create_prog(instrObj):
 
             #if PROGNAME exists, use that to populate the PROG* values
             progname = instrObj.get_keyword('PROGNAME')
-            if progname == None:
-                ofile.write('PROGID\n')  #NOTE: writing PROGID instead
-                ofile.write('PROGPI\n')
-                ofile.write('PROGINST\n')
-                ofile.write('PROGTITL\n')
-            else:
+            isProgValid = is_progid_valid(progname)
+            if not isProgValid:
+                if log: log.warning('create_prog: Invalid PROGNAME: ' + str(progname))
+
+            progid   = 'PROGID'
+            progpi   = 'PROGPI'
+            proginst = 'PROGINST'
+            progtitl = 'PROGTITL'
+            if isProgValid:
                 progname = progname.strip().upper()
-                semid = sem + '_' + progname
+                if progname == 'ENG':
+                    progid = 'ENG'
+                else:
+                    semid = sem + '_' + progname
+                    progid   = progname
+                    progpi   = get_prog_pi   (semid, 'PROGPI'  , log)
+                    proginst = get_prog_inst (semid, 'PROGINST', log)
+                    progtitl = get_prog_title(semid, 'PROGTITL', log)
 
-                #try api
-                progpi   = get_prog_pi   (semid, 'PROGPI'  , log)
-                proginst = get_prog_inst (semid, 'PROGINST', log)
-                progtitl = get_prog_title(semid, 'PROGTITL', log)
+            ofile.write(progid + '\n')
+            ofile.write(progpi   + '\n')
+            ofile.write(proginst + '\n')
+            ofile.write(progtitl + '\n')
 
-                ofile.write(progname + '\n')
-                ofile.write(progpi   + '\n')
-                ofile.write(proginst + '\n')
-                ofile.write(progtitl + '\n')
 
             #write OA last
             ofile.write(oa + '\n')

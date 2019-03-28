@@ -229,3 +229,17 @@ def get_prog_title(semid, default=None, log=None):
         return default
     else : 
         return title['progtitl']
+
+
+def is_progid_valid(progid):
+
+    #TODO: improve this
+    if not progid: return False
+    if len(progid) <= 2: return False
+    if len(progid) >= 6: return False
+    if " " in progid: return False
+    return True
+
+
+
+

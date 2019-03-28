@@ -338,6 +338,8 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             row0 = baseDf[baseDf['KOAID'] == koaid].iloc[0]
             row1 = df[df['KOAID'] == koaid].iloc[0]
             for col in compareCols:
+                if col in skips: continue
+
                 val0 = row0[col]
                 val1 = row1[col]
 
@@ -345,8 +347,11 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
                 if pd.isnull(val1): val1 = ''
 
                 if col == 'RA' or col == 'DEC':
-                    val0 = "{:.2f}".format(float(val0))
-                    val1 = "{:.2f}".format(float(val1))
+                    try:
+                        val0 = "{:.2f}".format(float(val0))
+                        val1 = "{:.2f}".format(float(val1))
+                    except:
+                        pass
 
                 if val0 != val1:
                     result['warnings'].append('Value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
