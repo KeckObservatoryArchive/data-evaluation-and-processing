@@ -228,6 +228,7 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
 
     #for each file, read extensions and write to file
     hduNames = []
+    extFullList = []
     for filepath in filepaths:
         file = os.path.basename(filepath)
         hdus = fits.open(filepath)
@@ -276,23 +277,15 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
             #outFile = file.replace(endsWith, '.ext.' + hdu.name + '.table')
             outFile = file.replace(endsWith, '.ext' + str(i) + '.table')
             outFilepath = outDir + outFile
+            extFullList.append(outFilepath)
             with open(outFilepath, 'w') as f:
                 f.write(dataStr)
 
 
     #Create ext.md5sum.table
-    for i in range(0, len(hdus)):
-        hdu = hdus[i]
-        if 'TableHDU' not in str(type(hdu)): continue
-        search = ".ext" + str(i) + ".table"
-        md5Outfile = outDir + '/' + md5Prepend + 'ext' + str(i) + '.md5sum.table'
-        if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
-        make_dir_md5_table(outDir, search, md5Outfile)
-    # for hduName in hduNames:
-    #     search = ".ext." + hduName + ".table"
-    #     md5Outfile = outDir + '/' + md5Prepend + 'ext.' + hduName + '.md5sum.table'
-    #     if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
-    #     make_dir_md5_table(outDir, search, md5Outfile)
+    md5Outfile = outDir + '/' + md5Prepend + 'ext.md5sum.table'
+    if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
+    make_dir_md5_table(outDir, None, md5Outfile, fileList=extFullList)
 
 
 
