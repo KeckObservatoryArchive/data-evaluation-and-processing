@@ -124,8 +124,8 @@ def create_prog(instrObj):
             #if PROGNAME exists, use that to populate the PROG* values
             progname = instrObj.get_keyword('PROGNAME')
             isProgValid = is_progid_valid(progname)
-            if not isProgValid:
-                if log: log.warning('create_prog: Invalid PROGNAME: ' + str(progname))
+            if progname and not isProgValid:
+                if log: log.error('create_prog: Invalid PROGNAME: ' + str(progname))
 
             progid   = 'PROGID'
             progpi   = 'PROGPI'
