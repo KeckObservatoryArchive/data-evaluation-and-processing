@@ -38,12 +38,16 @@ def get_root_dirs(rootDir, instr, utDate):
 
 
 
-def make_dir_md5_table(readDir, endswith, outfile):
+def make_dir_md5_table(readDir, endswith, outfile, fileList=None):
 
+    #get file list either direct or using 'endswith' search
     files = []
-    for file in sorted(os.listdir(readDir)):
-        if (endswith == None or file.endswith(endswith)): 
-            files.append(readDir + '/' + file)
+    if fileList:
+        files = fileList
+    else:        
+        for file in sorted(os.listdir(readDir)):
+            if (endswith == None or file.endswith(endswith)): 
+                files.append(readDir + '/' + file)
 
     with open(outfile, 'w') as fp:
         for file in files:
