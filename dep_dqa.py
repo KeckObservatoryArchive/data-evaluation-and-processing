@@ -274,8 +274,7 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
                 dataStr += "|\n"
 
             #write to outfile
-            #outFile = file.replace(endsWith, '.ext.' + hdu.name + '.table')
-            outFile = file.replace(endsWith, '.ext' + str(i) + '.table')
+            outFile = file.replace(endsWith, '.ext' + str(i) + '.' + hdu.name + '.table')
             outFilepath = outDir + outFile
             extFullList.append(outFilepath)
             with open(outFilepath, 'w') as f:
