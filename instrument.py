@@ -126,8 +126,8 @@ class Instrument:
         readmeFile = self.dirs['output'] + '/README';
         with open(readmeFile, 'w') as f:
             path = self.dirs['output']
-            match = re.search( r'.*(/.*/.*/\d\d\d\d\d\d\d\d)$', path, re.M)
-            if match: path = match.groups(0)[0]
+            # match = re.search( r'.*(/.*/.*/\d\d\d\d\d\d\d\d)$', path, re.M)
+            # if match: path = match.groups(0)[0]
             f.write(path + '\n')
 
 
@@ -945,6 +945,8 @@ class Instrument:
             num = frameno.rfind('_') + 1
             frameno = frameno[num:]
             frameno = int(frameno)
+
+            self.set_keyword('FRAMENUM', frameno, 'KOA: Image frame number (derived from filename)')
 
         #update
         self.set_keyword('FRAMENO', frameno, 'KOA: Image frame number')

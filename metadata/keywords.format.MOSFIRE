@@ -11,7 +11,7 @@ GRATMODE	char	32	Y
 INSTRUME	char	32	N
 KOAIMTYP	char	32	N
 MGTNAME	char	32	Y
-OBJECT	char	32	Y
+OBJECT	char	64	Y
 OBSMODE	char	32	Y
 PROGID	char	32	N
 PROGINST	char	32	N
@@ -153,7 +153,7 @@ LONGSTRN	char	24	Y
 LST	char	32	Y
 LTM1_1	double	24	Y
 LTM2_2	double	24	Y
-MASKNAME	char	32	Y
+MASKNAME	char	64	Y
 MDCMECH	char	32	Y
 MDCNAME	char	32	Y
 MDCRAW	integer	8	Y
