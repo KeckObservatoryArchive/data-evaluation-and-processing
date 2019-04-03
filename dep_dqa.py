@@ -282,9 +282,10 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
 
 
     #Create ext.md5sum.table
-    md5Outfile = outDir + '/' + md5Prepend + 'ext.md5sum.table'
-    if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
-    make_dir_md5_table(outDir, None, md5Outfile, fileList=extFullList)
+    if len(extFullList) > 0:
+        md5Outfile = outDir + '/' + md5Prepend + 'ext.md5sum.table'
+        if log: log.info('dep_dqa.py creating {}'.format(md5Outfile))
+        make_dir_md5_table(outDir, None, md5Outfile, fileList=extFullList)
 
 
 
