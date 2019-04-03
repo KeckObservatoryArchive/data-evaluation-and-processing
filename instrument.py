@@ -88,6 +88,7 @@ class Instrument:
 
         #other helpful vars
         self.rootDir = self.config[self.instr]['ROOTDIR']
+        if self.rootDir.endswith('/'): self.rootDir = self.rootDir[:-1]
         self.utDateDir = self.utDate.replace('/', '-').replace('-', '')
 
 
