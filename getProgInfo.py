@@ -363,8 +363,13 @@ class ProgSplit:
         This method obtains the data from the dep_obtain output file
         """
 
+        #use obtain func
         obFile = self.stageDir + '/dep_obtain' + self.instrument + '.txt'
         self.programs = get_obtain_data(obFile)
+
+        #if only one program and it is blank, this is actually no programs (legacy)
+        if len(self.programs) == 1 and self.programs[0]['ProjCode'] == 'NONE':
+            self.programs = []
 
 #---------------------------------- END GET SCHEDULE VALUE------------------------------------
 
@@ -607,9 +612,9 @@ class ProgSplit:
         for kw in keywords:
             val = ''
             if kw == 'progtitl':
-                if 'PROGTL1' in header: val += header['PROGTL1']
-                if 'PROGTL2' in header: val += header['PROGTL2']
-                if 'PROGTL3' in header: val += header['PROGTL3']
+                if 'PROGTL1' in header                      : val +=       header['PROGTL1']
+                if 'PROGTL2' in header and header['PROGTL2']: val += ' ' + header['PROGTL2']
+                if 'PROGTL3' in header and header['PROGTL3']: val += ' ' + header['PROGTL3']
             else:
                 if kw.upper() in header: 
                     val = header[kw.upper()]
@@ -659,7 +664,7 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, log=None, test=F
     #no proj codes
     # TODO: only throw error if there was some science files (ie this could be engineering)
     else:
-        progSplit.log.warning('No ' + instrument + ' programs found this night.')
+        progSplit.log.warning('No ' + instrument + ' programs scheduled this night.')
 
     #write out result
     fname = stageDir + '/newproginfo.txt'
