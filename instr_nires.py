@@ -104,7 +104,7 @@ class Nires(instrument.Instrument):
         Adds OFNAME keyword to header 
         """
 
-        self.log.info('set_ofName: setting OFNAME keyword value')
+        # self.log.info('set_ofName: setting OFNAME keyword value')
 
         #get value
         ofName = self.get_keyword('OFNAME')
@@ -125,7 +125,7 @@ class Nires(instrument.Instrument):
         Fixes missing ELAPTIME keyword.
         '''
 
-        self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
+        # self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
 
         #skip if it exists
         if self.get_keyword('ELAPTIME', False) != None: return True
@@ -150,7 +150,7 @@ class Nires(instrument.Instrument):
         # NOTE: kfilter is always on for imag
         '''
 
-        self.log.info('set_wavelengths: setting wavelength keyword values')
+        # self.log.info('set_wavelengths: setting wavelength keyword values')
 
         instr = self.get_keyword('FTYPE')
 
@@ -174,7 +174,7 @@ class Nires(instrument.Instrument):
         Adds nominal spectral resolution keyword
         '''
 
-        self.log.info('set_specres: setting SPECRES keyword values')
+        # self.log.info('set_specres: setting SPECRES keyword values')
 
         instr = self.get_keyword('FTYPE')
         if (instr == 'spec'):
@@ -215,7 +215,7 @@ class Nires(instrument.Instrument):
         #add keyword for 'imag' only
         instr = self.get_keyword('FTYPE')
         if (instr == 'imag'):
-            self.log.info('set_filter: setting FILTER keyword value')
+            # self.log.info('set_filter: setting FILTER keyword value')
             filt = 'Kp'
             self.set_keyword('FILTER' , filt, 'KOA: Filter')
         return True
@@ -229,7 +229,7 @@ class Nires(instrument.Instrument):
         #add keywords for 'spec' only
         instr = self.get_keyword('FTYPE')
         if (instr == 'spec'):
-            self.log.info('set_slit_dims: setting slit keyword values')
+            # self.log.info('set_slit_dims: setting slit keyword values')
             slitlen  = 18.1
             slitwidt = 0.5
             self.set_keyword('SLITLEN'  , slitlen,  'KOA: Slit length projected on sky')
@@ -243,7 +243,7 @@ class Nires(instrument.Instrument):
         This is derived from OBSTYPE keyword.
         '''
 
-        self.log.info('set_koaimtyp: setting KOAIMTYP keyword value from OBSTYPE')
+        # self.log.info('set_koaimtyp: setting KOAIMTYP keyword value from OBSTYPE')
 
         #get obstype value
         obstype = self.get_keyword('OBSTYPE')

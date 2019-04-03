@@ -98,7 +98,7 @@ class Mosfire(instrument.Instrument):
         Fixes missing ELAPTIME keyword.
         '''
 
-        self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
+        # self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
 
         #skip if it exists
         if self.get_keyword('ELAPTIME', False) != None: return True
@@ -121,7 +121,7 @@ class Mosfire(instrument.Instrument):
         Adds OFNAME keyword to header 
         """
 
-        self.log.info('set_ofName: setting OFNAME keyword value')
+        # self.log.info('set_ofName: setting OFNAME keyword value')
 
         #get value
         ofName = self.get_keyword('OFNAME')
@@ -142,7 +142,7 @@ class Mosfire(instrument.Instrument):
         Determine image type based on instrument keyword configuration
         """
 
-        self.log.info('set_koaimtyp: setting KOAIMTYP keyword value')
+        # self.log.info('set_koaimtyp: setting KOAIMTYP keyword value')
 
         # Default KOAIMTYP value
         koaimtyp = 'undefined'
@@ -227,7 +227,7 @@ class Mosfire(instrument.Instrument):
         # https://www.keck.hawaii.edu/realpublic/inst/mosfire/genspecs.html
         """
 
-        self.log.info('set_wavelengths: setting wavelength keyword values')
+        # self.log.info('set_wavelengths: setting wavelength keyword values')
 
         # Filter lookup (filter: [central, fwhm])
 

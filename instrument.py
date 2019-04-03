@@ -251,7 +251,7 @@ class Instrument:
         Create and add KOAID to header if it does not already exist
         '''
 
-        self.log.info('set_koaid: setting KOAID keyword value')
+        # self.log.info('set_koaid: setting KOAID keyword value')
 
         #skip if it exists
         if self.get_keyword('KOAID', False) != None: return True
@@ -362,7 +362,7 @@ class Instrument:
         '''
         #todo:  go over idl file again and pull out logic for other instruments
 
-        self.log.info('set_instr: verifying this is a ' + self.instr + ' FITS file')
+        #self.log.info('set_instr: verifying this is a ' + self.instr + ' FITS file')
 
         ok = False
 
@@ -534,7 +534,7 @@ class Instrument:
 
     def set_prog_info(self, progData):
         
-        self.log.info('set_prog_info: setting program information keywords')
+        # self.log.info('set_prog_info: setting program information keywords')
 
         #note: progData is also stored in newproginfo.txt output from getProgInfo.py
 
@@ -568,7 +568,7 @@ class Instrument:
 
         #extra warning for log
         if data['progid'] == 'NONE':
-            self.log.warning('set_prog_info: PROGID is NONE for ' + self.fitsFilepath)
+            self.log.warning('set_prog_info: PROGID is NONE for ' + os.path.basename(self.fitsFilepath))
 
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:50]
@@ -631,7 +631,7 @@ class Instrument:
         NOTE: This must come after set_semester() is called
         '''
 
-        self.log.info('set_propint: determining PROPINT value')
+        # self.log.info('set_propint: determining PROPINT value')
 
         #create semid
         semid = self.get_semid()
@@ -689,7 +689,7 @@ class Instrument:
         Adds mean, median, std keywords to header
         '''
 
-        self.log.info('set_image_stats_keywords: setting image statistics keyword values')
+        # self.log.info('set_image_stats_keywords: setting image statistics keyword values')
 
         image = self.fitsHdu[0].data     
         imageStd    = float("%0.2f" % np.std(image))
@@ -708,7 +708,7 @@ class Instrument:
         Determines number of saturated pixels and adds NPIXSAT to header
         '''
 
-        self.log.info('set_npixsat: setting pixel saturation keyword value')
+        # self.log.info('set_npixsat: setting pixel saturation keyword value')
 
         satVal = self.get_keyword('SATURATE')
         if satVal == None:
@@ -748,7 +748,7 @@ class Instrument:
         NOTE: DEP should not exit if weather files are not found
         '''
 
-        self.log.info('set_weather_keywords: setting weather keyword values')
+        # self.log.info('set_weather_keywords: setting weather keyword values')
 
         #get input vars
         dateobs = self.get_keyword('DATE-OBS')
@@ -867,7 +867,6 @@ class Instrument:
                 plt.savefig(pngFile)
                 Image.open(pngFile).convert('RGB').save(jpgFile)
                 os.remove(pngFile)
-                self.log.info('make_jpg: file created {}'.format(jpgFile))
                 plt.close()
             else:
                 #TODO: if this errors, should we remove .fits file added previously?
@@ -926,7 +925,7 @@ class Instrument:
         Adds FRAMENO keyword to header if it doesn't exist
         """
 
-        self.log.info('set_frameno: setting FRAMNO keyword value from FRAMENUM')
+        # self.log.info('set_frameno: setting FRAMNO keyword value from FRAMENUM')
 
         #skip if it exists
         if self.get_keyword('FRAMENO', False) != None: return True
