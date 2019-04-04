@@ -116,27 +116,6 @@ class Mosfire(instrument.Instrument):
         return True
 
 
-    def set_ofName(self):
-        """
-        Adds OFNAME keyword to header 
-        """
-
-        # self.log.info('set_ofName: setting OFNAME keyword value')
-
-        #get value
-        ofName = self.get_keyword('OFNAME')
-        if (ofName == None): 
-            self.log.error('set_ofName: cannot find value for OFNAME')
-            return False
-
-        #add *.fits to output if it does not exist (to fix old files)
-        if (ofName.endswith('.fits') == False) : ofName += '.fits'
-
-        #update
-        self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
-        return True
-
-
     def set_koaimtyp(self):
         """
         Determine image type based on instrument keyword configuration
