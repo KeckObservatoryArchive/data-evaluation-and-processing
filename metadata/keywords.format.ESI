@@ -4,7 +4,7 @@ OFNAME	char	32	N
 PROGID	char	32	N
 PROGINST	char	32	N
 PROGPI	char	32	N
-PROGTITL	char	32	Y
+PROGTITL	char	210	Y
 KOAIMTYP	char	32	N
 DATLEVEL	integer	8	Y
 DISPSCAL	double	16	Y
@@ -57,7 +57,7 @@ BZERO	integer	16	Y
 CCDGAIN	char	8	Y
 CCDPSIZE	char	32	Y
 CCDSPEED	char	8	Y
-COLL1AW	integer	8	Y
+COLL1RAW	integer	8	Y
 COLL1CAL	char	16	Y
 COLL1ERR	integer	8	Y
 COLL1FOP	char	8	Y
@@ -111,6 +111,7 @@ EQUINOX	double	16	Y
 ERASECNT	integer	16	Y
 ERASLINE	integer	8	Y
 EXPOSURE	integer	8	Y
+EXTEND	char	8	Y
 FLAMP3	char	16	Y
 FLAMP4	char	16	Y
 FLAMP5	char	16	Y
@@ -129,7 +130,7 @@ IMFLTORD	integer	8	Y
 IMFLTRAW	integer	16	Y
 IMFLTSTA	char	16	Y
 IMFLTTOR	double	16	Y
-IMTYPE	char	8	Y
+IMTYPE	char	16	Y
 INSTANGL	double	16	Y
 INSTFLIP	char	8	Y
 INSTRUME	char	16	Y
@@ -212,7 +213,6 @@ ROTSRVER	double	16	Y
 ROTSTST	char	16	Y
 ROTZERO	double	16	Y
 ROWSHFT	integer	8	Y
-RVFILCAL	char	16	Y
 SECFOCUS	double	16	Y
 SECTHETX	double	16	Y
 SECTHETY	double	16	Y
@@ -226,6 +226,8 @@ SLMSKRAW	integer	16	Y
 SLMSKSTA	char	16	Y
 SLMSKTOR	double	16	Y
 ST	char	16	Y
+SYNOPFMT	char	100	Y
+SYNOPSIS	char	100	Y
 TARGDEC	double	16	Y
 TARGEPOC	double	16	Y
 TARGEQUI	double	16	Y
@@ -259,6 +261,7 @@ TMPPRSMC	double	16	Y
 TODISK	char	8	Y
 TTIME	integer	8	Y
 TUBETEMP	double	16	Y
+TVFILCAL	char	16	Y
 TVFILERR	integer	8	Y
 TVFILFOP	char	8	Y
 TVFILNAM	char	32	Y
