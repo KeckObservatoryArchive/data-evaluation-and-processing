@@ -388,3 +388,32 @@ def load_metadata_file_as_df(filepath):
         return data
 
     return None
+
+
+def header_keyword_report(keywordsDefFile, fitsFile):
+
+
+    #read keywords format file and fits file
+    keyDefs = pd.read_csv(keywordsDefFile, sep='\t')
+    header = fits.getheader(fitsFile, ignore_missing_end=True)
+
+    #put header keys into set
+    print ("=========HEADER LIST===========")
+    headerKeys = []
+    for key in header.keys():
+        print (key)
+        headerKeys.append(key)
+
+    #put keyDefs into set
+    print ("=========FORMAT LIST===========")
+    formatKeys = []
+    for index, row in keyDefs.iterrows():
+        print (row['keyword'])
+        formatKeys.append(row['keyword'])
+
+    #diff sets 
+    diff1 = list(set(headerKeys) - set(formatKeys))
+    print ("=========KEYWORDS DIFF (header - format)===========\n", diff1)
+
+    diff2 = list(set(formatKeys) - set(headerKeys))
+    print ("=========KEYWORDS DIFF (format - header)===========\n", diff2)
