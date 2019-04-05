@@ -69,7 +69,7 @@ class Instrument:
 
 
         # Other values that can be overwritten in instr-*.py
-        self.endHour = '20:00:00'	# 24 hour period start/end time (UT)
+        self.endHour = '20:00:00'   # 24 hour period start/end time (UT)
 
 
         # Values to be populated by subclass
@@ -389,8 +389,8 @@ class Instrument:
 
             #if fixed, then update 'INSTRUME' in header
             if ok:
-                self.set_keyword('INSTRUME', self.instr, 'KOA: Fixing missing INSTRUME keyword')
-                self.log.warning('set_instr: set missing INSTRUME value')
+                self.set_keyword('INSTRUME', self.instr, 'KOA: Fixing INSTRUME keyword')
+                self.log.info('set_instr: fixing INSTRUME value')
 
         #log err
         if (not ok):
@@ -453,9 +453,14 @@ class Instrument:
         Checks to see if we have a UTC time keyword, and if it needs to be fixed or created.
         '''
 
-        #try to get from header (unmapped or mapped)
+        #try to get from header unmapped and mark if update needed
+        update = False
         utc = self.get_keyword('UTC', False)
-        if utc == None: utc = self.get_keyword('UTC')
+        if utc == None: update = True
+
+        #try to get from header mapped
+        if utc == None:
+            utc = self.get_keyword('UTC')
 
         #validate
         valid = False
@@ -471,8 +476,12 @@ class Instrument:
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S.00')
-            self.set_keyword('UTC', utc, 'KOA: Value corrected')
+            update = True
             self.log.warning('set_utc: set UTC value from FITS file time')
+
+        #update/add if need be
+        if update:
+            self.set_keyword('UTC', utc, 'KOA: UTC keyword corrected')
 
         return True
 
@@ -549,7 +558,7 @@ class Instrument:
                 data = progFile
                 break
         if data == None: 
-            self.log.warning('set_prog_info: Could not get program info.  UDF!')
+            self.log.error('set_prog_info: Could not get program info.  UDF!')
             return False
 
         #create keywords, deal with blank/undefined vals
