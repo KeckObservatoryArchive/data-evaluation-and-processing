@@ -128,7 +128,9 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
             #get value from header, set to null if not found
             if   (keyword in header) : val = header[keyword]
             elif (keyword in extra)  : val = extra[keyword]
-            else                     : val = 'null';
+            else: 
+                val = 'null';
+                if dev: log_msg(log, dev, 'metadata check: Keyword not found in header: ' + keyword)
 
             #check keyword val and format
             val = check_keyword_val(keyword, val, row, warns, log)

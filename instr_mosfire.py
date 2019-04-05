@@ -64,8 +64,8 @@ class Mosfire(instrument.Instrument):
         return ok
 
 
-
-    def get_dir_list(self):
+    @staticmethod
+    def get_dir_list():
         '''
         Function to generate the paths to all the MOSFIRE accounts, including engineering
         Returns the list of paths
@@ -113,27 +113,6 @@ class Mosfire(instrument.Instrument):
         #update val
         elaptime = itime * coadds
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
-        return True
-
-
-    def set_ofName(self):
-        """
-        Adds OFNAME keyword to header 
-        """
-
-        # self.log.info('set_ofName: setting OFNAME keyword value')
-
-        #get value
-        ofName = self.get_keyword('OFNAME')
-        if (ofName == None): 
-            self.log.error('set_ofName: cannot find value for OFNAME')
-            return False
-
-        #add *.fits to output if it does not exist (to fix old files)
-        if (ofName.endswith('.fits') == False) : ofName += '.fits'
-
-        #update
-        self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
         return True
 
 

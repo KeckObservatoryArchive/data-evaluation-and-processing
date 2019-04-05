@@ -51,7 +51,7 @@ def dep_locate(instrObj, tpx=0):
     if ('SEARCH_DIR' in instrObj.config['LOCATE']): useDirs = [instrObj.config['LOCATE']['SEARCH_DIR']]
     else                                          : useDirs = instrObj.get_dir_list()
     if len(useDirs) == 0:
-        log.warning('Did not find any sdata directories')
+        log.error('dep_locate: Did not find any directories to search!')
         return
 
 
@@ -408,10 +408,10 @@ def find_24hr_fits(useDirs, utDate, endTime, modtimeOverride=0):
     for fitsDir in useDirs:
         for root, dirs, files in os.walk(fitsDir):
             for item in sorted(files):
-
                 if not '.fits' in item: continue
 
                 # Create the path to the current file we want to check
+                if root.endswith('/'): root = root[:-1]
                 fullPath = ''.join((root, '/', item))
 
                 # Check to see if the file is a fits file created/modified in the last day. 

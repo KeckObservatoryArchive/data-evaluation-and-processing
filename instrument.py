@@ -69,7 +69,7 @@ class Instrument:
 
 
         # Other values that can be overwritten in instr-*.py
-        self.endHour = '20:00:00'	# 24 hour period start/end time (UT)
+        self.endHour = '20:00:00'   # 24 hour period start/end time (UT)
 
 
         # Values to be populated by subclass
@@ -88,6 +88,7 @@ class Instrument:
 
         #other helpful vars
         self.rootDir = self.config[self.instr]['ROOTDIR']
+        if self.rootDir.endswith('/'): self.rootDir = self.rootDir[:-1]
         self.utDateDir = self.utDate.replace('/', '-').replace('-', '')
 
 
@@ -274,7 +275,7 @@ class Instrument:
         Returns the koaid and TRUE if the KOAID is successfully created
         """
 
-        #TODO: see common.koaid() and make sure all logic is moved here or to instr_*.py
+        #TODO: see old/common.koaid() and make sure all logic is moved here or to instr_*.py
 
         # Get the prefix for the correct instrument and configuration
         self.prefix = self.get_prefix()
@@ -388,8 +389,8 @@ class Instrument:
 
             #if fixed, then update 'INSTRUME' in header
             if ok:
-                self.set_keyword('INSTRUME', self.instr, 'KOA: Fixing missing INSTRUME keyword')
-                self.log.warning('set_instr: set missing INSTRUME value')
+                self.set_keyword('INSTRUME', self.instr, 'KOA: Fixing INSTRUME keyword')
+                self.log.info('set_instr: fixing INSTRUME value')
 
         #log err
         if (not ok):
@@ -452,9 +453,14 @@ class Instrument:
         Checks to see if we have a UTC time keyword, and if it needs to be fixed or created.
         '''
 
-        #try to get from header (unmapped or mapped)
+        #try to get from header unmapped and mark if update needed
+        update = False
         utc = self.get_keyword('UTC', False)
-        if utc == None: utc = self.get_keyword('UTC')
+        if utc == None: update = True
+
+        #try to get from header mapped
+        if utc == None:
+            utc = self.get_keyword('UTC')
 
         #validate
         valid = False
@@ -470,8 +476,12 @@ class Instrument:
             lastMod = os.stat(filename).st_mtime
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S.00')
-            self.set_keyword('UTC', utc, 'KOA: Value corrected')
+            update = True
             self.log.warning('set_utc: set UTC value from FITS file time')
+
+        #update/add if need be
+        if update:
+            self.set_keyword('UTC', utc, 'KOA: UTC keyword corrected')
 
         return True
 
@@ -548,7 +558,7 @@ class Instrument:
                 data = progFile
                 break
         if data == None: 
-            self.log.warning('set_prog_info: Could not get program info.  UDF!')
+            self.log.error('set_prog_info: Could not get program info.  UDF!')
             return False
 
         #create keywords, deal with blank/undefined vals
@@ -740,6 +750,26 @@ class Instrument:
 
         return True
 
+
+    def set_ofName(self):
+        """
+        Adds OFNAME keyword to header 
+        """
+
+        # self.log.info('set_ofName: setting OFNAME keyword value')
+
+        #get value
+        ofName = self.get_keyword('OFNAME')
+        if (ofName == None): 
+            self.log.error('set_ofName: cannot find value for OFNAME')
+            return False
+
+        #add *.fits to output if it does not exist (to fix old files)
+        if (ofName.endswith('.fits') == False) : ofName += '.fits'
+
+        #update
+        self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
+        return True
 
 
     def set_weather_keywords(self):
