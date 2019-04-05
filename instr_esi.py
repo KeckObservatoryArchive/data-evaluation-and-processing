@@ -6,25 +6,69 @@ ESI specific DR techniques can be added to it in the future
 '''
 
 import instrument
+import datetime as dt
+from common import *
+import numpy as np
+
 
 class Esi(instrument.Instrument):
+
     def __init__(self, instr, utDate, rootDir, log=None):
+
         # Call the parent init to get all the shared variables
         super().__init__(instr, utDate, rootDir, log)
 
+
+        # Set any unique keyword index values here
+        self.keywordMap['UTC']       = 'UT'        
+
+
         # Other vars that subclass can overwrite
+        #TODO: Ack! Looks like the old DEP has an hour difference between this value and the actual cron time!
         self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
 
-        # Set the esi specific paths to anc and stage
-        seq = (self.rootDir,'/ESI/', self.utDate, '/anc')
-        self.ancDir = ''.join(seq)
-        seq = (self.rootDir, '/stage')
-        self.stageDir = ''.join(seq)
-        # Generate the paths to the ESI datadisk accounts
-        self.paths = self.get_dir_list()
+
+        # Generate the paths to the NIRES datadisk accounts
+        self.sdataList = self.get_dir_list()
 
 
-    def get_dir_list(self):
+    def run_dqa_checks(self, progData):
+        '''
+        Run all DQA checks unique to this instrument.
+        '''
+
+        #todo: check that all of these do not need a subclass version if base class func was used.
+        ok = True
+        if ok: ok = self.set_instr()
+        if ok: ok = self.set_dateObs()
+        if ok: ok = self.set_utc()
+        if ok: ok = self.set_koaimtyp()
+        if ok: ok = self.set_koaid()
+        if ok: ok = self.set_ut()
+        if ok: ok = self.set_frameno()
+        if ok: ok = self.set_ofName()
+        if ok: ok = self.set_semester()
+        if ok: ok = self.set_prog_info(progData)
+        if ok: ok = self.set_propint(progData)
+        if ok: ok = self.set_datlevel(0)
+        if ok: ok = self.set_image_stats_keywords()
+        if ok: ok = self.set_weather_keywords()
+        if ok: ok = self.set_oa()
+        if ok: ok = self.set_npixsat()
+
+        # if ok: ok = self.set_wavelengths()
+        # if ok: ok = self.set_specres()
+        # if ok: ok = self.set_slit_dims()
+        # if ok: ok = self.set_spatscal()
+        # if ok: ok = self.set_dispscal()
+
+        if ok: ok = self.set_dqa_vers()
+        if ok: ok = self.set_dqa_date()
+        return ok
+
+
+    @staticmethod
+    def get_dir_list():
         '''
         Function to generate the paths to all the ESI accounts, including engineering
         Returns the list of paths
@@ -33,31 +77,29 @@ class Esi(instrument.Instrument):
         path = '/s/sdata70'
         for i in range(8):
             if i != 5:
-                joinSeq = (path, str(i), '/esi')
-                path2 = ''.join(joinSeq)
+                path2 = path + str(i) + '/esi'
                 for j in range(1,21):
-                    joinSeq = (path2, str(j))
-                    path3 = ''.join(joinSeq)
+                    path3 = path2 + str(j)
                     dirs.append(path3)
-                joinSeq = (path2, 'eng')
-                path3 = ''.join(joinSeq)
+                path3 = path2 + 'eng'
                 dirs.append(path3)
         return dirs
 
-    def get_prefix(self, keys):
-        instr = self.get_prefix(keys)
-        if instr == 'esi':
-            prefix = 'EI'
-        else:
-            prefix = ''
+
+    def get_prefix(self):
+
+        instr = self.get_instr()
+        if instr == 'esi': prefix = 'EI'
+        else             : prefix = ''
         return prefix
+
 
     def set_koaimtyp(self):
         """
         Uses get_koaimtyp to set KOAIMTYP
         """
 
-        self.log.info('set_koaimtyp: setting KOAIMTYP keyword value')
+        #self.log.info('set_koaimtyp: setting KOAIMTYP keyword value')
 
         koaimtyp = self.get_koaimtyp()
 
@@ -69,6 +111,7 @@ class Esi(instrument.Instrument):
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
 
         return True
+
 
     def get_koaimtyp(self):
         """
