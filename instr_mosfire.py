@@ -64,8 +64,8 @@ class Mosfire(instrument.Instrument):
         return ok
 
 
-
-    def get_dir_list(self):
+    @staticmethod
+    def get_dir_list():
         '''
         Function to generate the paths to all the MOSFIRE accounts, including engineering
         Returns the list of paths
