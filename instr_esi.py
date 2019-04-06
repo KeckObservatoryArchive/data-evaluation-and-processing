@@ -42,6 +42,8 @@ class Esi(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_utc()
+        self.get_dispmode(update=True)
+        self.get_camera(update=True)
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ut()
@@ -54,13 +56,13 @@ class Esi(instrument.Instrument):
         if ok: ok = self.set_image_stats_keywords()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_oa()
-        if ok: ok = self.set_npixsat()
+        if ok: ok = self.set_npixsat(65535)
 
-        # if ok: ok = self.set_wavelengths()
-        # if ok: ok = self.set_specres()
-        # if ok: ok = self.set_slit_dims()
-        # if ok: ok = self.set_spatscal()
-        # if ok: ok = self.set_dispscal()
+        if ok: ok = self.set_wavelengths()
+        if ok: ok = self.set_specres()
+        if ok: ok = self.set_slit_dims()
+        if ok: ok = self.set_spatscal()
+        if ok: ok = self.set_dispscal()
 
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
@@ -113,9 +115,44 @@ class Esi(instrument.Instrument):
         return True
 
 
+    def get_dispmode(self, update=False):
+        """
+        Determines spectrograph dispersion mode (low, high, null)
+        """
+
+        dispmode = self.get_keyword('DISPMODE')
+        if dispmode == None:
+            imfltnam = self.get_keyword('IMFLTNAM', default='').lower()
+            ldfltnam = self.get_keyword('LDFLTNAM', default='').lower()
+            prismnam = self.get_keyword('PRISMNAM', default='').lower()
+
+            if   imfltnam == 'out' and ldfltnam == 'in'  and prismnam == 'in' : dispmode = 'low'
+            elif imfltnam == 'out' and ldfltnam == 'out' and prismnam == 'in' : dispmode = 'high'
+            elif imfltnam == 'in'  and ldfltnam == 'out' and prismnam == 'out': dispmode = 'null'
+
+            if update: self.set_keyword('DISPMODE', dispmode, 'KOA: Spectrograph dispersion mode')
+
+        return dispmode
+
+
+    def get_camera(self, update=False):
+        '''
+        Determines instrument camera mode (imag or spec)
+        '''
+        camera = self.get_keyword('CAMERA')
+        if camera == None:
+            dispmode = self.get_dispmode()
+            if dispmode in ('low', 'high'): camera = 'spec'
+            else                          : camera = 'imag'
+
+            if update: self.set_keyword('CAMERA', camera, 'KOA: Instrument camera mode')
+
+        return camera
+
+
     def get_koaimtyp(self):
         """
-        Determine iamge type based on instrument keyword configuration
+        Determine image type based on instrument keyword configuration
         """
 
         # Default KOAIMTYP value
@@ -195,3 +232,94 @@ class Esi(instrument.Instrument):
                 if not flat and not arc: return 'object'
 
         return 'undefined'
+
+
+    def set_wavelengths(self):
+        '''
+        Adds wavelength keywords.
+        '''
+
+        # self.log.info('set_wavelengths: setting wavelength keyword values')
+
+        #todo: verify these values below
+        camera  = self.get_camera()
+
+        #imaging:
+        if (camera == 'imag'):
+            self.set_keyword('WAVERED' , 10900, 'KOA: Red end wavelength')
+            self.set_keyword('WAVECNTR',  7400, 'KOA: Center wavelength')
+            self.set_keyword('WAVEBLUE',  3900, 'KOA: Blue end wavelength')
+
+        #spec:
+        elif (camera == 'spec'):
+            self.set_keyword('WAVERED' , 10900, 'KOA: Red end wavelength')
+            self.set_keyword('WAVECNTR',  7400, 'KOA: Center wavelength')
+            self.set_keyword('WAVEBLUE',  3900, 'KOA: Blue end wavelength')
+
+        return True
+
+
+    def set_specres(self):
+        '''
+        Adds nominal spectral resolution keyword
+        '''
+
+        # self.log.info('set_specres: setting SPECRES keyword values')
+
+        #todo: verify these values below
+        camera   = self.get_camera()
+        if (camera == 'spec'):
+            specres = 3500.0
+            self.set_keyword('SPECRES' , specres,  'KOA: Nominal spectral resolution')
+        return True
+
+
+    def set_dispscal(self):
+        '''
+        Adds CCD pixel scale, dispersion (arcsec/pixel) keyword to header.
+        '''
+
+        camera   = self.get_camera()
+        dispscal = None
+        if   (camera == 'imag'): dispscal = 0.1542
+        elif (camera == 'spec'): dispscal = 0.1542
+        self.set_keyword('DISPSCAL' , dispscal, 'KOA: CCD pixel scale, dispersion')
+        return True
+
+
+    def set_spatscal(self):
+        '''
+        Adds spatial scale keyword to header.
+        '''
+
+        camera   = self.get_camera()
+        spatscal = None
+        if   (camera == 'imag'): spatscal = 0.1542
+        elif (camera == 'spec'): spatscal = 0.1542
+        self.set_keyword('SPATSCAL' , spatscal, 'KOA: CCD pixel scale, spatial')
+        return True
+
+
+    def set_slit_dims(self):
+        '''
+        Adds slit length and width keywords to header.
+        '''
+
+        camera   = self.get_camera()
+        dispmode = self.get_dispmode()
+
+        #add keywords for 'spec' only
+        if (camera == 'spec'):
+
+            slitlen = None
+            if   dispmode == 'low' : slitlen = 18.1*60
+            elif dispmode == 'high': slitlen = 20
+            self.set_keyword('SLITLEN'  , slitlen,  'KOA: Slit length projected on sky')
+
+            slitwidt = None
+            slmsknam = self.get_keyword('SLMSKNAM')
+            if slmsknam:
+                slitwidt = float(slmsknam.split('_')[0])
+            self.set_keyword('SLITWIDT' , slitwidt, 'KOA: Slit width projected on sky')
+
+        return True
