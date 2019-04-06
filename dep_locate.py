@@ -296,7 +296,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
        if filename[0] == 'i':
            filename = ''.join((filename, '.fits'))
        return filename, True
-   elif instr in ['MOSFIRE', 'NIRES']:
+   elif instr in ['MOSFIRE', 'NIRES', 'NIRSPEC']:
        try:
            outfile = keywords['DATAFILE']
            if '.fits' not in outfile:
@@ -306,7 +306,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
            copy_bad_file(
                    instr, fitsFile, ancDir, 'Bad Outfile', log)
            return '', False
-   elif instr == 'KCWI':
+   elif instr in ['KCWI']:
        try:
            outfile = keywords['OFNAME']
            return outfile, True

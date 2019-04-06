@@ -43,9 +43,9 @@ class Nirspec(instrument.Instrument):
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
-        if ok: ok = self.set_wavelengths()
+#        if ok: ok = self.set_wavelengths()
 #        if ok: ok = self.set_specres()
-        if ok: ok = self.set_weather_keywords()
+#        if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_datlevel(0)
 #        if ok: ok = self.set_filter()
 #        if ok: ok = self.set_slit_dims()
@@ -83,25 +83,25 @@ class Nirspec(instrument.Instrument):
         return dirs
 
 
-    def get_prefix(self, keys):
+    def get_prefix(self):
 
         # SCAM = NC, SPEC = NS
         instr = self.get_instr()
         if instr == 'nirspec' or instr == 'nirspao':
             try:
-                outdir = self.get_keyword['OUTDIR']
+                camera = self.get_keyword('CAMERA').lower()
             except KeyError:
                 prefix = ''
             else:
-                if '/scam' in outdir:
+                if camera == 'scam':
                     prefix = 'NC'
-                elif '/spec' in outdir:
+                elif camera == 'spec':
                     prefix = 'NS'
                 else:
                     prefix = ''
         else:
             prefix = ''
-       return prefix
+        return prefix
 
 
     def set_elaptime(self):
@@ -112,13 +112,13 @@ class Nirspec(instrument.Instrument):
         self.log.info('set_elaptime: determining ELAPTIME from TRUITIME')
 
         #skip it it exists
-        if self.get_keyword('ELAPTIME', Flase) != None: return True
+        if self.get_keyword('ELAPTIME', False) != None: return True
 
         #get necessary keywords
         itime  = self.get_keyword('TRUITIME')
         coadds = self.get_keyword('COADDS')
         if (itime == None or coadds == None):
-            self.log.error('set_elaptime: TRUITIME and COADDS values needed to set ELAPTIME'
+            self.log.error('set_elaptime: TRUITIME and COADDS values needed to set ELAPTIME')
             return False
 
         #update val
