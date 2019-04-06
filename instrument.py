@@ -184,7 +184,7 @@ class Instrument:
 
 
 
-    def get_keyword(self, keyword, useMap=True):
+    def get_keyword(self, keyword, useMap=True, default=None):
         '''
         Gets keyword value from the FITS header as defined in keywordMap class variable.  
         NOTE: FITS file must be loaded first with self.set_fits_file
@@ -196,7 +196,7 @@ class Instrument:
         # check for loaded fitsHeader
         if not self.fitsHeader:
              raise Exception('get_keyword: ERROR: no FITS header loaded')
-             return None
+             return default
 
         #use keyword mapping?
         if useMap:
@@ -216,7 +216,7 @@ class Instrument:
             if val != None: return val
 
         #return None if we didn't find it
-        return None
+        return default
 
 
 
@@ -713,14 +713,16 @@ class Instrument:
         return True
 
 
-    def set_npixsat(self):
+    def set_npixsat(self, satVal=None):
         '''
         Determines number of saturated pixels and adds NPIXSAT to header
         '''
 
         # self.log.info('set_npixsat: setting pixel saturation keyword value')
 
-        satVal = self.get_keyword('SATURATE')
+        if satVal == None:
+            satVal = self.get_keyword('SATURATE')
+            
         if satVal == None:
             self.log.warning("set_npixsat: Could not find SATURATE keyword")
         else:
