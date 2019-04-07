@@ -36,6 +36,7 @@ class Nirspec(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_elaptime()
+        if ok: ok = self.set_coadd()
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_frameno()
@@ -124,6 +125,26 @@ class Nirspec(instrument.Instrument):
         #update val
         elaptime = itime * coadds
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
+        return True
+
+
+    def set_coadd(self):
+        '''
+        Adds COADD, copy of COADDS for UI
+        '''
+
+        # todo - do we really need this?
+
+        self.log.info('set_coadd: adding COADD from COADDS')
+
+        if self.get_keyword('COADD', False) != None: return True
+
+        coadd = self.get_keyword('COADDS')
+        if coadd == None:
+            self.log.error('set_coadd: COADDS value needed to set COADD')
+            return False
+
+        self.set_keyword('COADD', coadd, 'KOA: Copy of COADDS')
         return True
 
 
