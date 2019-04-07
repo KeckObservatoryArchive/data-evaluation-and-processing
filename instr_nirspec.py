@@ -155,6 +155,9 @@ class Nirspec(instrument.Instrument):
 
         self.log.info('set_ofName: setting OFNAME keyword value')
 
+        #OFNAME was added as a native NIRSPEC keyword around 20190405
+        if self.get_keyword('OFNAME', False) != None: return True
+
         #get value
         ofName = self.get_keyword('OFNAME')
         if (ofName == None):
