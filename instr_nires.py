@@ -74,11 +74,10 @@ class Nires(instrument.Instrument):
         dirs = []
         path = '/s/sdata150'
         for i in range(0,4):
-            joinSeq = (path, str(i))
-            path2 = ''.join(joinSeq)
+            path2 = path + str(i)
             dirs.append(path2 + '/nireseng')
             for j in range(1, 10):
-                path3 = ''.join((path2, '/nires', str(j)))
+                path3 = path2 + '/nires' + str(j)
                 dirs.append(path3)
         return dirs
 

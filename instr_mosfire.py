@@ -72,15 +72,12 @@ class Mosfire(instrument.Instrument):
         '''
         dirs = []
         path = '/s/sdata1300'
-        joinSeq = (path, '/mosfire')
-        path2 = ''.join(joinSeq)
+        path2 = path + '/mosfire'
         dirs.append(path2)
         for i in range(1,10):
-            joinSeq = (path, '/mosfire', str(i))
-            path2 = ''.join(joinSeq)
+            path2 = path + '/mosfire' + str(i)
             dirs.append(path2)
-        joinSeq = (path, '/moseng')
-        path2 = ''.join(joinSeq)
+        path2 = path + '/moseng'
         dirs.append(path2)
         return dirs
 
@@ -203,7 +200,7 @@ class Mosfire(instrument.Instrument):
     def set_wavelengths(self):
         """
         Adds wavelength keywords.
-        # https://www.keck.hawaii.edu/realpublic/inst/mosfire/genspecs.html
+        # https://www2.keck.hawaii.edu/inst/mosfire/filters.html
         """
 
         # self.log.info('set_wavelengths: setting wavelength keyword values')
