@@ -66,7 +66,7 @@ class Nires(instrument.Instrument):
 
 
     @staticmethod
-    def get_dir_list(self):
+    def get_dir_list():
         '''
         Function to generate generates all the storage locations including engineering
         Returns the list of paths
