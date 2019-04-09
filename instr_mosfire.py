@@ -94,6 +94,7 @@ class Mosfire(instrument.Instrument):
         '''
         Fixes missing ELAPTIME keyword.
         '''
+        #todo: make this a common instrument.py function for all instruments (small differences)
 
         # self.log.info('set_elaptime: determining ELAPTIME from ITIME/COADDS')
 
@@ -108,7 +109,7 @@ class Mosfire(instrument.Instrument):
             return False
 
         #update val
-        elaptime = itime * coadds
+        elaptime = round(itime * coadds, 4)
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         return True
 
