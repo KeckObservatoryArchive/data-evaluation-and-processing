@@ -176,7 +176,7 @@ def check_keyword_val(keyword, val, fmt, warns, log=None, dev=False):
 
 
     #check null
-    if (val == 'null'):
+    if (val == 'null' or val == ''):
         if (fmt['allowNull'] == 'N'):
             raise Exception('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))            
         return val

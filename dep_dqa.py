@@ -93,12 +93,12 @@ def dep_dqa(instrObj, tpx=0):
         if ok: ok = instrObj.run_dqa_checks(progData)
         if ok: ok = check_koaid(instrObj, outFiles, log)
         if ok: ok = instrObj.write_lev0_fits_file()
-        if ok: ok = instrObj.make_jpg()
+        if ok: instrObj.make_jpg()
 
  
         #If any of these steps return false then copy to udf and skip
         if (not ok): 
-            log.info('FITS file is UDF.  Copying {} to {}'.format(filename, dirs['udf']))
+            log.warning('FITS file failed DQA.  Copying {} to {}'.format(filename, dirs['udf']))
             shutil.copy2(filename, dirs['udf']);
             continue
 
@@ -197,7 +197,7 @@ def dep_dqa(instrObj, tpx=0):
 
     #update koapi_send for all unique semids
     #NOTE: ensure this doesn't trigger during testing
-    if tpx and not isDev and utDate > '2019-01-01':
+    if tpx and not isDev:
         check_koapi_send(semids, instrObj.utDate, instrObj.config['API']['koaapi'], log)
 
 

@@ -66,7 +66,7 @@ class Nires(instrument.Instrument):
 
 
     @staticmethod
-    def get_dir_list(self):
+    def get_dir_list():
         '''
         Function to generate generates all the storage locations including engineering
         Returns the list of paths
@@ -74,11 +74,10 @@ class Nires(instrument.Instrument):
         dirs = []
         path = '/s/sdata150'
         for i in range(0,4):
-            joinSeq = (path, str(i))
-            path2 = ''.join(joinSeq)
+            path2 = path + str(i)
             dirs.append(path2 + '/nireseng')
             for j in range(1, 10):
-                path3 = ''.join((path2, '/nires', str(j)))
+                path3 = path2 + '/nires' + str(j)
                 dirs.append(path3)
         return dirs
 
