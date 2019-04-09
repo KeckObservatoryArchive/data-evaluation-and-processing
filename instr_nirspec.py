@@ -36,6 +36,7 @@ class Nirspec(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_elaptime()
+        if ok: ok = self.set_coadd()
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_frameno()
@@ -127,12 +128,35 @@ class Nirspec(instrument.Instrument):
         return True
 
 
+    def set_coadd(self):
+        '''
+        Adds COADD, copy of COADDS for UI
+        '''
+
+        # todo - do we really need this?
+
+        self.log.info('set_coadd: adding COADD from COADDS')
+
+        if self.get_keyword('COADD', False) != None: return True
+
+        coadd = self.get_keyword('COADDS')
+        if coadd == None:
+            self.log.error('set_coadd: COADDS value needed to set COADD')
+            return False
+
+        self.set_keyword('COADD', coadd, 'KOA: Copy of COADDS')
+        return True
+
+
     def set_ofName(self):
         """
         Adds OFNAME keyword to header
         """
 
         self.log.info('set_ofName: setting OFNAME keyword value')
+
+        #OFNAME was added as a native NIRSPEC keyword around 20190405
+        if self.get_keyword('OFNAME', False) != None: return True
 
         #get value
         ofName = self.get_keyword('OFNAME')
