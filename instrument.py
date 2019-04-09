@@ -98,6 +98,12 @@ class Instrument:
         assert os.path.isdir(self.rootDir), 'rootDir does not exist'
 
 
+    #abstract methods that must be implemented by inheriting classes
+    def get_dir_list(self) : raise NotImplementedError("Abstract method not implemented!")
+    def get_prefix(self)   : raise NotImplementedError("Abstract method not implemented!")
+    def set_koaimtyp(self) : raise NotImplementedError("Abstract method not implemented!")
+
+
 
     def dep_init(self, fullRun=True):
         '''

@@ -116,7 +116,7 @@ class Nires(instrument.Instrument):
             return False
 
         #update val
-        elaptime = itime * coadds
+        elaptime = round(itime * coadds, 4)
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         return True
         

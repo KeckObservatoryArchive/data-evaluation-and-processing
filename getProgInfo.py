@@ -408,6 +408,7 @@ class ProgSplit:
                 sunrise  = self.suntimes['sunrise']
                 prog['StartTime'] = sunset   if key == 0 else midpoint
                 prog['EndTime']   = midpoint if key == 0 else sunrise
+                self.log.info('Assigning start/end times for {} to suntimes {} - {}'.format(prog['ProjCode'], prog['StartTime'], prog['EndTime']))
 
             t1 = datetime.strptime(prog['StartTime'], '%H:%M')
             t2 = datetime.strptime(prog['EndTime']  , '%H:%M')
@@ -561,7 +562,7 @@ class ProgSplit:
 
             #final check to see if assigned
             if self.fileList[idx]['progpi'] in ('PROGPI', '', 'NONE'):
-                self.log.error("getProgInfo: Could not assign program for file: " + os.path.basename(['file']))
+                self.log.error("getProgInfo: Could not assign program for file: " + os.path.basename(self.fileList[idx]['file']))
 
 #---------------------END SPLIT MULTI ----------------------------------------
 
@@ -607,7 +608,9 @@ class ProgSplit:
         file = self.fileList[idx]
         header = fits.getheader(file['file'], 0)
 
-        #if any of the PROG* keywords don't match header, warn and use header values
+        #See if any of the PROG* keywords don't match old header
+        #If we could not determine (ie NONE), use old header value and warn
+        #Else, use new value and error with VERIFY reminder.
         keywords = ['progid', 'proginst', 'progpi', 'progtitl']
         for kw in keywords:
             val = ''
@@ -619,9 +622,15 @@ class ProgSplit:
                 if kw.upper() in header: 
                     val = header[kw.upper()]
 
+            #determine whether to use new or old val (only throw warn/error for PROGID)
             if val and val != file[kw]:
-                self.fileList[idx][kw] = val
-                self.log.warning("getProgInfo: Value mismatch. Assigning " + kw.upper() + " from header for: " + os.path.basename(file['file']))
+                if file[kw] and file[kw] != 'NONE':
+                    if kw == 'progid':
+                        self.log.error("getProgInfo: " + kw.upper() + " value mismatch. VERIFY new value for: " + os.path.basename(file['file']))
+                else:
+                    self.fileList[idx][kw] = val
+                    if kw == 'progid':
+                        self.log.warning("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
 
 #--------------------------------------------------------------------
 
