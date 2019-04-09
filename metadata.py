@@ -355,7 +355,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
                     except:
                         pass
 
-                if str(val0) != str(val1):
+                if str(val0).lower() != str(val1).lower():
                     result['warnings'].append('Value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
 
         results.append(result)
