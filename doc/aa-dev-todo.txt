@@ -3,118 +3,128 @@
 
 
 
-===BUGS===
-- [DONE?] Need to change staging output files to use tab-sep so we can deal with institution names like 'Notre Dame'.  Also 'van Dokkum' for PI name in dep_obtain, etc (see mosfire 2019-02-24)
-- Is WX/weather keywords broken?  getting nulls on MOSFIRE test.
-- Do we need NIRES ls -d commands in cron?
-
-
-===Improve Useability===
-- Improve command line help, defaults.
-- convenience prompt for dir removal and tpx removal if running manually?
-- Processing instructions for sub-steps (ie just running make_fits_extension_metadata_files)
-
-
-===CIT===
-- Create test directory with collection of sample FITS files and corresponding "gold standard" DEP output for comparison.
-- Create test script to validate DEP against sample FITS test directory.
-
-
-===MISC===
-- Make more functions as independent processing steps.
-- DEP look for optional semid in progid?  (ie 2019A_C123)
-- add to nires spreadsheet?  Should we add these or ignore?: DISPNAME2, SCRIPTNAME, SCRIPTDIR, WIDTH, HEIGHT, XPOS, YPOS, ROIMAXDIM
-- How do we keep track of sdata dirs.?  A: These are added by Jchock and we aren't necessarily notified.  Need better system.
-- make get_dir_list more readable (use glob function?) (just list them) (put in config)
+===HIGH===
+- Change DEP to look for optional full semid in progid.  (ie 2019A_C123)
+- How do we keep track of sdata dirs?  A: Added by Jchock and we aren't necessarily notified.  Need better system.
+- Overhaul scrubber checks system (which verifies data has been archived before deleting from sdata).
 - Q: Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?  Possibly not.
-- Should 24-hour cutoff hour be a config/input and not hard-coded into instrument class?
-- Add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
-- metadata.py needs a warning for header keywords found that are not in metadata definition file.
-- uber cron to ensure all instruments processing ran and completed?
-- review all koatpx columns vs which ones we touch and when (ie zero files)
-- Should a make_jpg failure result in UDF?
-- DATE-OBS: I created a check_keyword_dateobs function based on a dateobs check in create_prog.  But I see other, more extensive checks, like in the semester() function.  
-- Check correctness of NIRES processing of old data for NIRES instr splits? (2018-09-22, 2018-11-25)
-- How do we deal with the fact that if calib data is taken after DEP runs the next morning, that it will get assigned to the wrong program if PROGNAME is not in the header?  
-- What do we do when it gets assigned to NONE?
-
-
-
-===FULL KEYWORDS===
-
->>> metadata.compare_meta_files(['/koadata21/MOSFIRE/20190121/lev0/20190121.metadata.table', '/koadata21/test/MOSFIRE/20190121/lev0/20190121.metadata.table'])
-WARN: value mismatch: koaid "MF.20190121.14021.fits": col "PROGID": (0)"C329" != (1)"C292"
-
-[
-WARN: value mismatch: koaid "MF.20190121.12381.fits": col "PROGID": (0)"C329" != (1)"C292"
-m190121_0175.fits MF.20190121.12381.fits
-]
-
-- Found an instance where current DEP dropped a file in the dqa step but it wasn't put in udf (m190118_0003.fits MF.20190118.07090.fits).  Error in koalog was "KOAID could not be created".  New DEP kept it:
->>> metadata.compare_meta_files(['/koadata21/MOSFIRE/20190118/lev0/20190118.metadata.table', '/koadata21/test/MOSFIRE/20190118/lev0/20190118.metadata.table'])
-WARN: CANNOT FIND KOAID "MF.20190118.07090.fits" in MD0
-
-- MOSFIRE:
- -- spot check processing some old data (1 per month)
-   -- gather this data now /net/storageserver/koastorage02/MOSFIRE
- -- Q: stage data only goes back to 2015 for mosfire
- -- investigate no data in some ext headers
- -- will order of ext headers be reliable or should we use name instead?
- -- See spreadsheet where Chris marked which ones to remove.
- -- Grep for "could not determine KOAIMTYP" in logs.
- -- Add extended header tables to text file in lev0 dir.
- -- ??? OBSERVER      char    72      Y
- -- Fix data type issues in spreadsheet from metadata warnings
- -- Search old DEP for MOSFIRE specific code
- -- See processing for 2018-12-23: Problems with PROGID, PROGINST, detecting split night, getproginfo, etc ( see compare)
- -- Need to re-process ALL MOSFIRE runs.
- -- Should we leave program assignment as it is in old processed data? and/or just do a compare after every run?
-
-- Create Python util to compare metadata.format.<instr> keywords list to headers from all past data.  Report on keywords found in one but not in the other.
-- Need util to search headers from all past data and report distinct values for a particular keyword.
-- order of work: NIRES, MOSFIRE, (NIRSPEC?), DEIMOS, ESI
-- Don't forget WCS, slitmask plot and additional keywords from Mihseh (email).
-
-MOSFIRE data from 2012 has these extra keywords:
-
-GRPSDONE=                    2 / Groups actually completed in this coadd        
-TIME-OBS= '21:34:26.953'       / UT start time of exposure                      
-TIME-END= '21:34:33.718'       / UT end time of exposure (after last read)      
+- Put in check/warning if cron/run is at a different hour than self.endTime 
+- Need end of day cron to ensure all instruments processing ran and completed.
 
 
 
 ===LOW PRIORITY===
-- look at old Missing Data tables usage
-- sort metadata by timestamp? (currently sorted by KOAID which has 'NR'/'NI' prefix sort first)
-- get rid of dqa info statements everywhere
-- convert all tab indentation to spaces
-- metadata graph demo with Pyviz + jupyter notebook
-- rename graveyard/ to old/
+- Look at old Missing Data tables usage
+- Sort metadata by timestamp? (currently sorted by KOAID which has 'NR'/'NI' prefix sort first)
+- Metadata graph demo with Pyviz + jupyter notebook
+- Add "duplicate metadata keyword" check.  What to do? (ok if same val, otherwise ?)
+- Make get_dir_list more readable (use glob function?) (just list them) (put in config)
+- Review all koatpx columns vs which ones we touch and when (ie zero files)
 - Improve logging and reporting more.
 
 
 
-===IDEAS===
-- Rename dep_tar to dep_package.  Move fits gzip step to dep_package (but this would make koatpx.size incorrect so move that to dep_package as well).
-- Move dep.check_koa_db_entry() to koaxfr.py so that we can always run DEP up to that point? (see koaxfrSetup.php)
+===MISC===
+- Change processing steps to classes and have them create their own instrObj, log, etc.  Move common to processing base?
+- Make instrument.py a better base class; denote which functions/vars must be defined abstract methods.
+- Do instrObj header fixes up front so we can just refer to things in the header as header['name']?
+- Change back to instrument.py and subclasses as a FITS service class (ie not holding current fits file etc)?
+- Command line option for dir removal and tpx removal if running manually?
+- Create command line option to force program assignment by outdir or timerange.
+- Processing instructions for sub-steps (ie just running make_fits_extension_metadata_files)
+- Remove command line options from config so we can just do --modtimeOverride instead of --modtimeOverride=1?
+- Make more functions as independent processing steps.
+- Rename dep_tar to dep_package.  Move fits gzip step to dep_package (move koatpx.size calc as well as well).
 - Pull out metadata from DQA so it can be run as independent step after DQA? 
-- change back to instrument.py and subclasses as a service class (ie not holding current fits file etc)
-- Make insrument.py a better base class; denote which functions/vars must be defined in subclass.
-- process step base class would be nice.
-- always do instrObj header fix up front so we can just refer to things in the header as header['name']?
-- have log raise exception on log.error?
-- global singleton log object?
+
+
+===CIT===
+- Create test directory with collection of sample non-proprietary FITS files and corresponding "gold standard" DEP output for comparison.
+- Create test script to validate DEP against sample FITS test directory.
 
 
 
-===Processing Notes===
 
-How to run DEP on test data:
-- Copy fits data to a test directory (use -p option to preserve timestamps)
-- Clone DEP from git
-- Create config.live.ini
- -- Edit ROOTDIR to point to your output directory for these test runs.
- -- Edit LOCATE_DIR to point to the test directory to search for FITS files
- -- Edit ADMIN_EMAIL to go to you.
- -- Optional: If you don't have appropriate timestamps on the fits files, turn on LOCATE_MODTIME_OVERRIDE.
-- Run DEP with TPX flag off and up to tar step (don't koaxfr): python dep_go.py MOSFIRE 2019-01-20 0 obtain tar
+=== FULL KEYWORDS===
+!- Decide on extended header naming convention and file format (name, num, name+num?)
+- Order of work: NIRES, MOSFIRE, (NIRSPEC?), ESI, DEIMOS
+- Create a script that will search a directory for fits files for a particular instrument (prefix check?) and report on the different header keywords it found, how many times each appear, what the comment is, and if it looks like it has discrete values, and what the max size is and the data type.  Also report on extensions found.  Script will save results to a dataframe and can take a dataframe as input to pick up where it left off.
+
+
+
+===MOSFIRE===
+- Run one month per year (stagger)
+- Verify KOAIMTYP function is correct (see metadata check warns)?
+- See processing for 2018-12-23: Problems with PROGID, PROGINST, detecting split night, getproginfo, etc ( see compare)
+- ToO test: /net/storageserver/koastorage02/MOSFIRE/stage/MOSFIRE/20160118/
+
+- MOSFIRE data from 2012 has these extra keywords:
+GRPSDONE=                    2 / Groups actually completed in this coadd        
+TIME-OBS= '21:34:26.953'       / UT start time of exposure                      
+TIME-END= '21:34:33.718'       / UT end time of exposure (after last read)      
+
+- Keyword format issues:
+INFO: metadata check: var type of str, expected double (DDEC=0.0000000).
+INFO: metadata check: var type of str, expected double (DECOFF=0.000).
+INFO: metadata check: var type of str, expected double (DRA=0.000000).
+INFO: metadata check: var type of str, expected double (RAOFF=0.000).
+INFO: metadata check: var type of str, expected integer (ROTERCNT=0).
+INFO: metadata check: var type of str, expected double (ROTSRVER=-0.065).
+INFO: metadata check: var type of str, expected double (ROTZERO=0.00).
+INFO: metadata check: var type of str, expected double (DDEC=0.0000000).
+INFO: metadata check: var type of str, expected double (DECOFF=0.000).
+INFO: metadata check: var type of str, expected double (DRA=0.000000).
+INFO: metadata check: var type of str, expected double (RAOFF=0.000).
+INFO: metadata check: var type of str, expected double (TARGDEC=+00:00:00.0).
+INFO: metadata check: var type of str, expected double (TARGRA=00:00:00.00).
+INFO: metadata check: var type of str, expected double (DEC=+45:00:00.0).
+INFO: metadata check: var type of str, expected double (RA=00:31:11.91).
+INFO: metadata check: var type of str, expected double (EQUINOX=2000.0)
+
+grep "metadata check" dep_MOSFIRE_*.log | grep -v "in log" | grep -v "(ROT" | grep -v "(DDEC=" | grep -v "(DECOFF=" | grep -v "(RAOFF=" | grep -v "(DRA=" | grep -v "(TARG" | grep -v "(DEC=" | grep -v "(RA=" | grep -v "(OBJECT=" | grep -v "(MASKNAME"
+
+
+
+
+===ESI===
+
+---Ignoring these warnings (can't fix but doesn't affect archiving)---
+var type of str, expected double (RAOFF=-0.6)
+var type of str, expected double (ROTCALAN=0.00)
+var type of str, expected double (ROTERCNT=0)
+var type of str, expected double (ROTREFAN=0.00)
+var type of str, expected double (ROTZERO=0.00)
+var type of str, expected double (SECTHETX=-151.6)
+var type of str, expected double (SECTHETY=-239.3)
+
+---New keywords---
+CAMERA (imag, spec)
+
+---Need to implement these---
+Keyword not found in header: DISPSCAL
+Keyword not found in header: NPIXSAT
+Keyword not found in header: SLITLEN
+Keyword not found in header: SLITWIDT
+Keyword not found in header: SPATSCAL
+Keyword not found in header: SPECRES
+Keyword not found in header: WAVEBLUE
+Keyword not found in header: WAVECNTR
+Keyword not found in header: WAVERED
+
+https://www2.keck.hawaii.edu/inst/esi/overview.html
+https://www2.keck.hawaii.edu/inst/esi/QuickRef.html
+
+- Q: How can we determine imaging or spectrograph mode?  I don't see a keyword specifying this.
+- Q: What is the wavelength range?  3900 Å to 10900 Å?  Does it change for imag/spec?  
+- Q: What is the nominal spectral resolution?
+- Q: What is CCD pixel scale, dispersion and spatial  (arcsec/pixel)?
+- Q: Need to calculate NPIXSAT (# of saturated pixels), but I don't see a SATURATE level keyword.
+
+
+
+
+===NIRES===
+- add to nires spreadsheet?  Should we add these or ignore?: DISPNAME2, SCRIPTNAME, SCRIPTDIR, WIDTH, HEIGHT, XPOS, YPOS, ROIMAXDIM
+- WARNING - metadata check: var type of str, expected double (EQUINOX=2000.0)
+
+
