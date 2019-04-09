@@ -282,7 +282,7 @@ ROTBASE	double	24	Y
 ROTCALAN	double	24	Y
 ROTDEST	double	24	Y
 ROTERCNT	integer	8	Y
-ROTERRS	char	32	Y
+ROTERRS	char	48	Y
 ROTMODE	char	32	Y
 ROTOFF	double	24	Y
 ROTPDEST	double	24	Y
