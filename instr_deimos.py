@@ -7,28 +7,35 @@ DEIMOS specific DR techniques can be added to it in the future
 
 import instrument
 import datetime as dt
+from common import *
+import numpy as np
 
 class Deimos(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now(), rDir=''):
+
+    def __init__(self, instr, utDate, rootDir, log=None):
+
         # Call the parent init to get all the shared variables
-        super().__init__(endTime, rDir)
+        super().__init__(instr, utDate, rootDir, log)
 
-        """
-        Values to be overwritten from Superclass
-        """
-        # Set the deimos specific paths to anc and stage
-        seq = (self.rootDir,'/DEIMOS/', self.utDate, '/anc')
-        self.ancDir = ''.join(seq)
-        seq = (self.rootDir, '/stage')
-        self.stageDir = ''.join(seq)
-        # Generate the paths to the DEIMOS datadisk accounts
-        self.paths = self.get_dir_list()
 
-        """
-        Values not included in superclass, specific to DEIMOS
-        """
-        # add the FCSIMGFI config file for deimos
-        self.fcsimgfi = 'FCSIMGFI'
+        # Set any unique keyword index values here
+        self.keywordMap['OFNAME']       = 'DATAFILE'        
+        self.keywordMap['FRAMENO']      = 'FRAMENUM'
+
+
+        # Other vars that subclass can overwrite
+        self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
+
+
+        # Generate the paths to the NIRES datadisk accounts
+        self.sdataList = self.get_dir_list()
+
+
+        # """
+        # Values not included in superclass, specific to DEIMOS
+        # """
+        # # add the FCSIMGFI config file for deimos
+        # self.fcsimgfi = 'FCSIMGFI'
 
 
     def get_dir_list(self):
@@ -39,21 +46,23 @@ class Deimos(instrument.Instrument):
         dirs = []
         path = '/s/sdata100'
         for i in range(1,4):
-            seq = (path, str(i))
-            path2 = ''.join(seq)
+            path2 = path + str(i)
             for j in range(1,21):
-                seq = (path2, '/deimos', str(j))
-                path3 = ''.join(seq)
+                path3 = path2 + '/deimos' + str(j)
                 dirs.append(path3)
-            seq = (path2, 'dmoseng')
-            dirs.append(''.join(seq))
+            seq = path2 + 'dmoseng'
+            dirs.append(seq)
         return dirs
 
-    def get_prefix(self, keys):
-        self.instr = self.get_instr(keys)
-        if '/fcs' in keys[self.outdir]:
+
+    def get_prefix(self):
+
+        instr = self.get_instr()
+        outdir = self.get_keyword('OUTDIR')
+        
+        if '/fcs' in outdir:
             prefix = 'DF'
-        elif self.instr == 'deimos':
+        elif instr == 'deimos':
             prefix = 'DE'
         else:
             prefix = ''
