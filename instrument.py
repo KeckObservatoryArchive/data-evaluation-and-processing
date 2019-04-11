@@ -446,7 +446,7 @@ class Instrument:
         # If good match, just take first 10 chars (some dates have 'T' format and extra time)
         if len(dateObs) > 10:
             orig = dateObs
-            dateObs = parts[0:10]
+            dateObs = dateObs[0:10]
             self.set_keyword('DATE-OBS', dateObs, 'KOA: Value corrected (' + orig + ')')
             self.log.warning('set_dateObs: fixed DATE-OBS format (orig: ' + orig + ')')
 
