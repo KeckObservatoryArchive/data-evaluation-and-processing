@@ -66,10 +66,14 @@ def dep_add(instrObj):
             destination = ''.join((instrObj.dirs['anc'], '/nightly/', file))
             instrObj.log.info('dep_add.py copying {} to {}'.format(source, destination))
             shutil.copyfile(source, destination)
+        else:
+            destination = None
+            instrObj.log.warning('dep_add.py: Could not find {}'.format(source))
+
 
         #re-open file and look for bad lines with NUL chars and remove those lines and resave.
         #(The bad characters are a result of copying a file that is being modified every few seconds)
-        if os.path.exists(destination):
+        if destination and os.path.exists(destination):
             newLines = []
             with open(destination, 'r') as f:
                 for line in f:

@@ -20,6 +20,7 @@ from common import make_dir_md5_table
 import datetime
 import re
 import pandas as pd
+import html
 
 
 
@@ -345,22 +346,42 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
                 val0 = row0[col]
                 val1 = row1[col]
 
-                if pd.isnull(val0): val0 = ''
-                if pd.isnull(val1): val1 = ''
-
-                if col == 'RA' or col == 'DEC':
-                    try:
-                        val0 = "{:.2f}".format(float(val0))
-                        val1 = "{:.2f}".format(float(val1))
-                    except:
-                        pass
-
-                if str(val0).lower() != str(val1).lower():
+                if val_smart_diff(val0, val1, col):
                     result['warnings'].append('Value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
 
         results.append(result)
 
     return results
+
+
+
+def val_smart_diff(val0, val1, col=None):
+
+    #turn pandas null to blank 
+    if pd.isnull(val0): val0 = ''
+    if pd.isnull(val1): val1 = ''
+
+    #try to decimal format (if not then no problem)
+    try:
+        newval0 = "{:.2f}".format(float(val0))
+        newval1 = "{:.2f}".format(float(val1))
+    except:
+        newval0 = val0
+        newval1 = val1
+    val0 = newval0
+    val1 = newval1
+
+    #diff
+    isDiff = False
+    val0 = str(val0).lower()
+    val1 = str(val1).lower()
+    if val0 != val1:
+
+        #if different, try html escaping
+        if html.escape(val0) != html.escape(val1):
+            isDiff = True
+
+    return isDiff
 
 
 

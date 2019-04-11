@@ -282,6 +282,41 @@ class ProgSplit:
 
 #---------------------------- END ASSIGN SINGLE BY TIME -------------------------------------------
 
+
+    def assign_single_by_outdir_name(self, filenum):
+
+        ok = False
+
+        #get outdir
+        file = self.fileList[filenum]
+        outdir = file['outdir']
+        if not outdir or len(outdir) == 0: return False
+
+
+        # Assign them to program indexes based on naming convention
+        # (assume yyyyMMMdd, yyyyMMMdd_B...)
+        assign = -1
+        if   re.search('/\d{4}\D{3}\d{2}_A', outdir): assign = 0
+        elif re.search('/\d{4}\D{3}\d{2}_B', outdir): assign = 1
+        elif re.search('/\d{4}\D{3}\d{2}_C', outdir): assign = 2
+        elif re.search('/\d{4}\D{3}\d{2}_D', outdir): assign = 3
+        elif re.search('/\d{4}\D{3}\d{2}_E', outdir): assign = 4
+        elif re.search('/\d{4}\D{3}\d{2}'  , outdir): assign = 0
+
+        if assign >= len(self.programs) : 
+            self.log.warning('getProgInfo: Program assignment index ' + str(assign) + ' > number of programs.')
+            assign = -1
+
+        if assign < 0:
+            self.log.info('getProgInfo: Could not map ' + outdir + " to a program by dir naming convention.")
+            return False
+        else:
+            progid = self.programs[assign]['ProjCode']
+            self.log.info('getProgInfo: Mapping (by name) outdir ' + outdir + " to progIndex: " + str(assign) + ' ('+progid+').')
+            self.assign_single_to_pi(filenum, assign)
+            return True
+
+
     def assign_single_by_observer(self, filenum):
         '''
         Looks for matching observer names in header keyword and program listing.
@@ -477,7 +512,6 @@ class ProgSplit:
 
         # Try different methods
         self.assign_outdirs_by_sci_count()
-        self.assign_outdirs_by_dir_name()
 
 
     def assign_outdirs_by_sci_count(self):
@@ -497,7 +531,7 @@ class ProgSplit:
             for i, count in data['sciCounts'].items():
                 perc = count / data['sciTotal'] if data['sciTotal'] > 0 else 0
                 self.log.info('--- prog' + str(i) + ': ' + str(count) + ' ('+str(round(perc*100,0))+'%)')
-                if perc > 0.8: 
+                if perc > 0.8 and count > 10: 
                     self.outdirs[outdir]['assign'] = i
                     progid = self.programs[i]['ProjCode']
                     self.log.info('Mapping (by sci) outdir ' + outdir + " to progIndex: " + str(i) + ' ('+progid+').')
@@ -507,40 +541,7 @@ class ProgSplit:
                 self.log.warning("Could not map outdir by sci counts for: " + outdir)
 
 
-    def assign_outdirs_by_dir_name(self):
-
-        # Loop through the OUTDIRs and assign them to program indexes based on naming convention
-        # (assume yyyyMMMdd, yyyyMMMdd_B...)
-        for outdir, data in self.outdirs.items():
-
-            assign = -1
-            if   re.search('/\d{4}\D{3}\d{2}_A', outdir): assign = 0
-            elif re.search('/\d{4}\D{3}\d{2}_B', outdir): assign = 1
-            elif re.search('/\d{4}\D{3}\d{2}_C', outdir): assign = 2
-            elif re.search('/\d{4}\D{3}\d{2}_D', outdir): assign = 3
-            elif re.search('/\d{4}\D{3}\d{2}_E', outdir): assign = 4
-            elif re.search('/\d{4}\D{3}\d{2}'  , outdir): assign = 0
-
-            #if previously assigned, make sure this jives
-            if data['assign'] >= 0:
-                if data['assign'] != assign and assign >= 0:
-                    self.log.error("getProgInfo: Outdir assigned to program " + str(data['assign']) + ', but outdir naming convention suggests ' + str(assign) + ' ('+outdir+')')
-                continue
-
-            if assign >= len(self.programs) : 
-                self.log.error('getProgInfo: Program assignment index ' + str(assign) + ' > number of programs.')
-                assign = -1
-
-            if assign < 0:
-                self.log.warning('getProgInfo: Could not map ' + outdir + " to a program by dir naming convention.")
-            else:
-                progid = self.programs[assign]['ProjCode']
-                self.log.info('getProgInfo: Mapping (by name) outdir ' + outdir + " to progIndex: " + str(assign) + ' ('+progid+').')
-
-            self.outdirs[outdir]['assign'] = assign
-
-
-    def split_multi(self, useHdrProg):
+    def split_multi(self):
 
         # Loop thru all files and if we find an outdir match, assign to program
         for idx, file in enumerate(self.fileList):
@@ -552,13 +553,10 @@ class ProgSplit:
                 else:
                     ok = False 
                     if not ok: ok = self.assign_single_by_observer(idx)
+                    if not ok: ok = self.assign_single_by_outdir_name(idx)
                     if not ok: ok = self.assign_single_by_time(idx)
             else:
                 self.log.error("getProgInfo: Could not find outdir match for: " + fileOutdir)
-
-            #special reprocessing check to look in header for PROG* info if all else fails
-            if useHdrProg: 
-                self.use_header_prog_vals(idx)
 
             #final check to see if assigned
             if self.fileList[idx]['progpi'] in ('PROGPI', '', 'NONE'):
@@ -602,35 +600,52 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
-    def use_header_prog_vals(self, idx):
 
-        #read in fits file header only
-        file = self.fileList[idx]
-        header = fits.getheader(file['file'], 0)
-
-        #See if any of the PROG* keywords don't match old header
-        #If we could not determine (ie NONE), use old header value and warn
-        #Else, use new value and error with VERIFY reminder.
-        keywords = ['progid', 'proginst', 'progpi', 'progtitl']
-        for kw in keywords:
-            val = ''
-            if kw == 'progtitl':
-                if 'PROGTL1' in header                      : val +=       header['PROGTL1']
-                if 'PROGTL2' in header and header['PROGTL2']: val += ' ' + header['PROGTL2']
-                if 'PROGTL3' in header and header['PROGTL3']: val += ' ' + header['PROGTL3']
-            else:
-                if kw.upper() in header: 
-                    val = header[kw.upper()]
-
-            #determine whether to use new or old val (only throw warn/error for PROGID)
-            if val and val != file[kw]:
-                if file[kw] and file[kw] != 'NONE':
-                    if kw == 'progid':
-                        self.log.error("getProgInfo: " + kw.upper() + " value mismatch. VERIFY new value for: " + os.path.basename(file['file']))
+        for idx, file in enumerate(self.fileList):
+            fileOutdir = self.fix_outdir(file['outdir'])
+            if fileOutdir in self.outdirs:
+                progIndex = self.outdirs[fileOutdir]['assign']
+                if progIndex >= 0: 
+                    self.assign_single_to_pi(idx, progIndex)
                 else:
-                    self.fileList[idx][kw] = val
-                    if kw == 'progid':
-                        self.log.warning("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
+                    ok = False 
+                    if not ok: ok = self.assign_single_by_observer(idx)
+                    if not ok: ok = self.assign_single_by_outdir_name(idx)
+                    if not ok: ok = self.assign_single_by_time(idx)
+            else:
+                self.log.error("getProgInfo: Could not find outdir match for: " + fileOutdir)
+
+
+    def use_header_prog_vals(self):
+
+        for idx, file in enumerate(self.fileList):
+
+            #read in fits file header only
+            header = fits.getheader(file['file'], 0)
+
+            #See if any of the PROG* keywords don't match old header
+            #If we could not determine (ie NONE), use old header value and warn
+            #Else, use new value and error with VERIFY reminder.
+            keywords = ['progid', 'proginst', 'progpi', 'progtitl']
+            for kw in keywords:
+                val = ''
+                if kw == 'progtitl':
+                    if 'PROGTL1' in header                      : val +=       header['PROGTL1']
+                    if 'PROGTL2' in header and header['PROGTL2']: val += ' ' + header['PROGTL2']
+                    if 'PROGTL3' in header and header['PROGTL3']: val += ' ' + header['PROGTL3']
+                else:
+                    if kw.upper() in header: 
+                        val = header[kw.upper()]
+
+                #determine whether to use new or old val (only throw warn/error for PROGID)
+                if val and val != file[kw]:
+                    if file[kw] and file[kw] != 'NONE' and 'PROG' not in file[kw]:
+                        if kw == 'progid':
+                            self.log.error("getProgInfo: " + kw.upper() + " value mismatch. VERIFY new value for: " + os.path.basename(file['file']))
+                    else:
+                        self.fileList[idx][kw] = val
+                        if kw == 'progid':
+                            self.log.warning("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
 
 #--------------------------------------------------------------------
 
@@ -668,12 +683,18 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, log=None, test=F
         progSplit.get_sun_times()
         progSplit.get_outdirs(progSplit.programs)
         progSplit.assign_outdirs_to_programs()
-        progSplit.split_multi(useHdrProg)
+        progSplit.split_multi()
 
     #no proj codes
     # TODO: only throw error if there was some science files (ie this could be engineering)
     else:
         progSplit.log.warning('No ' + instrument + ' programs scheduled this night.')
+
+
+    #special reprocessing check to look in header for PROG* info if all else fails
+    if useHdrProg: 
+        progSplit.use_header_prog_vals()
+
 
     #write out result
     fname = stageDir + '/newproginfo.txt'
