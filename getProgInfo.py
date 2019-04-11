@@ -600,22 +600,6 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
-
-        for idx, file in enumerate(self.fileList):
-            fileOutdir = self.fix_outdir(file['outdir'])
-            if fileOutdir in self.outdirs:
-                progIndex = self.outdirs[fileOutdir]['assign']
-                if progIndex >= 0: 
-                    self.assign_single_to_pi(idx, progIndex)
-                else:
-                    ok = False 
-                    if not ok: ok = self.assign_single_by_observer(idx)
-                    if not ok: ok = self.assign_single_by_outdir_name(idx)
-                    if not ok: ok = self.assign_single_by_time(idx)
-            else:
-                self.log.error("getProgInfo: Could not find outdir match for: " + fileOutdir)
-
-
     def use_header_prog_vals(self):
 
         for idx, file in enumerate(self.fileList):
