@@ -361,6 +361,11 @@ def val_smart_diff(val0, val1, col=None):
     if pd.isnull(val0): val0 = ''
     if pd.isnull(val1): val1 = ''
 
+    #special fix for progtitl
+    if col == 'PROGTITL':
+        val0 = val0.replace('  ',' ')
+        val1 = val0.replace('  ',' ')
+
     #try to decimal format (if not then no problem)
     try:
         newval0 = "{:.2f}".format(float(val0))
@@ -389,7 +394,7 @@ def load_metadata_file_as_df(filepath):
 
     if not os.path.isfile(filepath): return False
 
-    with open(filepath) as f:
+    with open(filepath, 'r', errors='replace') as f:
 
         # Read first line of header and find all column widths using '|' split
         header = f.readline().strip()

@@ -232,7 +232,9 @@ def get_prog_title(semid, default=None, log=None):
         if log: log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
         return default
     else : 
-        return title['progtitl']
+        #deal with non-printable characters that can end up in progtitl
+        progtitl = title['progtitl'].encode('ascii', errors='ignore').decode('UTF-8')
+        return progtitl
 
 
 def is_progid_valid(progid):
