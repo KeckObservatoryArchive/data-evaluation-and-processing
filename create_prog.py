@@ -101,9 +101,11 @@ def create_prog(instrObj):
             outdir = instrObj.get_outdir()
 
             #lop off everything before /sdata
-            fileparts = filename.split('/sdata')
-            if len(fileparts) > 1: newFile = '/sdata' + fileparts[-1]
-            else                 : newFile = filename
+            # fileparts = filename.split('/sdata')
+            # if len(fileparts) > 1: newFile = '/sdata' + fileparts[-1]
+            # else                 : newFile = filename
+            #TODO: NOTE: removing this string split since is causing problems with new code and I don't think it is necessary
+            newFile = filename
 
             # Get the semester
             instrObj.set_semester()
