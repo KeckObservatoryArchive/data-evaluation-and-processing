@@ -131,7 +131,7 @@ class Mosfire(instrument.Instrument):
         axestat = self.get_keyword('AXESTAT')
 
         # MOSFIRE keyword values
-        obsmode = self.get_keyword('OBSMODE')
+        obsmode = self.get_keyword('OBSMODE', default='')
         maskname = self.get_keyword('MASKNAME')
         mdcmech = self.get_keyword('MDCMECH')
         mdcstat = self.get_keyword('MDCSTAT')
