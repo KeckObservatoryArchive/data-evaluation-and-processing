@@ -49,27 +49,26 @@ def dep_add(instrObj):
             os.makedirs(ancDirNew)
 
 
-    #check for valid nightly dir
-    nightlyDir = ''.join(('/s/nightly', str(telnr), '/', str(year), '/', month, '/', day))
-    if not os.path.isdir(nightlyDir):
-        nightlyDir = nightlyDir.replace('/s/', '/h/')
-        if not os.path.isdir(nightlyDir):
-            instrObj.log.warning('dep_add.py no nightly directory found')
-            return
-
-
-    # Copy nightly data to ancDir/nightly
+    # Copy nightly data to ancDir/nightly (try /s/ and /h/)
+    # NOTE: /s/ is only available for about 3 months
+    nightlyDir = '/nightly' + str(telnr) + '/' + str(year) + '/' + month + '/' + day + '/'
     files = ['envMet.arT', 'envFocus.arT']
     for file in files:
-        source = ''.join((nightlyDir, '/', file))
-        if os.path.exists(source):
+        destination = None
+
+        source = None
+        source1 = '/s' + nightlyDir + file
+        source2 = '/h' + nightlyDir + file
+        if   os.path.exists(source1): source = source1
+        elif os.path.exists(source2): source = source2
+
+        if source:
             destination = ''.join((instrObj.dirs['anc'], '/nightly/', file))
             instrObj.log.info('dep_add.py copying {} to {}'.format(source, destination))
             shutil.copyfile(source, destination)
         else:
-            destination = None
-            instrObj.log.warning('dep_add.py: Could not find {}'.format(source))
-
+            instrObj.log.warning('dep_add.py: Could not find {}'.format(file))
+            continue
 
         #re-open file and look for bad lines with NUL chars and remove those lines and resave.
         #(The bad characters are a result of copying a file that is being modified every few seconds)
