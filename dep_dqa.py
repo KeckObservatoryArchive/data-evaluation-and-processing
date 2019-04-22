@@ -270,11 +270,11 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
                 row = hdu.data[j]
                 for idx, cw in enumerate(colWidths):
                     valStr = row[idx]
-                    dataStr += '|' + valStr.ljust(cw)
-                dataStr += "|\n"
+                    dataStr += ' ' + str(valStr).ljust(cw)
+                dataStr += "\n"
 
             #write to outfile
-            outFile = file.replace(endsWith, '.ext' + str(i) + '.' + hdu.name + '.table')
+            outFile = file.replace(endsWith, '.ext' + str(i) + '.' + hdu.name + '.tbl')
             outFilepath = outDir + outFile
             extFullList.append(outFilepath)
             with open(outFilepath, 'w') as f:
