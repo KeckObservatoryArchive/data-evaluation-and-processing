@@ -127,6 +127,10 @@ class Mosfire(instrument.Instrument):
         # Telescope and dome keyword values
         el = self.get_keyword('EL')
         if not isinstance(el, float): el = 0.0
+        az = self.get_keyword('AZ')
+        if not isinstance(az, float): az = 0.0
+        domeposn = self.get_keyword('DOMEPOSN')
+        if not isinstance(domeposn, float): domeposn = 0.0
         domestat = self.get_keyword('DOMESTAT')
         axestat = self.get_keyword('AXESTAT')
 
@@ -154,7 +158,8 @@ class Mosfire(instrument.Instrument):
 
         # Is telescope in flatlamp position
         flatlampPos = 0
-        if el >= 44.99 and el <= 45.01 and 'tracking' not in [domestat, axestat]:
+        azDiff = abs(domeposn - az)
+        if (44.99 <= el <= 45.01) and (89.00 <= azDiff <= 91.00):
             flatlampPos = 1
 
         # Is the dust cover open
@@ -173,11 +178,8 @@ class Mosfire(instrument.Instrument):
             elif dustCover == 'open':
                 # This is an object unless a flatlamp is on
                 koaimtyp = 'object'
-                if flatOn:
-                    koaimtyp = 'flatlamp'
-                else:
-                    if flatlampPos:
-                        koaimtyp = 'flatlampoff'
+                if   flatOn     : koaimtyp = 'flatlamp'
+                elif flatlampPos: koaimtyp = 'flatlampoff'
 
         # Still undefined? Use image statistics
         if koaimtyp == 'undefined':
