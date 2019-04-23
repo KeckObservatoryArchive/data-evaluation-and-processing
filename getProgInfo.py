@@ -425,7 +425,7 @@ class ProgSplit:
 
 #------------------------------END GET SUN TIMES------------------------------------------------
 
-    def get_outdirs(self, programs):
+    def get_outdirs(self, programs, splitTime=None):
         '''
         Creates data array for each unique outdir which we will need if we are trying to figure out split nights.
         '''
@@ -439,7 +439,7 @@ class ProgSplit:
             if not prog['StartTime'] or not prog['EndTime']:
                 isMissingTimes = True
                 sunset   = self.suntimes['sunset']
-                midpoint = self.suntimes['midpoint']
+                midpoint = splitTime if splitTime else self.suntimes['midpoint']
                 sunrise  = self.suntimes['sunrise']
                 prog['StartTime'] = sunset   if key == 0 else midpoint
                 prog['EndTime']   = midpoint if key == 0 else sunrise
@@ -531,7 +531,7 @@ class ProgSplit:
             for i, count in data['sciCounts'].items():
                 perc = count / data['sciTotal'] if data['sciTotal'] > 0 else 0
                 self.log.info('--- prog' + str(i) + ': ' + str(count) + ' ('+str(round(perc*100,0))+'%)')
-                if perc > 0.8 and count > 10: 
+                if perc > 0.85 and count > 10: 
                     self.outdirs[outdir]['assign'] = i
                     progid = self.programs[i]['ProjCode']
                     self.log.info('Mapping (by sci) outdir ' + outdir + " to progIndex: " + str(i) + ' ('+progid+').')
@@ -634,7 +634,7 @@ class ProgSplit:
 #--------------------------------------------------------------------
 
 
-def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, log=None, test=False):
+def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, log=None, test=False):
 
     if test: 
         rootDir = stageDir.split('/stage')[0]
@@ -665,7 +665,7 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, log=None, test=F
         progSplit.sort_by_time(progSplit.programs)
         progSplit.log.info('getProgInfo: ' + utdate + ' is a split night with ' + str(len(progSplit.programs)) + ' programs: ' + str(progSplit.programs))
         progSplit.get_sun_times()
-        progSplit.get_outdirs(progSplit.programs)
+        progSplit.get_outdirs(progSplit.programs, splitTime)
         progSplit.assign_outdirs_to_programs()
         progSplit.split_multi()
 

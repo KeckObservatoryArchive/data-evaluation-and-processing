@@ -47,6 +47,7 @@ def dep_dqa(instrObj, tpx=0):
     extraMeta = {}
     dqaFile = dirs['stage'] +'/dep_dqa' + instr +'.txt'
     useHdrProg = int(instrObj.config['MISC']['USE_HDR_PROG']) if 'USE_HDR_PROG' in instrObj.config['MISC'] else 0
+    splitTime = instrObj.config['MISC']['SPLIT_TIME'] if 'SPLIT_TIME' in instrObj.config['MISC'] else None
 
 
     #Log start
@@ -78,7 +79,7 @@ def dep_dqa(instrObj, tpx=0):
 
     #determine program info
     create_prog(instrObj)
-    progData = gpi.getProgInfo(utDate, instr, dirs['stage'], useHdrProg, log)
+    progData = gpi.getProgInfo(utDate, instr, dirs['stage'], useHdrProg, splitTime, log)
 
 
     # Loop through each entry in input_list
