@@ -168,14 +168,15 @@ def dep_dqa(instrObj, tpx=0):
     #gzip the fits files
     log.info('dep_dqa.py gzipping fits files in {}'.format(dirs['lev0']))
     import gzip
-    for file in os.listdir(dirs['lev0']):
-        if file.endswith('.fits'): 
-            in_path = dirs['lev0'] + '/' + file
-            out_path = in_path + '.gz'
-            with open(in_path, 'rb') as fIn:
-                with gzip.open(out_path, 'wb', compresslevel=5) as fOut:
-                    shutil.copyfileobj(fIn, fOut)
-                    os.remove(in_path)
+    for dirpath, dirnames, filenames in os.walk(dirs['lev0']):
+        for f in filenames:
+            if f.endswith('.fits'):
+                in_path = os.path.join(dirpath, f)
+                out_path = in_path + '.gz'
+                with open(in_path, 'rb') as fIn:
+                    with gzip.open(out_path, 'wb', compresslevel=5) as fOut:
+                        shutil.copyfileobj(fIn, fOut)
+                        os.remove(in_path)
 
 
     #get sdata number lists and PI list strings

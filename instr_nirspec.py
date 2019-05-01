@@ -48,21 +48,13 @@ class Nirspec(instrument.Instrument):
         if ok: ok = self.set_dispers()
         if ok: ok = self.set_slit_values()
         if ok: ok = self.set_wavelengths()
-#        if ok: ok = self.set_specres()
-#        if ok: ok = self.set_weather_keywords()
-#        if ok: ok = self.set_filter()
-#        if ok: ok = self.set_slit_dims()
-#        if ok: ok = self.set_spatscal()
-#        if ok: ok = self.set_dispscal()
+        if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_image_stats_keywords()
         if ok: ok = self.set_gain_and_readnoise()
-        if ok: ok = self.set_npixsat(self.get_keyword('COADDS') * 65535)
+        if ok: ok = self.set_npixsat(self.get_keyword('COADDS') * 25000)
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
-
-#        for key in ['DATLEVEL', 'DQA_VERS', 'DQA_DATE', 'ISAO', 'DISPERS', 'DISPSCAL', 'SPATSCAL', 'SLITLEN', 'SLITWIDT', 'SPECRES', 'FILTER', 'WAVEBLUE', 'WAVECNTR', 'WAVERED', 'IMAGEMN', 'IMAGEMD', 'IMAGESD', 'NPIXSAT', 'OA']:
-#            print(self.get_keyword(key), type(self.get_keyword(key)))
 
         return ok
 
@@ -73,7 +65,7 @@ class Nirspec(instrument.Instrument):
         Returns the list of paths
         '''
         dirs = []
-        path = '/s/sdata90'
+        path = '/s/sdata60'
         for i in range(4):
             joinSeq = (path, str(i))
             path2 = ''.join(joinSeq)
@@ -142,10 +134,10 @@ class Nirspec(instrument.Instrument):
         Adds OFNAME keyword to header
         """
 
-        self.log.info('set_ofName: setting OFNAME keyword value')
-
         #OFNAME was added as a native NIRSPEC keyword around 20190405
         if self.get_keyword('OFNAME', False) != None: return True
+
+        self.log.info('set_ofName: setting OFNAME keyword value')
 
         #get value
         ofName = self.get_keyword('OFNAME')
@@ -355,8 +347,20 @@ class Nirspec(instrument.Instrument):
         slitwidt = 'null'
         specres = 'null'
 
-        lowres = {0.38:2500, 0.57:2000, 0.76:1800}
-
+        #low resoltuion slitwidt:specres
+        lowres = {'0.38':2500, '0.57':2000, '0.76':1800}
+        #high resolution slitwidtAO:slitwidt
+        highres = {}
+        highres['0.0136'] = 0.144
+        highres['0.0271'] = 0.288
+        highres['0.0407'] = 0.432
+        highres['0.0543'] = 0.576
+        highres['0.0679'] = 0.720
+        highres['0.0272'] = 0.288
+        highres['0.0407'] = 0.432
+        highres['0.0358'] = 0.380
+        highres['0.0538'] = 0.570
+        highres['0.0717'] = 0.760
         if self.prefix == 'NS':
             self.log.info('set_slit_values: setting SLITLEN and SLITWIDT keyword values from SLITNAME')
             slitname = self.get_keyword('SLITNAME')
@@ -370,8 +374,11 @@ class Nirspec(instrument.Instrument):
 
                 dispers = self.get_keyword('DISPERS')
                 if dispers == 'low':
-                    specres = lowres[slitwidt]
+                    specres = lowres[str(slitwidt.rstrip('0'))]
                 elif dispers == 'high':
+                    width = str(slitwidt)
+                    if self.get_keyword('ISAO') == 'yes':
+                        width = highres[width]
                     specres = round(10800/float(slitwidt))
 
                 specres = int(specres)
