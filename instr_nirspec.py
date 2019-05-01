@@ -105,6 +105,21 @@ class Nirspec(instrument.Instrument):
         return prefix
 
 
+    def set_instr(self):
+        '''
+        Overrides instrument.set_instr
+        '''
+
+        ok = False
+
+        instrume = self.get_keyword('INSTRUME')
+        if (instrume.strip() == 'NIRSPAO'): instrume = 'NIRSPEC'
+ 
+        if (self.instr == instrume.strip()): ok = True
+
+        return ok
+
+
     def set_elaptime(self):
         '''
         Fixes missing ELAPTIME keyword
