@@ -877,7 +877,13 @@ class Instrument:
 
         path = self.dirs['lev0']
         koaid = self.fitsHeader.get('KOAID')
-        filePath = ''.join((path, '/', koaid))
+        filePath = ''
+        for root, dirs, files in os.walk(path):
+            if koaid in files:
+                filePath = ''.join((root, '/', koaid))
+        if not filePath:
+            self.log.error('make_jpg: Could not find KOAID: ' + koaid)
+            return False
         self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
 
         #check if already exists? (JPG conversion is time consuming)
