@@ -362,7 +362,7 @@ class Nirspec(instrument.Instrument):
         slitwidt = 'null'
         specres = 'null'
 
-        #low resoltuion slitwidt:specres
+        #low resolution slitwidt:specres
         lowres = {'0.38':2500, '0.57':2000, '0.76':1800}
         #high resolution slitwidtAO:slitwidt
         highres = {}
