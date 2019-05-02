@@ -37,7 +37,13 @@ def koaxfr(instrObj, tpx=0):
 
     # If no FITS files then email IPAC verifying (empty) transfer complete
 
-    count = len([name for name in os.listdir(instrObj.dirs['lev0']) if name.endswith('.fits.gz')])
+#    count = len([name for name in os.listdir(instrObj.dirs['lev0']) if name.endswith('.fits.gz')])
+    count = 0
+    for dirpath, dirnames, filenames in os.walk(instrObj.dirs['lev0']):
+        for f in filenames:
+            if f.endswith('.fits.gz'):
+                count += 1
+
     if count == 0:
         log.info('koaxfr.py no FITS files to transfer')
         subject = ''.join((utDate.replace('-', ''), ' ', instr))
