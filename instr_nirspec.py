@@ -8,6 +8,7 @@ NIRSPEC specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 from common import *
+from math import ceil
 
 class Nirspec(instrument.Instrument):
 
@@ -189,6 +190,8 @@ class Nirspec(instrument.Instrument):
             'dark'    : 'dark',
             'domeflat': 'domeflat',
             'domearc' : 'domearc',
+            'arclamp' : 'arclamp',
+            'flatlamp': 'flatlamp',
 #            'astro'   : 'object',   #NOTE: old val
 #            'star'    : 'object',   #NOTE: old val
 #            'calib'   : 'undefined' #NOTE: old val
@@ -259,6 +262,8 @@ class Nirspec(instrument.Instrument):
         self.log.info('set_wavelengths: setting WAVE keyword values from FILTER')
 
         filters = {}
+        filters['UNKNOWN']   = {'blue':'null', 'cntr':'null', 'red':'null'}
+        filters['BLANK']     = {'blue':'null', 'cntr':'null', 'red':'null'}
         filters['NIRSPEC-1'] = {'blue':0.9470, 'cntr':1.0340, 'red':1.1210}
         filters['NIRSPEC-2'] = {'blue':1.0890, 'cntr':1.1910, 'red':1.2930}
         filters['NIRSPEC-3'] = {'blue':1.1430, 'cntr':1.2590, 'red':1.3750}
@@ -289,6 +294,7 @@ class Nirspec(instrument.Instrument):
                 waveblue = waves['blue']
                 wavecntr = waves['cntr']
                 wavered = waves['red']
+                break
 
         self.set_keyword('WAVEBLUE', waveblue, 'KOA: Approximate blue end wavelength (u)')
         self.set_keyword('WAVECNTR', wavecntr, 'KOA: Approximate central wavelength (u)')
@@ -363,19 +369,34 @@ class Nirspec(instrument.Instrument):
         specres = 'null'
 
         #low resolution slitwidt:specres
-        lowres = {'0.38':2500, '0.57':2000, '0.76':1800}
+        #y = 4155.1x^2 - 6578.9x + 4400
+        lowres = {}
+        lowres['0.144'] = 3540
+        lowres['0.288'] = 2850
+        lowres['0.38'] = 2500
+        lowres['0.432'] = 2330
+        lowres['0.57'] = 2000
+        lowres['0.576'] = 1990
+        lowres['0.72'] = 1820
+        lowres['0.76'] = 1800
+        lowresmap = {}
+        lowresmap['0.036'] = 0.38;
+        lowresmap['0.054'] = 0.57;
+        lowresmap['0.072'] = 0.76;
+
         #high resolution slitwidtAO:slitwidt
-        highres = {}
-        highres['0.0136'] = 0.144
-        highres['0.0271'] = 0.288
-        highres['0.0407'] = 0.432
-        highres['0.0543'] = 0.576
-        highres['0.0679'] = 0.720
-        highres['0.0272'] = 0.288
-        highres['0.0407'] = 0.432
-        highres['0.0358'] = 0.380
-        highres['0.0538'] = 0.570
-        highres['0.0717'] = 0.760
+        #y = 10800 / slitwidt
+        highresmap = {}
+        highresmap['0.0136'] = 0.144
+        highresmap['0.0271'] = 0.288
+        highresmap['0.0407'] = 0.432
+        highresmap['0.0543'] = 0.576
+        highresmap['0.0679'] = 0.720
+        highresmap['0.0272'] = 0.288
+        highresmap['0.0407'] = 0.432
+        highresmap['0.0358'] = 0.380
+        highresmap['0.0538'] = 0.570
+        highresmap['0.0717'] = 0.760
         if self.prefix == 'NS':
             self.log.info('set_slit_values: setting SLITLEN and SLITWIDT keyword values from SLITNAME')
             slitname = self.get_keyword('SLITNAME')
@@ -388,15 +409,16 @@ class Nirspec(instrument.Instrument):
                     slitlen, slitwidt = slitwidt, slitlen
 
                 dispers = self.get_keyword('DISPERS')
+                width = str(slitwidt)
                 if dispers == 'low':
+                    if self.get_keyword('ISAO') == 'yes':
+                        width = lowresmap[width]
                     specres = lowres[str(slitwidt.rstrip('0'))]
                 elif dispers == 'high':
-                    width = str(slitwidt)
                     if self.get_keyword('ISAO') == 'yes':
-                        width = highres[width]
-                    specres = round(10800/float(slitwidt))
+                        width = highresmap[width]
+                    specres = int(ceil(10800/float(slitwidt)/100.0))*100
 
-                specres = int(specres)
                 slitlen = float(slitlen)
                 slitwidt = float(slitwidt)
 
