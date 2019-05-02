@@ -388,7 +388,7 @@ def get_tpx_sdata_str(progData):
     items = []
     for row in progData:
         filepath = row['file']
-        match = re.match( r'/sdata(.*?)/', filepath, re.I)
+        match = re.search( r'/sdata(.*?)/', filepath, re.I)
         if match:
             item = match.groups(1)[0]
             if item not in items:
