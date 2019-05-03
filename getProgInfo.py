@@ -89,8 +89,6 @@ class ProgSplit:
         #var init
         self.fileList = []
         self.numFiles = 0
-        self.observer = []
-        self.obsValues = []
         self.outdirs = {}
         self.programs = []
         self.suntimes = None
@@ -487,24 +485,6 @@ class ProgSplit:
 
 #--------------------------------END GET OUTDIR-----------------------------
 
-    def get_observer(self):
-        repchar = [' ','_','/','&','.',',,']
-        count = []
-        temp = []
-        for key, file in self.fileList:
-            obs = file['observer']
-            if obs != 'Keck Engineering':
-                outdir = self.fix_outdir(file['outdir'])
-            for char in repchar:
-                obs = obs.replace(char, ',')
-            if obs not in temp:
-                temp.append(obs)
-            obs = ''.join((obs, '_', outdir))
-            if obs not in self.observer:
-                self.observer.append(obs)
-        self.obsValues = len(temp)
-
-#----------------------END GET OBSERVER------------------------------------
 
     def assign_outdirs_to_programs(self):
 
@@ -600,7 +580,7 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
-    def use_header_prog_vals(self):
+    def use_header_prog_vals(self, use):
 
         for idx, file in enumerate(self.fileList):
 
@@ -622,14 +602,20 @@ class ProgSplit:
                         val = header[kw.upper()]
 
                 #determine whether to use new or old val (only throw warn/error for PROGID)
-                if val and val != file[kw]:
-                    if file[kw] and file[kw] != 'NONE' and 'PROG' not in file[kw]:
-                        if kw == 'progid':
-                            self.log.error("getProgInfo: " + kw.upper() + " value mismatch. VERIFY new value for: " + os.path.basename(file['file']))
-                    else:
+                if use == 'assist':
+                    if val and val != file[kw]:
+                        if file[kw] and file[kw] != 'NONE' and 'PROG' not in file[kw]:
+                            if kw == 'progid':
+                                self.log.error("getProgInfo: " + kw.upper() + " value mismatch. VERIFY new value for: " + os.path.basename(file['file']))
+                        else:
+                            self.fileList[idx][kw] = val
+                            if kw == 'progid':
+                                self.log.warning("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
+                elif use == 'force':
+                    if val and val != file[kw]:
                         self.fileList[idx][kw] = val
-                        if kw == 'progid':
-                            self.log.warning("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
+                            if kw == 'progid':
+                                self.log.warning("getProgInfo: Force assigning " + kw.upper() + " from old header for: " + os.path.basename(file['file']))
 
 #--------------------------------------------------------------------
 
@@ -677,7 +663,7 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, 
 
     #special reprocessing check to look in header for PROG* info if all else fails
     if useHdrProg: 
-        progSplit.use_header_prog_vals()
+        progSplit.use_header_prog_vals(useHdrProg)
 
 
     #write out result

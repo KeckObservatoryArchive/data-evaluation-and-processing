@@ -46,7 +46,7 @@ def dep_dqa(instrObj, tpx=0):
     semids = []
     extraMeta = {}
     dqaFile = dirs['stage'] +'/dep_dqa' + instr +'.txt'
-    useHdrProg = int(instrObj.config['MISC']['USE_HDR_PROG']) if 'USE_HDR_PROG' in instrObj.config['MISC'] else 0
+    useHdrProg = instrObj.config['MISC']['USE_HDR_PROG'] if 'USE_HDR_PROG' in instrObj.config['MISC'] else None
     splitTime = instrObj.config['MISC']['SPLIT_TIME'] if 'SPLIT_TIME' in instrObj.config['MISC'] else None
 
 
@@ -395,6 +395,7 @@ def get_tpx_sdata_str(progData):
                 items.append(item)
 
     text = '/'.join(items)
+    if text == '': text = 'NONE'
     return text
 
 
@@ -410,6 +411,7 @@ def get_tpx_pi_str(progData):
             items.append(pi)
 
     text = '/'.join(items)
+    if text == '': text = 'NONE'
     return text
 
 

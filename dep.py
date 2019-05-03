@@ -70,8 +70,20 @@ class Dep:
         @type instr: string
         """
 
+        #process steps control (pair down ordered list if requested)
+        steps = ['obtain', 'locate', 'add', 'dqa', 'tar', 'koaxfr']
+        if (processStart != None and processStart not in steps):
+            raise Exception('Incorrect use of processStart: ' + processStart)
+            return False
+        if (processStop != None and processStop not in steps):
+            raise Exception('Incorrect use of processStop: ' + processStop)
+            return False
+        if processStart != None: steps = steps[steps.index(processStart):]
+        if processStop  != None: steps = steps[:(steps.index(processStop)+1)]
+
+
         #check if full run.  Prompt if not full run and doing tpx updates
-        fullRun = True if (processStart == None and processStop == None) else False
+        fullRun = True if (processStart == 'obtain' and processStop == 'koaxfr') else False
         if (fullRun == False and self.tpx): 
             self.prompt_confirm_tpx()
 
@@ -87,7 +99,7 @@ class Dep:
 
 
         #check 24 time window vs runtime
-        if fullRun or True:
+        if fullRun:
             if not self.check_runtime_vs_window(): return False
 
 
@@ -95,18 +107,6 @@ class Dep:
         if fullRun and self.tpx:
             utcTimestamp = dt.datetime.utcnow().strftime("%Y%m%d %H:%M")
             update_koatpx(self.instrObj.instr, self.instrObj.utDate, 'start_time', utcTimestamp, self.instrObj.log)
-
-
-        #process steps control (pair down ordered list if requested)
-        steps = ['obtain', 'locate', 'add', 'dqa', 'tar', 'koaxfr']
-        if (processStart != None and processStart not in steps):
-            raise Exception('Incorrect use of processStart: ' + processStart)
-            return False
-        if (processStop != None and processStop not in steps):
-            raise Exception('Incorrect use of processStop: ' + processStop)
-            return False
-        if processStart != None: steps = steps[steps.index(processStart):]
-        if processStop  != None: steps = steps[:(steps.index(processStop)+1)]
 
 
         #run each step in order
@@ -130,7 +130,7 @@ class Dep:
 
 
         #email completion report
-        if fullRun: self.do_process_report_email()
+        if fullRun or True: self.do_process_report_email()
 
 
         #complete
