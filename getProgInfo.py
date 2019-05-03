@@ -614,8 +614,8 @@ class ProgSplit:
                 elif use == 'force':
                     if val and val != file[kw]:
                         self.fileList[idx][kw] = val
-                            if kw == 'progid':
-                                self.log.warning("getProgInfo: Force assigning " + kw.upper() + " from old header for: " + os.path.basename(file['file']))
+                        if kw == 'progid':
+                            self.log.warning("getProgInfo: Force assigning " + kw.upper() + " from old header for: " + os.path.basename(file['file']))
 
 #--------------------------------------------------------------------
 

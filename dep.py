@@ -130,7 +130,7 @@ class Dep:
 
 
         #email completion report
-        if fullRun or True: self.do_process_report_email()
+        if fullRun: self.do_process_report_email()
 
 
         #complete
