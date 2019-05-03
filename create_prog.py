@@ -34,7 +34,6 @@ def create_prog(instrObj):
     utDate     = instrObj.utDate
     stageDir   = instrObj.dirs['stage']
     log        = instrObj.log
-    useHdrProg = int(instrObj.config['MISC']['USE_HDR_PROG']) if 'USE_HDR_PROG' in instrObj.config['MISC'] else 0
 
 
     #info
