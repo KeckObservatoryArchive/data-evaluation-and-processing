@@ -521,8 +521,9 @@ class Instrument:
 
         #Returns the OUTDIR associated with the filename, else returns None.
         #OUTDIR = [/s]/sdata####/account/YYYYmmmDD
-        #todo: do we want to update header?
         #todo: should we look for '/s/' and subtract one from index?
+        #NOTE: for reprocessing old data that doesn't have OUTDIR keyword, this matches
+        #on /stage/ or /storageserver/ instead of /s/, which still gets the job done.  not ideal.
         try:
             filename = self.fitsFilepath
             start = filename.find('/s')
@@ -794,6 +795,7 @@ class Instrument:
         telnr   = self.get_telnr()
 
         #read envMet.arT and write to header
+        #todo: read this once in dqa to speed things up?
         logFile = self.dirs['anc'] + '/nightly/envMet.arT'
         data = envlog(logFile, 'envMet', telnr, dateobs, utc)
         if type(data) is not dict: 
