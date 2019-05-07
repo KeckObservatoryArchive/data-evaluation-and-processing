@@ -89,9 +89,10 @@ class Nirspec(instrument.Instrument):
         instr = self.get_instr()
         if instr == 'nirspec' or instr == 'nirspao':
             try:
-                camera = self.get_keyword('CAMERA').lower()
+                camera = self.get_keyword('CAMERA')
                 if camera == None:
-                    camera = self.get_keyword('OUTDIR').lower()
+                    camera = self.get_keyword('OUTDIR')
+                camera = camera.lower()
             except KeyError:
                 prefix = ''
             else:
