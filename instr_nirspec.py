@@ -206,18 +206,18 @@ class Nirspec(instrument.Instrument):
         else:
             self.log.info('set_koaimtyp: setting KOAIMTYP keyword value from algorithm')
 
-            calmpos = self.get_keyword('CALMPOS').lower()
-            calppos = self.get_keyword('CALPPOS').lower()
+            calmpos = self.get_keyword('CALMPOS', default='').lower()
+            calppos = self.get_keyword('CALPPOS', default='').lower()
             #calcpos doesn't exist in header
-#            calcpos = self.get_keyword('CALCPOS').lower()
-            xenon = self.get_keyword('XENON').lower()
-            krypton = self.get_keyword('KRYPTON').lower()
-            argon = self.get_keyword('ARGON').lower()
-            neon = self.get_keyword('NEON').lower()
+#            calcpos = self.get_keyword('CALCPOS', default='').lower()
+            xenon = self.get_keyword('XENON', default='').lower()
+            krypton = self.get_keyword('KRYPTON', default='').lower()
+            argon = self.get_keyword('ARGON', default='').lower()
+            neon = self.get_keyword('NEON', default='').lower()
 #flat doesn't exist
 #            flat = self.get_keyword('FLAT')
-            flimagin = self.get_keyword('FLIMAGIN').lower()
-            flspectr = self.get_keyword('FLSPECTR').lower()
+            flimagin = self.get_keyword('FLIMAGIN', default='').lower()
+            flspectr = self.get_keyword('FLSPECTR', default='').lower()
             flat = 0
             if flimagin == 'on' or flspectr == 'on':
                 flat = 1
@@ -248,7 +248,7 @@ class Nirspec(instrument.Instrument):
 
         #warn if undefined
         if (koaimtyp == 'undefined'):
-            self.log.info('set_koaimtyp: Could not determine KOAIMTYP from OBSTYPE value of "' + obstype + '"')
+            self.log.info('set_koaimtyp: Could not determine KOAIMTYP from OBSTYPE value')
 
         #update keyword
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
