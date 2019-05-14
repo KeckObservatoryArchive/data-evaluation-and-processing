@@ -276,10 +276,10 @@ class Nirspec(instrument.Instrument):
         filters['BR-GAMMA']  = {'blue':2.1550, 'cntr':2.1650, 'red':2.1750}
         filters['CO']        = {'blue':2.2810, 'cntr':2.2930, 'red':2.3050}
         filters['K-PRIME']   = {'blue':1.9500, 'cntr':2.1225, 'red':2.2950}
+        filters['KL']        = {'blue':2.1340, 'cntr':3.1810, 'red':4.2280}
         filters['K']         = {'blue':1.9960, 'cntr':2.1890, 'red':2.3820}
         filters['L-PRIME']   = {'blue':3.4200, 'cntr':3.7700, 'red':4.1200}
         filters['M-PRIME']   = {'blue':4.5700, 'cntr':4.6900, 'red':4.8100}
-        filters['KL']        = {'blue':2.1340, 'cntr':3.1810, 'red':4.2280}
         filters['HEI']       = {'blue':1.0776, 'cntr':1.0830, 'red':1.0884}
         filters['PA-BETA']   = {'blue':1.2757, 'cntr':1.2823, 'red':1.2888}
         filters['FEII']      = {'blue':1.6390, 'cntr':1.6465, 'red':1.6540}
@@ -414,11 +414,11 @@ class Nirspec(instrument.Instrument):
                 if dispers == 'low':
                     if self.get_keyword('ISAO') == 'yes':
                         width = lowresmap[width]
-                    specres = lowres[str(slitwidt.rstrip('0'))]
+                    specres = lowres[str(width.rstrip('0'))]
                 elif dispers == 'high':
                     if self.get_keyword('ISAO') == 'yes':
                         width = highresmap[width]
-                    specres = int(ceil(10800/float(slitwidt)/100.0))*100
+                    specres = int(ceil(10800/float(width)/100.0))*100
 
                 slitlen = float(slitlen)
                 slitwidt = float(slitwidt)
