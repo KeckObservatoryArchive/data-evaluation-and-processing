@@ -84,7 +84,8 @@ class Dep:
 
         #check if full run.  Prompt if not full run and doing tpx updates
         fullRun = True if (processStart == 'obtain' and processStop == 'koaxfr') else False
-        if (fullRun == False and self.tpx): 
+        isReprocess = int(self.instrObj.config['MISC']['REPROCESS']) if 'REPROCESS' in self.instrObj.config['MISC'] else 0
+        if (fullRun == False and self.tpx and not isReprocess): 
             self.prompt_confirm_tpx()
 
 
