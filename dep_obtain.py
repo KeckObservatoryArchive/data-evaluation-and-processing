@@ -118,10 +118,9 @@ def run_old_dep_obtain(instr, prevDate, utDate, stageDir, log):
     For dates before 2018-01-01, we have to run the old PHP version since new database does not contain data before then
     '''
 
-    cmd = "/kroot/archive/dep/obtain/5-1-0/dep_obtain.php " + instr + ' ' + prevDate.replace('-', '/') + ' ' + utDate.replace('-', '/') + ' ' + stageDir
-    log.info("Running old dep_obtain.php: " + cmd)
-    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    script_response = proc.stdout.read()
+    cmd = ["/kroot/archive/dep/obtain/5-1-0/dep_obtain.php", instr, prevDate.replace('-', '/'), utDate.replace('-', '/'), stageDir]
+    log.info("Running old dep_obtain.php: " + ' '.join(cmd))
+    proc = subprocess.call(cmd)
 
 
 

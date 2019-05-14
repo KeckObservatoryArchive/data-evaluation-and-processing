@@ -283,6 +283,7 @@ class ProgSplit:
 
     def assign_single_by_outdir_name(self, filenum):
 
+        #TODO: NOTE : not using this for now since it is not really reliable. Change to only use if there are multiple outdirs matching this format.
         ok = False
 
         #get outdir
@@ -533,7 +534,7 @@ class ProgSplit:
                 else:
                     ok = False 
                     if not ok: ok = self.assign_single_by_observer(idx)
-                    if not ok: ok = self.assign_single_by_outdir_name(idx)
+                    #if not ok: ok = self.assign_single_by_outdir_name(idx)
                     if not ok: ok = self.assign_single_by_time(idx)
             else:
                 self.log.error("getProgInfo: Could not find outdir match for: " + fileOutdir)
