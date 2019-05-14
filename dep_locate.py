@@ -229,7 +229,7 @@ def dep_rawfiles(instr, utDate, inFile, outFile, ancDir, isReprocess, log):
       filepath = goodFiles[i]
       targetDir = os.path.dirname(filepath)
       if filepath.endswith('.fits.gz'):
-            output = subprocess.Popen(['gunzip', filepath])
+            output = subprocess.call(['gunzip', filepath])
             goodFiles[i] = filepath.replace(".fits.gz", ".fits")
 
 
