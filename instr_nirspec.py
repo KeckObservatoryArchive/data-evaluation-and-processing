@@ -330,10 +330,12 @@ class Nirspec(instrument.Instrument):
         dispscal = 'null'
         spatscal = 'null'
 
-        if 'NC' in self.get_keyword('KOAID'):
-            spatscal = 0.178
+        # Set SPATSCAL = PSCALE
+        pscale = self.get_keyword('PSCALE')
+        if pscale == None: pscale = 'null'
+        spatscal = pscale
 
-        else:
+        if 'NS' in self.get_keyword('KOAID'):
             self.log.info('set_dispers: setting DISPERS and DISPSCAL keyword values from ECHLPOS')
 
             echlpos = self.get_keyword('ECHLPOS')
@@ -344,13 +346,9 @@ class Nirspec(instrument.Instrument):
             elif echlpos <= 100.0:
                 dispers = 'high'
                 dispscal = 0.144
-                spatscal = 0.190
-                if isao == 'yes': spatscal = 0.018
             else:
                 dispers = 'low'
                 dispscal = 0.190
-                spatscal = 0.144
-                if isao == 'yes': spatscal = 0.013
 
         #update keywords
         self.set_keyword('DISPERS', dispers, 'KOA: dispersion level')
