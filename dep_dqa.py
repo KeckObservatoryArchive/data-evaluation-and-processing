@@ -106,7 +106,11 @@ def dep_dqa(instrObj, tpx=0):
         #keep list of good fits filenames
         procFiles.append(instrObj.fitsFilepath)
         inFiles.append(os.path.basename(instrObj.fitsFilepath))
-        outFiles.append(instrObj.fitsHeader.get('KOAID'))
+        koaid = instrObj.fitsHeader.get('KOAID')
+        if koaid.startswith('NC'): koaid = '/'.join(('scam', koaid))
+        elif koaid.startswith('NS'): koaid = '/'.join(('spec', koaid))
+        outFiles.append(koaid)
+#        outFiles.append(instrObj.fitsHeader.get('KOAID'))
         semids.append(instrObj.get_semid())
 
         #stats
