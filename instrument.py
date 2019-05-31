@@ -799,7 +799,7 @@ class Instrument:
         logFile = self.dirs['anc'] + '/nightly/envMet.arT'
         data = envlog(logFile, 'envMet', telnr, dateobs, utc)
         if type(data) is not dict: 
-            self.log.warning("Could not read envMet.arT data")
+            self.log.error("Could not read envMet.arT data")
             return True
 
         self.set_keyword('WXDOMHUM' , data['wx_domhum'],    'KOA: Weather dome humidity')
@@ -817,7 +817,7 @@ class Instrument:
         logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
         data = envlog(logFile, 'envFocus', telnr, dateobs, utc)
         if type(data) is not dict: 
-            self.log.warning("Could not read envFocus.arT data")
+            self.log.error("Could not read envFocus.arT data")
             return True
 
         self.set_keyword('GUIDFWHM' , data['guidfwhm'],     'KOA: Guide star FWHM value')
