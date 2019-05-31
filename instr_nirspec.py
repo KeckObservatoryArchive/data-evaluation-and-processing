@@ -338,17 +338,16 @@ class Nirspec(instrument.Instrument):
         if 'NS' in self.get_keyword('KOAID'):
             self.log.info('set_dispers: setting DISPERS and DISPSCAL keyword values from ECHLPOS')
 
-            echlpos = self.get_keyword('ECHLPOS')
+            slitname = self.get_keyword('SLITNAME')
             isao = self.get_keyword('ISAO')
 
-            #these values are for NIRSPEC, different for for NIRSAO
-            if echlpos == None: dispers = 'unknown'
-            elif echlpos <= 100.0:
-                dispers = 'high'
-                dispscal = 0.144
-            else:
+            if slitname == None: dispers = 'unknown'
+            elif 'x42' in slitname:
                 dispers = 'low'
                 dispscal = 0.190
+            else:
+                dispers = 'high'
+                dispscal = 0.144
 
         #update keywords
         self.set_keyword('DISPERS', dispers, 'KOA: dispersion level')
