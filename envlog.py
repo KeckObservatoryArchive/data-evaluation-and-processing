@@ -47,7 +47,7 @@ def envlog(logFile, logType, telnr, dateObs, utc):
         #TODO: NOTE: added 'dtype=object' to skip low memory warning due to
         #column mixed data types. We should define dtypes for columns to speed up.
         data = pd.read_csv(logFile, skiprows=[0,2], dtype=object)
-    except IOError as e:
+    except Exception as e:
         print ('envlog: Unable to open: {}!'.format(logFile))
         return False
     #
