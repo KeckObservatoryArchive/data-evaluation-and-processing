@@ -187,6 +187,8 @@ class ProgSplit:
                     for key, value in self.too.items():
                         if key in row[value]:
                             garbage, progid = row[value].split('_ToO_')
+                            if '/' in progid:
+                                progid, tmp = progid.split('/') # case of /scam and /spec
                             semid = self.semester+'_'+progid
                             row['proginst'] = get_prog_inst(semid, 'NONE', self.log, isToO=True)
                             row['progid']   = progid

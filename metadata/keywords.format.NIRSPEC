@@ -15,6 +15,12 @@ DISPERS	char	16	Y
 DISPSCAL	double	32	Y
 ELAPTIME	double	32	Y
 FILTER	char	24	Y
+SLITNAME	char	32	Y
+SLITLEN	double	32	Y
+SLITWIDT	double	32	Y
+PSCALE	double	32	Y
+SPATSCAL	double	32	Y
+SPECRES	double	32	Y
 WAVEBLUE	double	32	Y
 WAVECNTR	double	32	Y
 WAVERED	double	32	Y
@@ -218,7 +224,6 @@ PLATETMP	double	32	Y
 PONAME	char	25	Y
 POXPOS	double	32	Y
 POYPOS	double	32	Y
-PSCALE	double	32	Y
 RABASE	char	16	Y
 RADECSYS	char	16	Y
 RAOFF	double	32	Y
@@ -258,14 +263,9 @@ SETNUM	integer	16	Y
 SIMPLE	char	8	Y
 SLITANG	double	32	Y
 SLITCENT	char	16	Y
-SLITLEN	double	32	Y
-SLITNAME	char	32	Y
 SLITPA	double	32	Y
-SLITWIDT	double	32	Y
-SPATSCAL	double	32	Y
 SPEC1TMP	double	32	Y
 SPEC2TMP	double	32	Y
-SPECRES	double	32	Y
 STARTX	integer	16	Y
 STARTY	integer	16	Y
 STATENAM	char	24	Y

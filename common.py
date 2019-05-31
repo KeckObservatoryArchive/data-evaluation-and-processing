@@ -45,14 +45,20 @@ def make_dir_md5_table(readDir, endswith, outfile, fileList=None):
     if fileList:
         files = fileList
     else:        
-        for file in sorted(os.listdir(readDir)):
-            if (endswith == None or file.endswith(endswith)): 
-                files.append(readDir + '/' + file)
+#        for file in sorted(os.listdir(readDir)):
+#            if (endswith == None or file.endswith(endswith)): 
+#                files.append(readDir + '/' + file)
+        for dirpath, dirnames, filenames in os.walk(readDir):
+            for f in filenames:
+                if f.endswith(endswith):
+                    files.append(dirpath + '/' + f)
 
     with open(outfile, 'w') as fp:
         for file in files:
             md5 = hashlib.md5(open(file, 'rb').read()).hexdigest()
-            fp.write(md5 + '  ' + os.path.basename(file) + "\n")
+            bName = file.replace(readDir + '/', '')
+            fp.write(md5 + '  ' + bName + '\n')
+#            fp.write(md5 + '  ' + os.path.basename(file) + "\n")
 
 
 
