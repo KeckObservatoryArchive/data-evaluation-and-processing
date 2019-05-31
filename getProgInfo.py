@@ -122,7 +122,8 @@ class ProgSplit:
         # Aug 1 UT is still part of Jul 31 HST
         elif imo == 8 and idy > 1:
             sem = 'B'
-        elif imo == 2 and idy < 1:
+        # Feb 1 UTC is part of semester B
+        elif imo == 2 and idy == 1:
             sem = 'B'
         # Jan through Feb 1 are a part of the previous year's semester
         if imo == 1 or (imo ==2 and idy == 1):
@@ -370,10 +371,12 @@ class ProgSplit:
             "Ellis, Konidaris, Belli, Newman, & Schenkar"
         '''
 
-        #replace whitespace with comma
+        #replace whitespace and periods with comma
         obsvStr = re.sub("\s+", ",", obsvStr.strip())
+        obsvStr = re.sub("\.+", ",", obsvStr.strip())
 
         #get rid of other unwanted things
+        obsvStr = re.sub("\(.+?\)", "", obsvStr.strip())
         search  = ["_", "/", "&", ".", "and"]
         for s in search:
             obsvStr = obsvStr.replace(s, '')
