@@ -7,21 +7,57 @@ OSIRIS specific DR techniques can be added to it in the future
 
 import instrument
 import datetime as dt
+from common import *
+from math import ceil
 
 class Osiris(instrument.Instrument):
-    def __init__(self, endTime=dt.datetime.now(), rDir=''):
+
+    def __init__(self, instr, utDate, rootDir, log=None):
+
         # Call the parent init to get all the shared variables
-        super().__init__(endTime, rDir)
+        super().__init__(instr, utDate, rootDir, log)
 
         # OSIRIS has 'DATAFILE' instead of OUTFILE
         self.ofName = 'DATAFILE'
-        # Set the OSIRIS specific paths to anc and stage
-        seq = (self.rootDir, '/OSIRIS/', self.utDate, '/anc')
-        self.ancDir = ''.join(seq)
-        seq = (self.rootDir, '/stage')
-        self.stageDir = ''.join(seq)
+
+        #other vars that subclass can overwrite
+        self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
+
         # Generate the paths to the OSIRIS datadisk accounts
         self.paths = self.get_dir_list()
+
+
+    def run_dqa_checks(self, progData):
+        '''
+        Run all DQA checks unique to this instrument
+        '''
+
+        ok = True
+        if ok: ok = self.set_dqa_date()
+        if ok: ok = self.set_dqa_vers()
+        if ok: ok = self.set_datlevel(0)
+        if ok: ok = self.set_instr()
+        if ok: ok = self.set_dateObs()
+#        if ok: ok = self.set_elaptime()
+#        if ok: ok = self.set_koaimtyp()
+        if ok: ok = self.set_koaid()
+#        if ok: ok = self.set_frameno()
+#        if ok: ok = self.set_ofName()
+        if ok: ok = self.set_semester()
+#        if ok: ok = self.set_isao()
+#        if ok: ok = self.set_dispers()
+#        if ok: ok = self.set_slit_values()
+#        if ok: ok = self.set_wavelengths()
+#        if ok: ok = self.set_weather_keywords()
+#        if ok: ok = self.set_image_stats_keywords()
+#        if ok: ok = self.set_gain_and_readnoise()
+#        if ok: ok = self.set_npixsat(self.get_keyword('COADDS') * 25000)
+        if ok: ok = self.set_oa()
+        if ok: ok = self.set_prog_info(progData)
+        if ok: ok = self.set_propint(progData)
+
+        return ok
+
 
     def get_dir_list(self):
         '''
@@ -53,9 +89,9 @@ class Osiris(instrument.Instrument):
             except KeyError:
                 prefix = ''
             else:
-                if '/scam' in outdir:
+                if '/IMAG' in outdir:
                     prefix = 'OI'
-                elif '/spec' in outdir:
+                elif '/SPEC' in outdir:
                     prefix = 'OS'
                 else:
                     prefix = ''
