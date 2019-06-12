@@ -39,16 +39,17 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_ut()
-#        if ok: ok = self.set_elaptime()
-#        if ok: ok = self.set_koaimtyp()
+        if ok: ok = self.set_elaptime()
+        if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_frameno()
+        if ok: ok = self.set_filter()
 #        if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
 #        if ok: ok = self.set_isao()
 #        if ok: ok = self.set_dispers()
 #        if ok: ok = self.set_slit_values()
-#        if ok: ok = self.set_wavelengths()
+        if ok: ok = self.set_wavelengths()
 #        if ok: ok = self.set_weather_keywords()
 #        if ok: ok = self.set_image_stats_keywords()
 #        if ok: ok = self.set_gain_and_readnoise()
@@ -196,3 +197,142 @@ class Osiris(instrument.Instrument):
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
         return True
 
+
+    def set_wcs_keywords(self):
+        '''
+        Creates WCS keywords
+        '''
+
+        crval1 = crval2 = 'null'
+        crpix1 = crpix2 = 'null'
+        ctype1 = ctype2 = 'null'
+        wat0_001 = wat1_001 = wat2_001 = 'null'
+        wcsdim = 'null'
+        ltm1_1 = ltm2_2 = 'null'
+        cdelt1 = cdelt2 = 'null'
+        crota2 = 'null'
+        radecsys = 'null'
+
+        instr = self.get_keyword('INSTR')
+        dateobs = self.get_keyword('DATE-OBS')
+        rotmode = self.get_keyword('ROTMODE')
+        poname = self.get_keyword('PONAME')
+        rotposn = self.get_keyword('ROTPOSN')
+        ra = self.get_keyword('RA')
+        dec = self.get_keyword('DEC')
+
+        pi = np.pi()
+
+        if instr.lower() == 'imag' and 'position angle' in rotmode:
+            ctype1 = 'RA---TAN'
+            ctype2 = 'DEC--TAN'
+            wat0_001 = 'system=image'
+            wat1_001 = 'wtype=tan axtype=ra'
+            wat2_001 = 'wtype=tan axtype=dec'
+            wcsdim = 2
+            radecsys = 'FK5'
+            ltm1_1 = 1.000
+            ltm2_2 = 1.000
+            if 'ospec' in poname.lower():
+                offset = 47.5
+                theta = (offset - (rotposn+90)) * pi / 180.0
+                deltaRA = (15.42 * cos(theta) + 14.12 * sin(theta)) / (cos(dec*pi/180.0)*3600.0)
+                deltaDEC = (15.42 * sin(theta) - 14.12 * cos(theta)) / 3600.0
+                crval1 = ra + deltaRA
+                crval2 = dec + deltaDEC
+            else:
+                deltaRA = 0.0
+                deltaDEC = 0.0
+                crval1 = ra
+                crval2 = dec
+
+            crota2 = -(rotposn+90)
+            while crota2 < 0: crota2 += 360.0
+            cdelt1 = -0.0000055555556
+            cdelt2 = 0.0000055555556
+            crpix1 = 512.5
+            crpix2 = 512.5
+
+        return True
+
+
+    def set_filter(self):
+        '''
+        Populates filter from ifilter or sfilter
+        '''
+
+        self.log.info('set_wavelengths: setting FILTER keyword value')
+
+        instr = self.get_keyword('INSTR')
+        ifilter = self.get_keyword('IFILTER')
+        sfilter = self.get_keyword('SFILTER')
+
+        filter = ''
+        if instr.lower() == 'imag':
+            filter = ifilter
+        elif instr.lower() == 'spec':
+            filter = sfitler
+
+        self.set_keyword('FILTER', filter, 'KOA: Copy of IFILTER/SFILTER')
+
+        return True
+
+
+    def set_wavelengths(self):
+        '''
+        Set wavelength values based off filters used
+        '''
+
+        self.log.info('set_wavelengths: setting WAVE keyword values from FILTER')
+
+        waveblue = wavecntr = wavered = 'null'
+
+        wave = {}
+        wave['zbb']     = {'waveblue': 999, 'wavered':1176}
+        wave['jbb']     = {'waveblue':1180, 'wavered':1440}
+        wave['hbb']     = {'waveblue':1473, 'wavered':1803}
+        wave['kbb']     = {'waveblue':1965, 'wavered':2381}
+        wave['kcb']     = {'waveblue':1965, 'wavered':2381}
+        wave['zn4']     = {'waveblue':1103, 'wavered':1158}
+        wave['jn1']     = {'waveblue':1174, 'wavered':1232}
+        wave['jn2']     = {'waveblue':1228, 'wavered':1289}
+        wave['jn3']     = {'waveblue':1275, 'wavered':1339}
+        wave['jn4']     = {'waveblue':1323, 'wavered':1389}
+        wave['hn1']     = {'waveblue':1466, 'wavered':1541}
+        wave['hn2']     = {'waveblue':1532, 'wavered':1610}
+        wave['hn3']     = {'waveblue':1594, 'wavered':1676}
+        wave['hn4']     = {'waveblue':1652, 'wavered':1737}
+        wave['hn5']     = {'waveblue':1721, 'wavered':1808}
+        wave['kn1']     = {'waveblue':1955, 'wavered':2055}
+        wave['kn2']     = {'waveblue':2036, 'wavered':2141}
+        wave['kn3']     = {'waveblue':2121, 'wavered':2229}
+        wave['kc3']     = {'waveblue':2121, 'wavered':2229}
+        wave['kn4']     = {'waveblue':2208, 'wavered':2320}
+        wave['kc4']     = {'waveblue':2208, 'wavered':2320}
+        wave['kn5']     = {'waveblue':2292, 'wavered':2408}
+        wave['kc5']     = {'waveblue':2292, 'wavered':2408}
+        wave['pagamma'] = {'waveblue':1087, 'wavered':1105}
+        wave['feii']    = {'waveblue':1634, 'wavered':1661}
+        wave['hcont']   = {'waveblue':1571, 'wavered':1596}
+        wave['zn3']     = {'waveblue':1061, 'wavered':1113}
+        wave['y']       = {'waveblue': 977, 'wavered':1073}
+        wave['j']       = {'waveblue':1168, 'wavered':1318}
+        wave['kp']      = {'waveblue':1961, 'wavered':2268}
+        wave['brgamma'] = {'waveblue':2155, 'wavered':2184}
+        wave['kcont']   = {'waveblue':2259, 'wavered':2281}
+        wave['hei_b']   = {'waveblue':2046, 'wavered':2075}
+
+        instr = self.get_keyword('INSTR')
+        filter = self.get_keyword('FILTER')
+        filter = filter.lower()
+
+        if filter in wave.keys():
+            waveblue = wave[filter]['waveblue']
+            wavered = wave[filter]['wavered']
+            wavecntr = int((wavered + waveblue) / 2.0)
+
+        self.set_keyword('WAVEBLUE', waveblue, 'KOA: Approximate blue end wavelength (nm)')
+        self.set_keyword('WAVECNTR', wavecntr, 'KOA: Approximate central wavelength (nm)')
+        self.set_keyword('WAVERED', wavered, 'KOA: Approximate red end wavelength (nm)')
+
+        return True
