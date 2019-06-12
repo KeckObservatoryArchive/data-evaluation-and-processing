@@ -42,7 +42,7 @@ class Osiris(instrument.Instrument):
 #        if ok: ok = self.set_elaptime()
 #        if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
-#        if ok: ok = self.set_frameno()
+        if ok: ok = self.set_frameno()
 #        if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
 #        if ok: ok = self.set_isao()
@@ -104,7 +104,6 @@ class Osiris(instrument.Instrument):
         '''
         Fixes missing ELAPTIME keyword
         '''
-
         self.log.info('set_elaptime: determining ELAPTIME from TRUITIME')
 
         #skip it it exists
@@ -113,8 +112,7 @@ class Osiris(instrument.Instrument):
         #get necessary keywords
         itime  = self.get_keyword('TRUITIME')
         coadds = self.get_keyword('COADDS')
-        framenum = self.get_keyword('FRAMENUM')
-        
+        #if exposure time or # of exposures doesn't exist, throw error
         if (itime == None or coadds == None):
             self.log.error('set_elaptime: TRUITIME and COADDS values needed to set ELAPTIME')
             return False
@@ -123,11 +121,11 @@ class Osiris(instrument.Instrument):
         elaptime = round(itime/1000 * coadds, 5)
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         
-        #update frame number
-        self.set_keyword('FRAMENUM', framenum, 'Frame number (added by KOA)')
-        
+        return True
+    
+    def set_instr(self):
         #update instrument
         self.set_keyword('INSTRUME', 'OSIRIS', 'Instrument (added by KOA)') 
         
-
         return True
+        
