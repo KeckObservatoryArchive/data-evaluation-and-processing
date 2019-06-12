@@ -123,11 +123,4 @@ class Osiris(instrument.Instrument):
         elaptime = round(itime/1000 * coadds, 5)
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         
-        #update frame number
-        self.set_keyword('FRAMENUM', framenum, 'Frame number (added by KOA)')
-        
-        #update instrument
-        self.set_keyword('INSTRUME', 'OSIRIS', 'Instrument (added by KOA)') 
-        
-
         return True
