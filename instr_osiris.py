@@ -82,7 +82,7 @@ class Osiris(instrument.Instrument):
             dirs.append(''.join(seq))
         return dirs
 
-    def get_prefix(self, keys):
+    def get_prefix(self):
         try:
             instr = self.get_keyword('INSTR')
         except KeyError:
