@@ -290,13 +290,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
 
    #TODO: move this to instrument classes
 
-   if instr == 'OSIRIS': # Osiris already has the raw filename under DATAFILE
-       filename = keywords['DATAFILE']
-       # but the i file needs .fits added to it
-       if filename[0] == 'i':
-           filename = ''.join((filename, '.fits'))
-       return filename, True
-   elif instr in ['MOSFIRE', 'NIRES', 'NIRSPEC']:
+   if instr in ['MOSFIRE', 'NIRES', 'NIRSPEC', 'OSIRIS']:
        try:
            outfile = keywords['DATAFILE']
            if '.fits' not in outfile:
