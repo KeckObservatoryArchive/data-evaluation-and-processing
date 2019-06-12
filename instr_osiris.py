@@ -83,21 +83,17 @@ class Osiris(instrument.Instrument):
         return dirs
 
     def get_prefix(self, keys):
-        instr = self.get_instr(keys)
-        if instr == 'osiris':
-            try:
-                outdir = keys[self.outdir]
-            except KeyError:
-                prefix = ''
-            else:
-                if '/IMAG' in outdir:
-                    prefix = 'OI'
-                elif '/SPEC' in outdir:
-                    prefix = 'OS'
-                else:
-                    prefix = ''
+        try:
+            instr = self.get_keyword('INSTR')
+        except KeyError:
+            prefix = ''
         else:
-           prefix = ''
+            if 'imag' in instr:
+                prefix = 'OI'
+            elif 'spec' in instr:
+                prefix = 'OS'
+            else:
+                prefix = ''
         return prefix
 
     def set_elaptime(self):
@@ -129,3 +125,74 @@ class Osiris(instrument.Instrument):
         
         return True
         
+
+    def set_koaimtyp(self):
+        '''
+        Adds KOAIMTYP keyword
+        '''
+
+        self.log.info('set_koaimtyp: setting KOAIMTYP keyword from algorithm')
+
+        koaimtyp = 'undefined'
+        ifilter = self.get_keyword('IFILTER')
+        sfilter = self.get_keyword('SFILTER')
+        axestat = self.get_keyword('AXESTAT')
+        domeposn = self.get_keyword('DOMEPOSN')
+        az = self.get_keyword('AZ')
+        el = self.get_keyword('EL')
+        obsfname = self.get_keyword('OBSFNAME')
+        obsfx = self.get_keyword('OBSFX')
+        obsfy = self.get_keyword('OBSFY')
+        obsfz = self.get_keyword('OBSFZ')
+        instr = self.get_keyword('INSTR')
+        datafile = self.get_keyword('DATAFILE')
+        coadds = self.get_keyword('COADDS')
+
+        # telescope at flat position
+        flatpos = 0
+        if (el < 45.11 and el > 44.89) and (domeposn - az > 80.0 and domeposn - az < 100.0):
+            flatpos = 1
+
+        if 'telescope' in obsfname.lower():
+            koaimtyp = 'object'
+
+        # recmat files
+        if 'c' in datafile:
+            koaimtyp = 'calib'
+
+        # dark if ifilter/sfilter is dark
+        if 'drk' in ifilter.lower() and instr.lower() == 'imag':
+            koaimtyp = 'dark'
+        elif 'drk' in sfilter.lower() and instr.lower() == 'spec':
+            koaimtyp = 'dark'
+
+        # uses dome lamps for instr=imag
+        elif instr.lower() == 'imag':
+            if 'telescope' in obsfname and 'not controlling' in axestat and flatpos:
+                # divide image by coadds
+                img = self.fitsHdu[0].data
+
+                # median
+                imgmed = np.median(img)
+
+                if imgmed > 30.0:
+                    koaimtyp = 'flatlamp'
+                else:
+                    koaimtyp = 'flatlampoff'
+
+        if instr.lower == 'spec':
+            if 'telsim' in obsfname or (obsfx > 30 and obsfy < 0.1 and obsfz < 0.1):
+                koaimtyp = 'undefined'
+            elif obsfz > 10:
+                koaimtype = 'undefined'
+        elif 'c' in datafile:
+            koaimtyp = 'calib'
+
+        #warn if undefined
+        if (koaimtyp == 'undefined'):
+            self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
+
+        #update keyword
+        self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
+        return True
+
