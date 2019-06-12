@@ -6,7 +6,7 @@ import subprocess
 
 # usage
 if len(sys.argv) <= 6:
-    print ("USAGE: dep_go_reprocess.py instr startDate endDate tpx searchDirBase metaDirBase")
+    print ("USAGE: dep_go_reprocess.py instr startDate endDate tpx procStart procStop searchDirBase metaDirBase")
     sys.exit(0)
 
 
@@ -20,8 +20,11 @@ instr           = sys.argv[1]
 startDateStr    = sys.argv[2]
 endDateStr      = sys.argv[3]
 tpx             = sys.argv[4]
-searchDirBase   = sys.argv[5]
-metaDirBase     = sys.argv[6]
+procStart       = sys.argv[5]
+procStop        = sys.argv[6]
+useHdrProg      = sys.argv[7]
+searchDirBase   = sys.argv[8]
+metaDirBase     = sys.argv[9]
 
 
 # loop dates and call 
@@ -44,10 +47,10 @@ while curDate <= endDate:
 
     else:
         # cmd = "python3 dep_go.py " + instr + ' ' + curDateStr + ' ' + tpx + ' obtain tar --modtimeOverride 1 --reprocess 1 --searchDir ' + searchDir
-        params = ['/usr/local/anaconda3-5.0.0.1/bin/python', 'dep_go.py', instr, curDateStr, tpx, 'obtain', 'tar', 
+        params = ['/usr/local/anaconda3-5.0.0.1/bin/python', 'dep_go.py', instr, curDateStr, tpx, procStart, procStop, 
                     '--modtimeOverride', '1', 
                     '--reprocess', '1', 
-                    '--useHdrProg', 'assist', 
+                    '--useHdrProg', useHdrProg, 
                     '--searchDir', searchDir,
                     '--metaCompareDir', metaDir]
         print ('COMMAND: ', ' '.join(params))
