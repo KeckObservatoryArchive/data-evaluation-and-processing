@@ -236,55 +236,59 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
     hduNames = []
     extFullList = []
     for filepath in filepaths:
-        file = os.path.basename(filepath)
-        hdus = fits.open(filepath)
-        for i in range(0, len(hdus)):
-            hdu = hdus[i]
-            if 'TableHDU' not in str(type(hdu)): continue
+            file = os.path.basename(filepath)
+            hdus = fits.open(filepath)
+            for i in range(0, len(hdus)):
+                #wrap in try since some ext headers have been found to be corrupted
+                try:
+                    hdu = hdus[i]
+                    if 'TableHDU' not in str(type(hdu)): continue
 
-            #keep track of hdu names processed
-            if hdu.name not in hduNames: hduNames.append(hdu.name)
+                    #keep track of hdu names processed
+                    if hdu.name not in hduNames: hduNames.append(hdu.name)
 
-            #calc col widths
-            dataStr = ''
-            colWidths = []
-            for idx, colName in enumerate(hdu.data.columns.names):
-                fmtWidth = int(hdu.data.formats[idx][1:])
-                colWidth = max(fmtWidth, len(colName))
-                colWidths.append(colWidth)
+                    #calc col widths
+                    dataStr = ''
+                    colWidths = []
+                    for idx, colName in enumerate(hdu.data.columns.names):
+                        fmtWidth = int(hdu.data.formats[idx][1:])
+                        colWidth = max(fmtWidth, len(colName))
+                        colWidths.append(colWidth)
 
-            #add hdu name as comment
-            dataStr += '\ Extended Header Name: ' + hdu.name + "\n"
+                    #add hdu name as comment
+                    dataStr += '\ Extended Header Name: ' + hdu.name + "\n"
 
-            #add header
-            #TODO: NOTE: Found that all ext data is stored as strings regardless of type it seems to hardcoding to 'char' for now.
-            for idx, cw in enumerate(colWidths):
-                dataStr += '|' + hdu.data.columns.names[idx].ljust(cw)
-            dataStr += "|\n"
-            for idx, cw in enumerate(colWidths):
-                dataStr += '|' + 'char'.ljust(cw)
-            dataStr += "|\n"
-            for idx, cw in enumerate(colWidths):
-                dataStr += '|' + ''.ljust(cw)
-            dataStr += "|\n"
-            for idx, cw in enumerate(colWidths):
-                dataStr += '|' + ''.ljust(cw)
-            dataStr += "|\n"
+                    #add header
+                    #TODO: NOTE: Found that all ext data is stored as strings regardless of type it seems to hardcoding to 'char' for now.
+                    for idx, cw in enumerate(colWidths):
+                        dataStr += '|' + hdu.data.columns.names[idx].ljust(cw)
+                    dataStr += "|\n"
+                    for idx, cw in enumerate(colWidths):
+                        dataStr += '|' + 'char'.ljust(cw)
+                    dataStr += "|\n"
+                    for idx, cw in enumerate(colWidths):
+                        dataStr += '|' + ''.ljust(cw)
+                    dataStr += "|\n"
+                    for idx, cw in enumerate(colWidths):
+                        dataStr += '|' + ''.ljust(cw)
+                    dataStr += "|\n"
 
-            #add data rows
-            for j in range(0, len(hdu.data)):
-                row = hdu.data[j]
-                for idx, cw in enumerate(colWidths):
-                    valStr = row[idx]
-                    dataStr += ' ' + str(valStr).ljust(cw)
-                dataStr += "\n"
+                    #add data rows
+                    for j in range(0, len(hdu.data)):
+                        row = hdu.data[j]
+                        for idx, cw in enumerate(colWidths):
+                            valStr = row[idx]
+                            dataStr += ' ' + str(valStr).ljust(cw)
+                        dataStr += "\n"
 
-            #write to outfile
-            outFile = file.replace(endsWith, '.ext' + str(i) + '.' + hdu.name + '.tbl')
-            outFilepath = outDir + outFile
-            extFullList.append(outFilepath)
-            with open(outFilepath, 'w') as f:
-                f.write(dataStr)
+                    #write to outfile
+                    outFile = file.replace(endsWith, '.ext' + str(i) + '.' + hdu.name + '.tbl')
+                    outFilepath = outDir + outFile
+                    extFullList.append(outFilepath)
+                    with open(outFilepath, 'w') as f:
+                        f.write(dataStr)
+                except:
+                    if log: log.error(f'Could not create extended header table for ext header index {i} for file {file}!')
 
 
     #Create ext.md5sum.table

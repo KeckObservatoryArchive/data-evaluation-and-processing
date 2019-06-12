@@ -173,7 +173,7 @@ class Instrument:
 
         #todo: should we have option to just read the header for performance if that is all that is needed?
         try:
-            self.fitsHdu = fits.open(filename)
+            self.fitsHdu = fits.open(filename, ignore_missing_end=True)
             self.fitsHeader = self.fitsHdu[0].header
             #self.fitsHeader = fits.getheader(filename)
             self.fitsFilepath = filename
@@ -861,12 +861,15 @@ class Instrument:
             # if os.path.isfile(outfile):
             #     self.log.warning('write_lev0_fits_file: file already exists. SKIPPING')
             #     return True
-
             self.fitsHdu.writeto(outfile)
             self.log.info('write_lev0_fits_file: output file is ' + outfile)
         except:
-            self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
-            return False
+            try:
+                self.fitsHdu.writeto(outfile, output_verify='ignore')
+                self.log.error('write_lev0_fits_file: Forced to write FITS using output_verify="ignore". May want to inspect:' + outfile)                
+            except:
+                self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
+                return False
 
         return True
 
