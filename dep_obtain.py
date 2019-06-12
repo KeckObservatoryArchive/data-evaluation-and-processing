@@ -26,7 +26,7 @@ def dep_obtain(instrObj):
 
     # Check if we should run old dep_obtain
 
-    if dt.strptime(instrObj.utDate, "%Y-%m-%d") <= dt.strptime("2018-01-01", "%Y-%m-%d"):
+    if dt.strptime(instrObj.utDate, "%Y-%m-%d") <= dt.strptime("2018-08-01", "%Y-%m-%d"):
         run_old_dep_obtain(instrObj.instr, prevDate, instrObj.utDate, instrObj.dirs['stage'], log)
         return
 
