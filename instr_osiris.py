@@ -419,7 +419,7 @@ class Osiris(instrument.Instrument):
         if progid == 'ENG' and koaimtyp == 'calib':
             pp = self.extraMeta['PROPINT']
             log = 'check_propint: Changing PROPINT from ' + str(pp) + ' to 0'
-            self.log.info(log), ' to 0')
+            self.log.info(log)
             self.extraMeta['PROPINT'] = 0
 
         return True
@@ -437,6 +437,7 @@ class Osiris(instrument.Instrument):
             return True
 
         if koaimtyp == 'calib' and (double(ra) < -720 or double(ra) > 720):
+            self.log.info('check_ra: changing RA to null')
             self.set_keyword('RA', None)
 
         return True
