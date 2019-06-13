@@ -9,6 +9,7 @@ import instrument
 import datetime as dt
 from common import *
 from math import ceil
+import numpy as np
 
 class Osiris(instrument.Instrument):
 
@@ -55,6 +56,7 @@ class Osiris(instrument.Instrument):
 #        if ok: ok = self.set_gain_and_readnoise()
         if ok: ok = self.set_npixsat(self.get_keyword('COADDS')*self.get_keyword('SATURATE'))
         if ok: ok = self.set_nlinear()
+        if ok: ok = self.set_scale()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
@@ -123,7 +125,7 @@ class Osiris(instrument.Instrument):
     
     def set_instr(self):
         #update instrument
-        self.set_keyword('INSTRUME', 'OSIRIS', 'Instrument (added by KOA)') 
+        self.set_keyword('INSTRUME', 'OSIRIS', 'KOA: Instrument')
         
         return True
         
@@ -374,4 +376,21 @@ class Osiris(instrument.Instrument):
             nlinSat = len(image[np.where(image >= satVal)])
             self.set_keyword('NLINEAR', nlinSat, 'KOA: Number of pixels above linearity')
 
+        return True
+
+    def set_scale(self):
+        '''
+        Sets scale
+        '''
+        
+        sscale = self.get_keyword('SSCALE')
+        instr = self.get_keyword('INSTR')
+        
+        if "imag" in instr:
+            scale = 0.02
+        else:
+            scale = sscale
+        
+        self.set_keyword('SCALE',scale,'KOA: Scale')
+        
         return True
