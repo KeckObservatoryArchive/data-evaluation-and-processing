@@ -115,7 +115,7 @@ class Osiris(instrument.Instrument):
             return False
 
         #update elaptime val, convert from milleseconds to seconds
-        elaptime = round(itime/1000 * coadds, 5)
+        elaptime = round(itime * coadds, 5)
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         
         return True
