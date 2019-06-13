@@ -116,7 +116,7 @@ class Osiris(instrument.Instrument):
             self.log.error('set_elaptime: TRUITIME and COADDS values needed to set ELAPTIME')
             return False
 
-        #update elaptime val, convert from milleseconds to seconds
+        #update elaptime val (seconds)
         elaptime = round(itime * coadds, 5)
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         
