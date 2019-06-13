@@ -82,7 +82,10 @@ class ProgSplit:
                             'keck ipdm'     :'observer', 
                             'nirspec'       :'observer',
                             'nireseng'      :'outdir', 
-                            'moseng'        :'outdir'}
+                            'moseng'        :'outdir'
+                            'osrseng'       :'outdir',
+                            'osiriseng'     :'outdir',                            
+                            }
         self.too = {'_ToO_':'outdir'}
         self.api = 'https://www.keck.hawaii.edu/software/db_api/'
 
