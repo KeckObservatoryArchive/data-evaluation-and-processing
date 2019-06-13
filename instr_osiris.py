@@ -57,6 +57,7 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_npixsat(self.get_keyword('COADDS')*self.get_keyword('SATURATE'))
         if ok: ok = self.set_nlinear()
         if ok: ok = self.set_scale()
+        if ok: ok = self.check_noninteger_values()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
@@ -393,4 +394,19 @@ class Osiris(instrument.Instrument):
         
         self.set_keyword('SCALE',scale,'KOA: Scale')
         
+        return True
+
+    def check_noninteger_values(self):
+        '''
+        This checks certain keywords for decimal values less than one and converts them to zero.
+        NOTE: This is a direct port from old IDL code.  Not sure what it is for.
+        '''
+        kws = ['SHTRANG', 'SHTRACT', 'IHTRACT']
+        for kw in kws:
+            val = self.get_keyword(kw)
+            if not val: continue
+            val = float(val)
+            if val < 1: 
+                val = 0
+                self.set_keyword(kw, val)
         return True
