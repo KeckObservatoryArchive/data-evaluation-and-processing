@@ -60,6 +60,7 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
         if ok: ok = self.check_propint()
+        if ok: ok = self.check_ra()
 
         return ok
 
@@ -387,7 +388,7 @@ class Osiris(instrument.Instrument):
         else:
             scale = sscale
         
-        self.set_keyword('SCALE',scale,'KOA: Scale')
+        self.set_keyword('SCALE', scale, 'KOA: Scale')
         
         return True
 
@@ -420,3 +421,23 @@ class Osiris(instrument.Instrument):
             log = 'check_propint: Changing PROPINT from ' + str(pp) + ' to 0'
             self.log.info(log), ' to 0')
             self.extraMeta['PROPINT'] = 0
+
+        return True
+
+
+    def check_ra(self):
+        '''
+        If KOAIMTYP=calib and (RA<-720 or RA>720), then RA=null
+        '''
+
+        koaimtyp = self.get_keyword('KOAIMTYP')
+        ra = self.get_keyword('RA')
+
+        if ra == None:
+            return True
+
+        if koaimtyp == 'calib' and (double(ra) < -720 or double(ra) > 720):
+            self.set_keyword('RA', None)
+
+        return True
+
