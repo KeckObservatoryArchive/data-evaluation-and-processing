@@ -17,8 +17,9 @@ class Osiris(instrument.Instrument):
         # Call the parent init to get all the shared variables
         super().__init__(instr, utDate, rootDir, log)
 
-        # OSIRIS has 'DATAFILE' instead of OUTFILE
-        self.ofName = 'DATAFILE'
+        # Set any unique keyword index values here
+        self.keywordMap['OFNAME']       = 'DATAFILE'
+        self.keywordMap['FRAMENO']      = 'FRAMENUM'
 
         #other vars that subclass can overwrite
         self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
@@ -44,14 +45,13 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_frameno()
         if ok: ok = self.set_filter()
-#        if ok: ok = self.set_ofName()
+        if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
-#        if ok: ok = self.set_isao()
 #        if ok: ok = self.set_dispers()
 #        if ok: ok = self.set_slit_values()
         if ok: ok = self.set_wavelengths()
-#        if ok: ok = self.set_weather_keywords()
-#        if ok: ok = self.set_image_stats_keywords()
+        if ok: ok = self.set_weather_keywords()
+        if ok: ok = self.set_image_stats_keywords()
 #        if ok: ok = self.set_gain_and_readnoise()
 #        if ok: ok = self.set_npixsat(self.get_keyword('COADDS') * 25000)
         if ok: ok = self.set_oa()
@@ -336,3 +336,4 @@ class Osiris(instrument.Instrument):
         self.set_keyword('WAVERED', wavered, 'KOA: Approximate red end wavelength (nm)')
 
         return True
+
