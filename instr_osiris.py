@@ -365,7 +365,7 @@ class Osiris(instrument.Instrument):
         if satVal == None:
             self.log.warning("set_nlinear: Could not find SATURATE keyword")
         else:
-            satVal = 0.8* satVal
+            satVal = 0.8 * satVal * self.get_keyword('COADDS')
             image = self.fitsHdu[0].data     
             linSat = image[np.where(image >= satVal)]
             nlinSat = len(image[np.where(image >= satVal)])
