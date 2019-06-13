@@ -271,7 +271,7 @@ class Osiris(instrument.Instrument):
         if instr.lower() == 'imag':
             filter = ifilter
         elif instr.lower() == 'spec':
-            filter = sfitler
+            filter = sfilter
 
         self.set_keyword('FILTER', filter, 'KOA: Copy of IFILTER/SFILTER')
 
