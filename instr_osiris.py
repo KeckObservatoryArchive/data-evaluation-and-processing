@@ -4,7 +4,6 @@ OSIRIS specific DR techniques can be added to it in the future
 
 12/14/2017 M. Brown - Created initial file
 '''
-
 import instrument
 import datetime as dt
 from common import *
@@ -33,7 +32,6 @@ class Osiris(instrument.Instrument):
         '''
         Run all DQA checks unique to this instrument
         '''
-
         ok = True
         if ok: ok = self.set_dqa_date()
         if ok: ok = self.set_dqa_vers()
@@ -135,7 +133,6 @@ class Osiris(instrument.Instrument):
         '''
         Adds KOAIMTYP keyword
         '''
-
         self.log.info('set_koaimtyp: setting KOAIMTYP keyword from algorithm')
 
         koaimtyp = 'undefined'
@@ -206,7 +203,6 @@ class Osiris(instrument.Instrument):
         '''
         Creates WCS keywords
         '''
-
         crval1 = crval2 = 'null'
         crpix1 = crpix2 = 'null'
         ctype1 = ctype2 = 'null'
@@ -282,7 +278,6 @@ class Osiris(instrument.Instrument):
         '''
         Populates filter from ifilter or sfilter
         '''
-
         self.log.info('set_wavelengths: setting FILTER keyword value')
 
         instr = self.get_keyword('INSTR')
@@ -304,7 +299,6 @@ class Osiris(instrument.Instrument):
         '''
         Set wavelength values based off filters used
         '''
-
         self.log.info('set_wavelengths: setting WAVE keyword values from FILTER')
 
         waveblue = wavecntr = wavered = 'null'
@@ -363,7 +357,6 @@ class Osiris(instrument.Instrument):
         '''
         Determines number of saturated pixels above linearity, adds NLINEAR to header
         '''
-
         # self.log.info('set_nlinear: setting number of pixels above linearity keyword value')
 
         if satVal == None:
@@ -384,8 +377,7 @@ class Osiris(instrument.Instrument):
     def set_scale(self):
         '''
         Sets scale
-        '''
-        
+        '''       
         sscale = self.get_keyword('SSCALE')
         instr = self.get_keyword('INSTR')
         
