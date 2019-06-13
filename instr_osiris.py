@@ -366,15 +366,17 @@ class Osiris(instrument.Instrument):
         # self.log.info('set_nlinear: setting number of pixels above linearity keyword value')
 
         if satVal == None:
-            satVal = 0.8*self.get_keyword('SATURATE')
+            satVal = self.get_keyword('SATURATE')
             
         if satVal == None:
             self.log.warning("set_nlinear: Could not find SATURATE keyword")
         else:
+            satVal = 0.8* satVal
             image = self.fitsHdu[0].data     
             linSat = image[np.where(image >= satVal)]
             nlinSat = len(image[np.where(image >= satVal)])
             self.set_keyword('NLINEAR', nlinSat, 'KOA: Number of pixels above linearity')
+            self.set_keyword('NONLIN', satVal, 'KOA: 3% nonlinearity level (80% full well)')
 
         return True
 
