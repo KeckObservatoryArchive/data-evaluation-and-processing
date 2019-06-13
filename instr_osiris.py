@@ -215,7 +215,6 @@ class Osiris(instrument.Instrument):
         radecsys = 'null'
 
         instr = self.get_keyword('INSTR')
-        dateobs = self.get_keyword('DATE-OBS')
         rotmode = self.get_keyword('ROTMODE')
         poname = self.get_keyword('PONAME')
         rotposn = self.get_keyword('ROTPOSN')
@@ -225,6 +224,7 @@ class Osiris(instrument.Instrument):
         pi = np.pi()
 
         if instr.lower() == 'imag' and 'position angle' in rotmode:
+            self.log.info('set_wcs_keywords: setting WCS keyword values')
             ctype1 = 'RA---TAN'
             ctype2 = 'DEC--TAN'
             wat0_001 = 'system=image'
@@ -241,18 +241,36 @@ class Osiris(instrument.Instrument):
                 deltaDEC = (15.42 * sin(theta) - 14.12 * cos(theta)) / 3600.0
                 crval1 = ra + deltaRA
                 crval2 = dec + deltaDEC
-            else:
+            elif 'osimg' in poname.lower():
                 deltaRA = 0.0
                 deltaDEC = 0.0
                 crval1 = ra
                 crval2 = dec
 
-            crota2 = -(rotposn+90)
-            while crota2 < 0: crota2 += 360.0
-            cdelt1 = -0.0000055555556
-            cdelt2 = 0.0000055555556
-            crpix1 = 512.5
-            crpix2 = 512.5
+            if crval1 != 'null':
+                crota2 = -(rotposn+90)
+                while crota2 < 0: crota2 += 360.0
+                cdelt1 = -0.0000055555556
+                cdelt2 = 0.0000055555556
+                crpix1 = 512.5
+                crpix2 = 512.5
+
+        self.set_keyword('CRVAL1', crval1, 'KOA: Horizontal axis WCS value at the reference pixel')
+        self.set_keyword('CRVAL2', crval2, 'KOA: Horizontal axis WCS value at the reference pixel')
+        self.set_keyword('CRPIX1', crpix1, 'KOA: Reference pixel on the horizontal axis')
+        self.set_keyword('CRPIX2', crpix2, 'KOA: Reference pixel on the vertical axis')
+        self.set_keyword('CTYPE1', ctype1, 'KOA: WCS Type of the horizontal coordinate')
+        self.set_keyword('CTYPE2', ctype2, 'KOA: WCS Type of the vertical coordinate')
+        self.set_keyword('WAT0_001', wat0_001, 'KOA: coordinate system')
+        self.set_keyword('WAT1_001', wat1_001, 'KOA: coordinate system')
+        self.set_keyword('WAT2_001', wat2_001, 'KOA: coordinate system')
+        self.set_keyword('WCSDIM', wcsdim, 'KOA: number of WCS dimensions')
+        self.set_keyword('LTM1_1', ltm1_1, 'KOA: ccd to image transformation')
+        self.set_keyword('LTM2_2', ltm2_2, 'KOA: ccd to image transformation')
+        self.set_keyword('CDELT1', cdelt1, '')
+        self.set_keyword('CDELT2', cdelt2, '')
+        self.set_keyword('CROTA2', crota2, '')
+        self.set_keyword('RADECSYS', radecsys, 'KOA: the system of the coordinates')
 
         return True
 
