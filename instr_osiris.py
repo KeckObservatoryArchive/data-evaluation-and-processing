@@ -53,7 +53,8 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_image_stats_keywords()
 #        if ok: ok = self.set_gain_and_readnoise()
-#        if ok: ok = self.set_npixsat(self.get_keyword('COADDS') * 25000)
+        if ok: ok = self.set_npixsat(self.get_keyword('COADDS')*self.get_keyword('SATURATE'))
+        if ok: ok = self.set_nlinear()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
@@ -337,3 +338,22 @@ class Osiris(instrument.Instrument):
 
         return True
 
+    def set_nlinear(self, satVal=None):
+        '''
+        Determines number of saturated pixels above linearity, adds NLINEAR to header
+        '''
+
+        # self.log.info('set_nlinear: setting number of pixels above linearity keyword value')
+
+        if satVal == None:
+            satVal = 0.8*self.get_keyword('SATURATE')
+            
+        if satVal == None:
+            self.log.warning("set_nlinear: Could not find SATURATE keyword")
+        else:
+            image = self.fitsHdu[0].data     
+            linSat = image[np.where(image >= satVal)]
+            nlinSat = len(image[np.where(image >= satVal)])
+            self.set_keyword('NLINEAR', nlinSat, 'KOA: Number of pixels above linearity')
+
+        return True
