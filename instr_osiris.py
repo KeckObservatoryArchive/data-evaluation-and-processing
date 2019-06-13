@@ -59,6 +59,7 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
+        if ok: ok = self.check_propint()
 
         return ok
 
@@ -404,3 +405,18 @@ class Osiris(instrument.Instrument):
                 val = 0
                 self.set_keyword(kw, val)
         return True
+
+
+    def check_propint(self):
+        '''
+        Change propint to 0 for PROGID=ENG and KOAIMTYP=calib
+        '''
+
+        koaimtyp = self.get_keyword('KOAIMTYP')
+        progid = self.get_keyword('PROGID')
+
+        if progid == 'ENG' and koaimtyp == 'calib':
+            pp = self.extraMeta['PROPINT']
+            log = 'check_propint: Changing PROPINT from ' + str(pp) + ' to 0'
+            self.log.info(log), ' to 0')
+            self.extraMeta['PROPINT'] = 0
