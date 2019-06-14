@@ -38,27 +38,32 @@ def get_root_dirs(rootDir, instr, utDate):
 
 
 
-def make_dir_md5_table(readDir, endswith, outfile, fileList=None):
+
+def make_dir_md5_table(readDir, endswith, outfile, fileList=None, regex=None):
+
+    #ensure path ends in slash since we rely on that later here
+    if not readDir.endswith('/'): readDir += '/'
 
     #get file list either direct or using 'endswith' search
     files = []
     if fileList:
         files = fileList
     else:        
-#        for file in sorted(os.listdir(readDir)):
-#            if (endswith == None or file.endswith(endswith)): 
-#                files.append(readDir + '/' + file)
         for dirpath, dirnames, filenames in os.walk(readDir):
             for f in filenames:
-                if f.endswith(endswith):
-                    files.append(dirpath + '/' + f)
-
+                match = False
+                if endswith and f.endswith(endswith): match = True
+                elif regex and re.search(regex, f): match = True
+                if match:
+                    files.append(dirpath + f)
+        files.sort()
+        
+    #write out table
     with open(outfile, 'w') as fp:
         for file in files:
             md5 = hashlib.md5(open(file, 'rb').read()).hexdigest()
-            bName = file.replace(readDir + '/', '')
+            bName = file.replace(readDir, '')
             fp.write(md5 + '  ' + bName + '\n')
-#            fp.write(md5 + '  ' + os.path.basename(file) + "\n")
 
 
 
