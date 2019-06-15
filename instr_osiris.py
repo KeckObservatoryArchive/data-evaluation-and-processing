@@ -247,19 +247,19 @@ class Osiris(instrument.Instrument):
                 theta = (offset - (rotposn+90)) * pi / 180.0
                 deltaRA = (15.42 * np.cos(theta) + 14.12 * np.sin(theta)) / (np.cos(dec*pi/180.0)*3600.0)
                 deltaDEC = (15.42 * np.sin(theta) - 14.12 * np.cos(theta)) / 3600.0
-                crval1 = ra + deltaRA
-                crval2 = dec + deltaDEC
+                crval1 = round(ra + deltaRA, 5)
+                crval2 = round(dec + deltaDEC, 5)
             elif 'osimg' in poname.lower():
                 deltaRA = 0.0
                 deltaDEC = 0.0
-                crval1 = ra
-                crval2 = dec
+                crval1 = round(ra, 5)
+                crval2 = round(dec, 5)
 
             if crval1 != 'null':
                 crota2 = -(rotposn+90)
                 while crota2 < 0: crota2 += 360.0
-                cdelt1 = -0.0000055555556
-                cdelt2 = 0.0000055555556
+                cdelt1 = -0.0000056 # -0.0000055555556
+                cdelt2 = 0.0000056  #  0.0000055555556
                 crpix1 = 512.5
                 crpix2 = 512.5
 
