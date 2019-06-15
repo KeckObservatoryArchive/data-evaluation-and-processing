@@ -245,8 +245,8 @@ class Osiris(instrument.Instrument):
             if 'ospec' in poname.lower():
                 offset = 47.5
                 theta = (offset - (rotposn+90)) * pi / 180.0
-                deltaRA = (15.42 * cos(theta) + 14.12 * sin(theta)) / (cos(dec*pi/180.0)*3600.0)
-                deltaDEC = (15.42 * sin(theta) - 14.12 * cos(theta)) / 3600.0
+                deltaRA = (15.42 * np.cos(theta) + 14.12 * np.sin(theta)) / (np.cos(dec*pi/180.0)*3600.0)
+                deltaDEC = (15.42 * np.sin(theta) - 14.12 * np.cos(theta)) / 3600.0
                 crval1 = ra + deltaRA
                 crval2 = dec + deltaDEC
             elif 'osimg' in poname.lower():
