@@ -263,21 +263,21 @@ class Osiris(instrument.Instrument):
                 crpix1 = 512.5
                 crpix2 = 512.5
 
-        self.set_keyword('CRVAL1', round(crval1, 5), 'KOA: WCS value at the reference pixel')
-        self.set_keyword('CRVAL2', round(crval2, 5), 'KOA: WCS value at the reference pixel')
-        self.set_keyword('CRPIX1', round(crpix1, 5), 'KOA: Reference pixel on the horizontal axis')
-        self.set_keyword('CRPIX2', round(crpix2, 5), 'KOA: Reference pixel on the vertical axis')
+        self.set_keyword('CRVAL1', crval1, 'KOA: WCS value at the reference pixel')
+        self.set_keyword('CRVAL2', crval2, 'KOA: WCS value at the reference pixel')
+        self.set_keyword('CRPIX1', crpix1, 'KOA: Reference pixel on the horizontal axis')
+        self.set_keyword('CRPIX2', crpix2, 'KOA: Reference pixel on the vertical axis')
         self.set_keyword('CTYPE1', ctype1, 'KOA: WCS Type of the horizontal coordinate')
         self.set_keyword('CTYPE2', ctype2, 'KOA: WCS Type of the vertical coordinate')
         self.set_keyword('WAT0_001', wat0_001, 'KOA: coordinate system')
         self.set_keyword('WAT1_001', wat1_001, 'KOA: coordinate system')
         self.set_keyword('WAT2_001', wat2_001, 'KOA: coordinate system')
         self.set_keyword('WCSDIM', wcsdim, 'KOA: number of WCS dimensions')
-        self.set_keyword('LTM1_1', round(ltm1_1, 5), 'KOA: ccd to image transformation')
-        self.set_keyword('LTM2_2', round(ltm2_2, 5), 'KOA: ccd to image transformation')
-        self.set_keyword('CDELT1', round(cdelt1, 5), '')
-        self.set_keyword('CDELT2', round(cdelt2, 5), '')
-        self.set_keyword('CROTA2', round(crota2, 5), '')
+        self.set_keyword('LTM1_1', ltm1_1, 'KOA: ccd to image transformation')
+        self.set_keyword('LTM2_2', ltm2_2, 'KOA: ccd to image transformation')
+        self.set_keyword('CDELT1', cdelt1, '')
+        self.set_keyword('CDELT2', cdelt2, '')
+        self.set_keyword('CROTA2', crota2, '')
         self.set_keyword('RADECSYS', radecsys, 'KOA: the system of the coordinates')
 
         return True
