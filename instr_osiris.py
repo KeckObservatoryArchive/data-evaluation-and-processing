@@ -125,6 +125,11 @@ class Osiris(instrument.Instrument):
         return True
     
     def set_instr(self):
+        '''
+        Assuming instrument is OSIRIS since INSTRUME not provided in header
+        '''
+
+        self.log.info('set_instr: setting INSTRUME to OSIRIS')
         #update instrument
         self.set_keyword('INSTRUME', 'OSIRIS', 'KOA: Instrument')
         
@@ -205,6 +210,7 @@ class Osiris(instrument.Instrument):
         '''
         Creates WCS keywords
         '''
+
         crval1 = crval2 = 'null'
         crpix1 = crpix2 = 'null'
         ctype1 = ctype2 = 'null'
@@ -280,6 +286,7 @@ class Osiris(instrument.Instrument):
         '''
         Populates filter from ifilter or sfilter
         '''
+
         self.log.info('set_wavelengths: setting FILTER keyword value')
 
         instr = self.get_keyword('INSTR')
@@ -301,6 +308,7 @@ class Osiris(instrument.Instrument):
         '''
         Set wavelength values based off filters used
         '''
+
         self.log.info('set_wavelengths: setting WAVE keyword values from FILTER')
 
         waveblue = wavecntr = wavered = 'null'
@@ -359,7 +367,8 @@ class Osiris(instrument.Instrument):
         '''
         Determines number of saturated pixels above linearity, adds NLINEAR to header
         '''
-        # self.log.info('set_nlinear: setting number of pixels above linearity keyword value')
+
+        self.log.info('set_nlinear: setting number of pixels above linearity keyword value')
 
         if satVal == None:
             satVal = self.get_keyword('SATURATE')
@@ -380,6 +389,9 @@ class Osiris(instrument.Instrument):
         '''
         Sets scale
         '''       
+
+        self.log.info('set_scale: setting SCALE from SSCALE')
+
         sscale = self.get_keyword('SSCALE')
         instr = self.get_keyword('INSTR')
         
@@ -397,6 +409,9 @@ class Osiris(instrument.Instrument):
         This checks certain keywords for decimal values less than one and converts them to zero.
         NOTE: This is a direct port from old IDL code.  Not sure what it is for.
         '''
+
+        self.log.info('check_noninteger_values: checking SHTRANG, SHTRACT and IHTRACT')
+
         kws = ['SHTRANG', 'SHTRACT', 'IHTRACT']
         for kw in kws:
             val = self.get_keyword(kw)
