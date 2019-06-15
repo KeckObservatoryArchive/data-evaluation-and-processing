@@ -50,6 +50,7 @@ class Osiris(instrument.Instrument):
 #        if ok: ok = self.set_slit_values()
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_weather_keywords()
+        if ok: ok = self.set_wcs_keywords()
         if ok: ok = self.set_image_stats_keywords()
 #        if ok: ok = self.set_gain_and_readnoise()
         if ok: ok = self.set_npixsat(self.get_keyword('COADDS')*self.get_keyword('SATURATE'))
