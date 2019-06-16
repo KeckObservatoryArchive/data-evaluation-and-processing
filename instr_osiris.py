@@ -144,8 +144,8 @@ class Osiris(instrument.Instrument):
         self.log.info('set_koaimtyp: setting KOAIMTYP keyword from algorithm')
 
         koaimtyp = 'undefined'
-        ifilter = self.get_keyword('IFILTER')
-        sfilter = self.get_keyword('SFILTER')
+        ifilter = self.get_keyword('IFILTER', default='')
+        sfilter = self.get_keyword('SFILTER', default='')
         axestat = self.get_keyword('AXESTAT')
         domeposn = self.get_keyword('DOMEPOSN')
         az = self.get_keyword('AZ')
@@ -258,8 +258,8 @@ class Osiris(instrument.Instrument):
             if crval1 != 'null':
                 crota2 = -(rotposn+90)
                 while crota2 < 0: crota2 += 360.0
-                cdelt1 = f'{-0.0000055555556:.6f}'
-                cdelt2 = f'{0.0000055555556:.6f}'
+                cdelt1 = -0.0000055555556
+                cdelt2 = 0.0000055555556
                 crpix1 = 512.5
                 crpix2 = 512.5
 
@@ -291,8 +291,8 @@ class Osiris(instrument.Instrument):
         self.log.info('set_wavelengths: setting FILTER keyword value')
 
         instr = self.get_keyword('INSTR')
-        ifilter = self.get_keyword('IFILTER')
-        sfilter = self.get_keyword('SFILTER')
+        ifilter = self.get_keyword('IFILTER', default='')
+        sfilter = self.get_keyword('SFILTER', default='')
 
         filter = ''
         if instr.lower() == 'imag':
@@ -452,7 +452,7 @@ class Osiris(instrument.Instrument):
         if ra == None:
             return True
 
-        if koaimtyp == 'calib' and (double(ra) < -720 or double(ra) > 720):
+        if koaimtyp == 'calib' and (float(ra) < -720 or float(ra) > 720):
             self.log.info('check_ra: changing RA to null')
             self.set_keyword('RA', None)
 
