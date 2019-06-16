@@ -258,8 +258,8 @@ class Osiris(instrument.Instrument):
             if crval1 != 'null':
                 crota2 = -(rotposn+90)
                 while crota2 < 0: crota2 += 360.0
-                cdelt1 = -0.00001 # -0.0000055555556
-                cdelt2 = 0.00001  #  0.0000055555556
+                cdelt1 = f'{-0.0000055555556:.6f}'
+                cdelt2 = f'{0.0000055555556:.6f}'
                 crpix1 = 512.5
                 crpix2 = 512.5
 
