@@ -6,6 +6,7 @@ import json
 from send_email import send_email
 import configparser
 import glob
+import re
 
 
 def get_root_dirs(rootDir, instr, utDate):
