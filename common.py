@@ -51,6 +51,7 @@ def make_dir_md5_table(readDir, endswith, outfile, fileList=None, regex=None):
     else:        
         for dirpath, dirnames, filenames in os.walk(readDir):
             for f in filenames:
+                if not dirpath.endswith('/'): dirpath += '/'
                 match = False
                 if endswith and f.endswith(endswith): match = True
                 elif regex and re.search(regex, f): match = True
