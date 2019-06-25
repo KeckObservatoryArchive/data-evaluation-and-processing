@@ -62,6 +62,7 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_propint(progData)
         if ok: ok = self.check_propint()
         if ok: ok = self.check_ra()
+        if ok: ok = self.run_drp()
 
         return ok
 
@@ -455,6 +456,25 @@ class Osiris(instrument.Instrument):
         if koaimtyp == 'calib' and (float(ra) < -720 or float(ra) > 720):
             self.log.info('check_ra: changing RA to null')
             self.set_keyword('RA', None)
+
+        return True
+
+
+    def run_drp(self):
+        '''
+        Run the OSIRIS DRP on vm-koaserver2
+        '''
+
+        import subprocess
+
+        cmd = []
+        cmd.append(self.config[self.instr]['DRP'])
+        cmd.append(self.utDate)
+
+        self.log.info('run_drp: starting DRP')
+        p = subprocess.Popne(cmd)
+        p.wait()
+        self.log.info('run_drp: DRP finished')
 
         return True
 
