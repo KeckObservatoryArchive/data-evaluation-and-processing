@@ -62,7 +62,6 @@ class Osiris(instrument.Instrument):
         if ok: ok = self.set_propint(progData)
         if ok: ok = self.check_propint()
         if ok: ok = self.check_ra()
-        if ok: ok = self.run_drp()
 
         return ok
 
@@ -383,7 +382,7 @@ class Osiris(instrument.Instrument):
             linSat = image[np.where(image >= satVal)]
             nlinSat = len(image[np.where(image >= satVal)])
             self.set_keyword('NLINEAR', nlinSat, 'KOA: Number of pixels above linearity')
-            self.set_keyword('NONLIN', satVal, 'KOA: 3% nonlinearity level (80% full well)')
+            self.set_keyword('NONLIN', int(satVal), 'KOA: 3% nonlinearity level (80% full well)')
 
         return True
 
@@ -468,11 +467,12 @@ class Osiris(instrument.Instrument):
         import subprocess
 
         cmd = []
-        cmd.append(self.config[self.instr]['DRP'])
+        for word in self.config[self.instr]['DRP'].split(' '):
+            cmd.append(word)
         cmd.append(self.utDate)
 
         self.log.info('run_drp: starting DRP')
-        p = subprocess.Popne(cmd)
+        p = subprocess.Popen(cmd)
         p.wait()
         self.log.info('run_drp: DRP finished')
 
