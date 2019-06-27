@@ -169,26 +169,13 @@ def dep_dqa(instrObj, tpx=0):
     make_dir_md5_table(dirs['lev0'], ".jpg", md5Outfile)
 
 
-    #gzip the fits files
-    log.info('dep_dqa.py gzipping fits files in {}'.format(dirs['lev0']))
-    import gzip
-    for dirpath, dirnames, filenames in os.walk(dirs['lev0']):
-        for f in filenames:
-            if f.endswith('.fits'):
-                in_path = os.path.join(dirpath, f)
-                out_path = in_path + '.gz'
-                with open(in_path, 'rb') as fIn:
-                    with gzip.open(out_path, 'wb', compresslevel=5) as fOut:
-                        shutil.copyfileobj(fIn, fOut)
-                        os.remove(in_path)
-
-
     #get sdata number lists and PI list strings
     piList = get_tpx_pi_str(progData)
     sdataList = get_tpx_sdata_str(progData)
 
 
-    #update TPX: archive ready
+    #update TPX
+    #NOTE: dep_tar will mark as archive ready once all is zipped, etc
     if tpx:
         log.info('dep_dqa.py: updating tpx DB records')
         utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
@@ -196,13 +183,11 @@ def dep_dqa(instrObj, tpx=0):
         update_koatpx(instr, utDate, 'pi', piList, log)
         update_koatpx(instr, utDate, 'sdata', sdataList, log)
         update_koatpx(instr, utDate, 'sci_files', str(sciFiles), log)
-        update_koatpx(instr, utDate, 'arch_stat', 'DONE', log)
-        update_koatpx(instr, utDate, 'arch_time', utcTimestamp, log)       
-        update_koatpx(instr, utDate, 'size', get_directory_size(dirs['output']), log)
 
 
     #update koapi_send for all unique semids
     #NOTE: ensure this doesn't trigger during testing
+    #TODO: Should this go in koaxfr?
     if tpx and not isDev:
         check_koapi_send(semids, instrObj.utDate, instrObj.config['API']['koaapi'], log)
 

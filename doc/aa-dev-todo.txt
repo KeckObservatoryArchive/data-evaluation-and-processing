@@ -64,7 +64,9 @@ https://koa.ipac.caltech.edu/cgi-bin/SQL/nph-sql?query=select+*+from+koa.koa_sta
 
 https://koa.ipac.caltech.edu/logs/test/dbIngest.mosfire.log
 
+https://koa.ipac.caltech.edu/logs/test/level0.mosfire.log
 
+select * from koa.koa_status_v7 where instrument='MOSFIRE'
 
 
 
