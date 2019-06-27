@@ -16,6 +16,7 @@ from dep_obtain import dep_obtain
 from dep_locate import dep_locate
 from dep_add import dep_add
 from dep_dqa import dep_dqa
+from dep_drp import dep_drp
 from dep_tar import dep_tar
 from koaxfr import koaxfr
 from send_email import send_email
@@ -71,7 +72,7 @@ class Dep:
         """
 
         #process steps control (pair down ordered list if requested)
-        steps = ['obtain', 'locate', 'add', 'dqa', 'tar', 'koaxfr']
+        steps = ['obtain', 'locate', 'add', 'dqa', 'lev1', 'tar', 'koaxfr']
         if (processStart != None and processStart not in steps):
             raise Exception('Incorrect use of processStart: ' + processStart)
             return False
@@ -118,8 +119,8 @@ class Dep:
             elif step == 'locate': dep_locate(self.instrObj, self.tpx)
             elif step == 'add'   : dep_add(self.instrObj)
             elif step == 'dqa'   : dep_dqa(self.instrObj, self.tpx)
-            #lev1
-            elif step == 'tar'   : dep_tar(self.instrObj)
+            elif step == 'lev1'  : dep_drp(self.instrObj, step, self.tpx)
+            elif step == 'tar'   : dep_tar(self.instrObj, self.tpx)
             elif step == 'koaxfr': koaxfr(self.instrObj, self.tpx)
 
             #check for expected output
@@ -230,6 +231,9 @@ class Dep:
         elif step == 'tar':
             checkFiles.append(dirs['anc'] + '/anc' + utDateDir + '.tar.gz')
             checkFiles.append(dirs['anc'] + '/anc' + utDateDir + '.md5sum')
+        elif step == 'lev1':
+            #todo: Anything to do here?
+            pass
 
 
         #check for file existence and fatal error if not found

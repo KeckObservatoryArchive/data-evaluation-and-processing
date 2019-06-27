@@ -471,7 +471,7 @@ class Osiris(instrument.Instrument):
             cmd.append(word)
         cmd.append(self.utDate)
 
-        self.log.info('run_drp: starting DRP')
+        self.log.info(f'run_drp: Running DRP command: {" ".join(cmd)}')
         p = subprocess.Popen(cmd)
         p.wait()
         self.log.info('run_drp: DRP finished')
