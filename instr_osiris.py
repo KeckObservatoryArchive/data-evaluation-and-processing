@@ -79,7 +79,7 @@ class Osiris(instrument.Instrument):
             seq = (path2, '/osiris')
             dirs.append(''.join(seq))
             for j in range(1,21):
-                seq = (path, '/osiris', str(j))
+                seq = (path2, '/osiris', str(j))
                 path3 = ''.join(seq)
                 dirs.append(path3)
             seq = (path2, '/osiriseng')
