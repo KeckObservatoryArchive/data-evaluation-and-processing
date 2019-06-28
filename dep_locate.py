@@ -261,6 +261,10 @@ def copy_bad_file(instr, fitsFile, ancDir, errorCode, log):
         log.warning('rawfiles {}: KOAID not correct date for {}'.format(instr, fitsFile))
     else:
         log.warning('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
+    # Don't copy OSIRIS SPEC ORP and cal files
+    if '/SPEC/ORP/' in fitsFile or '/SPEC/cal/' in fitsFile:
+        log.info('rawfiles {}: Skipping copy of {} to udf'.format(instr, fitsFile))
+        return
     log.info('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
     udfDir = ancDir + '/udf/'
     try:
