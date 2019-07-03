@@ -1010,3 +1010,12 @@ class Instrument:
         if koaimtyp == 'object' : return True
         else                    : return False
 
+
+    def run_drp(self):
+        '''
+        This will be overwritten by method in instrument specific module.
+        For those instruments without a DRP, just note that in the log.
+        '''
+
+        self.log.info('run_drp: no DRP defined for {}'.format(self.instr))
+        return True
