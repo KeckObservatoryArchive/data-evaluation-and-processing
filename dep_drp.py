@@ -23,13 +23,6 @@ def dep_drp(instrObj, drpLevel, tpx):
         log.info('dep_drp.py: No DRP directive found in config.')
         return
 
-
-    #make sure path exists
-    if not os.path.exists(drpCommand):
-        log.error(f'dep_drp.py: Path to DRP command does not exist: {drpCommand}')
-        return
-
-
     #run it
     #todo: catch error?
     #todo: leave it up to instrument class to decide whether to run+wait?  Or use a DRP_WAIT config?
