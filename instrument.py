@@ -298,7 +298,7 @@ class Instrument:
         # Create a timedate object using the string from the header
         try:
             utc = dt.strptime(utc, '%H:%M:%S.%f')
-        except ValueError:
+        except:
             return '', False
 
         # Extract the hour, minute, and seconds from the UTC time

@@ -262,7 +262,7 @@ def copy_bad_file(instr, fitsFile, ancDir, errorCode, log):
     else:
         log.warning('rawfiles {}: {} found for {}'.format(instr, errorCode, fitsFile))
     # Don't copy OSIRIS SPEC ORP and cal files
-    if '/SPEC/ORP/' in fitsFile or '/SPEC/cal/' in fitsFile:
+    if '/SPEC/ORP/' in fitsFile or '/SPEC/cal/' in fitsFile or 'mdark.fits' in fitsFile:
         log.info('rawfiles {}: Skipping copy of {} to udf'.format(instr, fitsFile))
         return
     log.info('rawfiles {}: Copying {} to {}/udf'.format(instr, fitsFile, ancDir))
