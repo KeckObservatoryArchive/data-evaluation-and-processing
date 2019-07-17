@@ -94,7 +94,7 @@ CNTSPERS	integer	16	Y
 COADD	integer	16	Y
 COADDONE	integer	16	Y
 COADDS	integer	16	Y
-CRASH	char	8	N
+CRASH	char	8	Y
 CRPIX1	double	32	Y
 CRPIX2	double	32	Y
 CRVAL1	double	32	Y
@@ -181,7 +181,7 @@ INSTRUME	char	72	N
 INSTSTAT	integer	16	Y
 IROTLOC	double	32	Y
 IROTPOS	double	32	Y
-ISAO	char	8	N
+ISAO	char	8	Y
 ITIME	integer	16	Y
 JADEFILE	char	72	Y
 JADENAME	char	32	Y
