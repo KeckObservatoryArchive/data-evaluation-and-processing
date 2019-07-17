@@ -144,8 +144,8 @@ FLAT	integer	16	Y
 FLIMAGIN	char	16	Y
 FLSPECTR	char	16	Y
 FOCALSTN	char	32	Y
-FREQ.SPE	integer	16	Y
-GAIN.SPE	integer	16	Y
+FREQ_SPE	integer	16	Y
+GAIN_SPE	integer	16	Y
 GROUPID	char	32	Y
 GROUPS	integer	16	Y
 GRPDONE	integer	16	Y
