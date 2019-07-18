@@ -161,8 +161,10 @@ class Instrument:
         # Additions for NIRSPEC
         # TODO: move this to instr_nirspec.py?
         if self.instr == 'NIRSPEC':
-            os.mkdir(self.dirs['lev0'] + '/scam')
-            os.mkdir(self.dirs['lev0'] + '/spec')
+            for dir in ['scam', 'spec']:
+                newdir = self.dirs['lev0'] + '/' + dir
+                if not os.path.isdir(newdir):
+                    os.mkdir(newdir)
 
 
 
