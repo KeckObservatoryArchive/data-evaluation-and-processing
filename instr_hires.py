@@ -591,6 +591,39 @@ class Hires(instrument.Instrument):
 
  
     def set_image_stats_keywords(self):
+        '''
+        Adds mean, median, std keywords to header
+        '''
+
+        # Can be up to 6 extensions
+        for ext in range(1, 7):
+            imageStd = imageMean = imageMedian = 'null'
+            postStd = postMean = postMedian = 'null'
+            if ext < len(self.fitsHdu):
+                image = self.fitsHdu[ext].data
+                imageStd    = float("%0.2f" % np.std(image))
+                imageMean   = float("%0.2f" % np.mean(image))
+                imageMedian = float("%0.2f" % np.median(image))
+                postpix = self.get_keyword('POSTPIX')
+                if postpix != None:
+                    postStd    = float("%0.2f" % np.std(image))
+                    postMean   = float("%0.2f" % np.mean(image))
+                    postMedian = float("%0.2f" % np.median(image)
+
+            key = str(ext).zfill(2)
+            key_mn = 'IM01MN' + key
+            key_md = 'IM01MD' + key
+            key_sd = 'IM01SD' + key
+            self.set_keyword(key_mn,  imageMean,   'KOA: Image data mean')
+            self.set_keyword(key_sd,  imageStd,    'KOA: Image data standard deviation')
+            self.set_keyword(key_md,  imageMedian, 'KOA: Image data median')
+            key_mn = 'PT01MN' + key
+            key_md = 'PT01MD' + key
+            key_sd = 'PT01SD' + key
+            self.set_keyword(key_mn,  postMean,   'KOA: Postscan data mean')
+            self.set_keyword(key_sd,  postStd,    'KOA: Postscan data standard deviation')
+            self.set_keyword(key_md,  postMedian, 'KOA: Postscan data median')
+
         return True
 
 
@@ -609,5 +642,55 @@ class Hires(instrument.Instrument):
             self.extraMeta['PROPINT2'] = self.extraMeta['PROPINT']
             self.extraMeta['PROPINT3'] = self.extraMeta['PROPINT']
             self.extraMeta['PROPMIN'] = self.extraMeta['PROPINT']
+
+        return True
+
+
+    def make_jpg(self):
+        '''
+        Converts HIRES FITS file to JPG image
+        Output filename = KOAID_CCD#_HDU##.jpg
+            # = 1, 2, 3...
+            ## = 01, 02, 03...
+        '''
+
+        # file to convert is lev0Dir/KOAID
+
+        koaid = self.get_keyword('KOAID')
+        filePath = ''
+        for root, dirs, files in os.walk(self.dirs['lev0']):
+            if koaid in files:
+                filePath = ''.join((root, '/', koaid))
+        if not filePath:
+            self.log.error('make_jpg: Could not find KOAID: ' + koaid)
+            return False
+        self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
+
+        koaid = koaid.replace('.fits', '')
+
+        try:
+            if os.path.isfile(filePath):
+                for ext in range(1, len(self.fitsHdu)+1):
+                    # image data to convert
+                    image = self.fitsHdu[ext].data
+                    interval = ZScaleInterval()
+                    vmin, vmax = interval.get_limits(image)
+                    norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
+                    plt.imshow(image, cmap='gray', origin='lower', norm=norm)
+                    plt.axis('off')
+                    # save as png, then convert to jpg
+                    ext2 = str(ext)
+                    pngFile = koaid+'_CCD'+ext2+'_HDU'+ext2.zfill(2)+'.png'
+                    jpgFile = pngFile.replace('.png', '.jpg')
+                    plt.savefig(pngFile)
+                    Image.open(pngFile).convert('RGB').save(jpgFile)
+                    os.remove(pngFile)
+                    plt.close()
+            else:
+                self.log.error('make_jpg: file does not exist {}'.format(filePath))
+                return False
+        except:
+            self.log.error('make_jpg: Could not create JPG: ' + jpgFile)
+            return False
 
         return True
