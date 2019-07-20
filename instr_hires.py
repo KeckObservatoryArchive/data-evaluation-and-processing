@@ -198,7 +198,7 @@ class Hires(instrument.Instrument):
 
     def fix_binning(self):
         '''
-        Remove spaces from BINNING value and update header
+        Remove spaces from BINNING value and update self.get_keyword
         '''
 
         binning = self.get_keyword('BINNING', False)
@@ -238,67 +238,145 @@ class Hires(instrument.Instrument):
         Determine and set wavelength range of spectum
         '''
 
+        #set pixel and CCD size
+        psize = 0.015
+        npix = 3072.0
 
-        return True
+        #make sure stages are homed
+        if not self.get_keyword('XDISPERS'):
+            xdispers = 'RED'
+        else:
+            xdispers = self.get_keyword('XDISPERS').strip()
 
+        keyflag=1
+        keyvars = ['','','','','']
+        for key_i,key_val in enumerate(['XDCAL','ECHCAL','XDSIGMAI','XDANGL','ECHANGL']):
+            if not self.get_keyword(key_val) or self.get_keyword(key_val) == 0:
+                keyflag = 0
+            else:
+                keyvars[key_i] = self.get_keyword(key_val)
+            
+        xdcal = keyvars[0]
+        echcal = keyvars[1]
+        xdsigmai = keyvars[2]
+        xdangl = keyvars[3]
+        echangl = keyvars[4]
+            
+        if keyflag == 1:
+            #specifications, camera-collimator, blaze, cal offset angles
+            camcol = 40.*np.pi/180.
+            blaze = -4.38*np.pi/180.
+            offset = 25.0-0.63 #0-order + 5deg for home
 
+            #grating equation
+            alpha = (xdangl+offset)*np.pi/180.
+            d = 10.**7/xdsigmai #microns
+            waveeq = lambda x,y,z: x*((1.+np.cos(y))*np.sin(z)-np.sin(y)*np.cos(z))
+            wavecntr = waveeq(d,camcol,alpha)
+            ccdangle = np.arctan2(npix*psize,(1.92*762.0)) #f = 762mm, psize u pix, 1.92 amag
 
-        waveblue = wavecntr = wavered = 'null'
-
-        psize = 0.015 # pixel size
-        npix = 3072.0 # ccd size
-        
-        # Make sure stages are homed
-        xdcal = self.get_keyword('XDCAL', False)
-        echcal = self.get_keyword('ECHCAL', False)
-        xdsigmai = self.get_keyword('XDSIGMAI', False)
-        xdangl = self.get_keyword('XDANGL', False)
-        echangl = self.get_keyword('ECHANGL', False)
-        xdispers = self.get_keyword('XDISPERS', default='')
-
-        if xdcal != None and echcal != None and xdsigmai != None and xdangl != None and \
-           echangl != None and xdcal != 0 and echcal != 0:
-
-            # Determine XD groove spacing and HIRES angle setting
-            camcol = 40.0 * np.pi() / 180.0 # camera-collimater angle
-            blaze = -4.38 * np.pi() / 180.0 # blaze angle
-            offset = 25.0 - 0.63            # 0-order + 5 deg for home
-            # Grating equation
-            alpha = (xdangl + offset) * np.pi() / 180.0
-            d = 10000000.0 / xdsigmai # microns
-            wavecntr = d * (( 1.0 + np.cos(camcol)) * np.sin(alpha) - np.sin(camcol) * np.cos(alpha))
-            ccdangle = np.arctan(npix * psize / 1.92 / 762.0) # f = 762 mm, psize u pix, 1.92 amag
+            #blue end
             alphab = alpha - ccdangle
-            waveblue = d * ((1.0 + np.cos(camcol)) * np.sin(alphab) - np.sin(camcol) * np.cos(alphab))
+            waveblue = waveeq(d,camcol,alphab) 
+
+            #red end
             alphar = alpha + ccdangle
-            wavered = d * ((1.0 + np.cos(camcol)) * np.sin(alphar) - np.sin(camcol) * np.cos(alphar))
-            # Get equation constants
+            wavered = waveeq(d,camcol,alphar)
+
+            #center, get non-decimal part of number
+            wavecntr = np.fix(wavecntr)
+            waveblue = np.fix(waveblue)
+            wavered = np.fix(wavered)
+
+            #get the correct equation constants
             if xdispers == 'RED':
-                # Order 62, 5748 A, order * wave = const
+                #order 62, 5748 A, order*wave = const
                 const = 62.0 * 5748.0
-                a = 1.4088
-                b = -306.6910
-                c = 16744.1946
-            elif xdispers == 'UV':
-                # ORder 97, 3677A, order * wave = const
+                a = float(1.4088)
+                b = float(-306.6910)
+                c = float(16744.1946)
+                
+            if xdispers == 'UV':
+                #order 97, 3677 A, order*wave = const
                 const = 97.0 * 3677.0
-                a = 0.9496
-                b = -266.2792
-                c = 19943.7496
-            # Correct wavelengths
-            order = floor((const / wavecntr))
+                a = float(0.9496)
+                b = float(-266.2792)
+                c = float(19943.7496)
+                
+            if xdispers == '':
+                return
 
 
+            #correct wavelength values
+            for i in [wavecntr,waveblue,wavered]:
+                #find order for wavecntr
+                wave = i
+                order = np.floor(const/wave)
+                trycount = 1
+                okflag = 0
+                while okflag == 0:
+                    #find shift in Y: order 62 =npix with XD=ECH=0(red)
+                    #                 order 97 =npix with XD=ECH=0(blue)
+                    if i == wavecntr:
+                        shift = a*order**2 + b*order + c
+                        newy = npix - shift
+                        newy = -newy
+                        okflag = 1
+                        
+                    else:
+                        shift2 = a*order**2 + b*order + c
+                        
+                        newy2 = shift2 - newy
+                        if newy2 < 120:
+                            order = order -1
+                            trycount += 1
+                            okflag=0
+                            if trycount < 100:
+                                continue
+                        npix2 = 2*npix
 
+                        if newy2 > npix2:
+                            order = order + 1
+                            trycount += 1
+                            okflag=0
+                            if trycount < 100:
+                                continue
+                        if trycount > 100 or newy2 > 120 or newy2 > npix2:
+                            okflag=1
+                            break
 
+                #find delta wave for order
+                dlamb = -0.1407*order + 18.005
+                #new wavecenter = central wavelength for this order
+                wave = const/order
+                #correct for echangl
+                wave = wave + (4*dlamb*echangl)
+                #round to nearest 10 A
+                wave2 = wave % 10 # round(wave,-1)
+                if wave2 < 5:
+                    wave = wave - wave2
+                else:
+                    wave = wave + (10-wave2)
+                if wave < 2000 or wave > 20000:
+                    wave = 'null'
+                if i == wavecntr:
+                    wavecntr = wave
+                elif i == waveblue:
+                    waveblue = wave
+                elif i == wavered:
+                    wavered = wave
 
-
-
-
-            # Cast to integers
-            waveblue = int(waveblue)
-            wavecntr = int(wavecntr)
-            wavered = int(wavered)
+            wavecntr = int(round(wavecntr,-1))
+            waveblue = int(round(waveblue,-1))
+            wavered = int(round(wavered,-1))
+        else:
+            wavecntr = 'null'
+            waveblue = 'null'
+            wavered = 'null'
+            
+        self.set_keyword('WAVECNTR',wavecntr,'Wave Center')
+        self.set_keyword('WAVEBLUE',waveblue,'Wave Blue')
+        self.set_keyword('WAVERED',wavered,'Wave Red')        
 
         return True
 
