@@ -10,6 +10,12 @@ import datetime as dt
 from common import *
 from math import ceil, floor
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+from PIL import Image
+from astropy.visualization import ZScaleInterval, AsinhStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
 
 class Hires(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -599,16 +605,25 @@ class Hires(instrument.Instrument):
         for ext in range(1, 7):
             imageStd = imageMean = imageMedian = 'null'
             postStd = postMean = postMedian = 'null'
+            precol  = self.get_keyword('PRECOL')
+            postpix = self.get_keyword('POSTPIX')
             if ext < len(self.fitsHdu):
                 image = self.fitsHdu[ext].data
-                imageStd    = float("%0.2f" % np.std(image))
-                imageMean   = float("%0.2f" % np.mean(image))
-                imageMedian = float("%0.2f" % np.median(image))
-                postpix = self.get_keyword('POSTPIX')
+                # postpix boundary
+                x = len(image) - postpix
+                # image area
+                start = precol + int(x*0.10)
+                end   = x - int(x*0.10)
+                imageStd    = float("%0.2f" % np.std(image[start:end, :]))
+                imageMean   = float("%0.2f" % np.mean(image[start:end, :]))
+                imageMedian = float("%0.2f" % np.median(image[start:end, :]))
                 if postpix != None:
-                    postStd    = float("%0.2f" % np.std(image))
-                    postMean   = float("%0.2f" % np.mean(image))
-                    postMedian = float("%0.2f" % np.median(image)
+                    # postscan area
+                    start = x + int(postpix*0.10)
+                    end   = -1 * int(postpix*0.10)
+                    postStd    = float("%0.2f" % np.std(image[start:end, :]))
+                    postMean   = float("%0.2f" % np.mean(image[start:end, :]))
+                    postMedian = float("%0.2f" % np.median(image[start:end, :]))
 
             key = str(ext).zfill(2)
             key_mn = 'IM01MN' + key
@@ -654,6 +669,8 @@ class Hires(instrument.Instrument):
             ## = 01, 02, 03...
         '''
 
+        # TODO: Can we merge this with instrument.make_jpg()?
+
         # file to convert is lev0Dir/KOAID
 
         koaid = self.get_keyword('KOAID')
@@ -666,11 +683,14 @@ class Hires(instrument.Instrument):
             return False
         self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
 
-        koaid = koaid.replace('.fits', '')
+        koaid = filePath.replace('.fits', '')
 
-        try:
-            if os.path.isfile(filePath):
-                for ext in range(1, len(self.fitsHdu)+1):
+        if os.path.isfile(filePath):
+            for ext in range(1, len(self.fitsHdu)):
+                try:
+                    ext2 = str(ext)
+                    pngFile = koaid+'_CCD'+ext2+'_HDU'+ext2.zfill(2)+'.png'
+                    jpgFile = pngFile.replace('.png', '.jpg')
                     # image data to convert
                     image = self.fitsHdu[ext].data
                     interval = ZScaleInterval()
@@ -679,18 +699,14 @@ class Hires(instrument.Instrument):
                     plt.imshow(image, cmap='gray', origin='lower', norm=norm)
                     plt.axis('off')
                     # save as png, then convert to jpg
-                    ext2 = str(ext)
-                    pngFile = koaid+'_CCD'+ext2+'_HDU'+ext2.zfill(2)+'.png'
-                    jpgFile = pngFile.replace('.png', '.jpg')
                     plt.savefig(pngFile)
-                    Image.open(pngFile).convert('RGB').save(jpgFile)
+                    Image.open(pngFile).convert('RGB').rotate(-90).save(jpgFile)
                     os.remove(pngFile)
                     plt.close()
-            else:
-                self.log.error('make_jpg: file does not exist {}'.format(filePath))
-                return False
-        except:
-            self.log.error('make_jpg: Could not create JPG: ' + jpgFile)
+                except:
+                    self.log.error('make_jpg: Could not create JPG: ' + jpgFile)
+        else:
+            self.log.error('make_jpg: file does not exist {}'.format(filePath))
             return False
 
         return True
