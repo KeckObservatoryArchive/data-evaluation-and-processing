@@ -134,6 +134,10 @@ class Nirspec(instrument.Instrument):
 
         #get necessary keywords
         itime  = self.get_keyword('TRUITIME')
+        #skip if value is -1
+        if itime == -1:
+            self.log.info('set_elaptime: TRUIITIME is invalid')
+            return True
         coadds = self.get_keyword('COADDS')
         if (itime == None or coadds == None):
             self.log.error('set_elaptime: TRUITIME and COADDS values needed to set ELAPTIME')
