@@ -45,23 +45,22 @@ class Hires(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_ut() # may need to delete duplicate UTC?
+        if ok: ok = self.set_utend()
 #        if ok: ok = self.set_numamps()
 #        if ok: ok = self.set_numccds() # needed?
-#        if ok: ok = self.set_elaptime()
         if ok: ok = self.set_koaimtyp() # imagetyp
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_blank()
         if ok: ok = self.fix_binning()
-        if ok: ok = self.set_frameno()
         if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
-        if ok: ok = self.set_wavelengths() # lambda_xd
+        if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_instrument_status() # inststat
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_image_stats_keywords() # IM* and PST*, imagestat
-#        if ok: ok = self.set_npixsat(satVal=65535.0) # npixsat
+        if ok: ok = self.set_npixsat(satVal=65535.0) # npixsat
         if ok: ok = self.set_sig2nois() # still needed?
-        if ok: ok = self.set_slit_values() # slitsize
+        if ok: ok = self.set_slit_values()
         if ok: ok = self.set_gain_and_readnoise() # ccdtype
         if ok: ok = self.set_skypa() # skypa
         if ok: ok = self.set_subexp() # subexp
@@ -166,7 +165,9 @@ class Hires(instrument.Instrument):
             if lmirrin == 0 and hatclos == 1: koaimtyp = 'undefined'
             return koaimtyp
         elif 'ThAr' in lampname:
-            if catcur1 >= 5.0:
+            catcur = catcur2
+            if lampname == 'ThAr2': catcur = catcur2
+            if catcur >= 5.0:
                 koaimtyp = 'arclamp'
                 if deckname == 'D5': koaimtyp = 'focus'
             else: koaimtyp = 'undefined'
@@ -534,19 +535,19 @@ class Hires(instrument.Instrument):
         decker['E5'] =  [1.000, 0.400]
 
         # If decker exists, determine slit values
-        if deckname in decker.items():
+        if deckname in decker.keys():
             slitwidt = decker[deckname][1]
             slitlen = decker[deckname][0]
             prslwid = slitwidt / dispscal
-            res = lambdaRes / (prslwid * dispRes * ybin)
+            res = lambdaRes / (prslwid * dispRes * int(ybin))
             specres = res - (res % 100)
         else:
             self.log.info('set_slit_values: Unable to set slit scale keywords')
 
         self.set_keyword('SLITLEN', slitlen, 'KOA: Slit length projected on sky (arcsec)')
-        self.set_keyword('SLITWIDT', slitlen, 'KOA: Slit width projected on sky (arcsec)')
-        self.set_keyword('SPATSCAL', slitlen, 'KOA: CCD pixel scale (arcsec/pixel)')
-        self.set_keyword('SPECRES', slitlen, 'KOA: Nominal spectral resolution')
+        self.set_keyword('SLITWIDT', slitwidt, 'KOA: Slit width projected on sky (arcsec)')
+        self.set_keyword('SPATSCAL', spatscal, 'KOA: CCD pixel scale (arcsec/pixel)')
+        self.set_keyword('SPECRES', specres, 'KOA: Nominal spectral resolution')
 
         return True
     
@@ -591,7 +592,20 @@ class Hires(instrument.Instrument):
         '''
         Determine if file is part of a subexposure sequence
         '''
+
         self.log.info('set_subexp: Setting ...')
+
+        subexp = 'False'
+
+        # PEXPTIME and PEXPELAP == 0 for a regular exposure
+        if self.get_keyword('PEXPTIME') != 0 or self.get_keyword('PEXPELAP') != 0:
+            eramode = self.get_keyword('ERAMODE', default='')
+            mosmode = self.get_keyword('MOSMODE', default='')
+            if eramode != mosmode or reamode != 'B,G,R':
+                # Find the start of the sequence
+
+                # Find the end of the sequence
+
 
         return True
 
@@ -710,3 +724,42 @@ class Hires(instrument.Instrument):
             return False
 
         return True
+
+
+    def set_npixsat(self, satVal=None):
+        '''
+        Determines number of saturated pixels and adds NPIXSAT to header
+        '''
+
+        self.log.info('set_npixsat: setting pixel saturation keyword value')
+
+        if satVal == None:
+            satVal = self.get_keyword('SATURATE')
+
+        if satVal == None:
+            self.log.warning("set_npixsat: Could not find SATURATE keyword")
+        else:
+            nPixSat = 0
+            for ext in range(1, len(self.fitsHdu)):
+                image = self.fitsHdu[ext].data
+                pixSat = image[np.where(image >= satVal)]
+                nPixSat += len(image[np.where(image >= satVal)])
+
+            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
+
+        return True
+
+
+    def set_utend(self):
+        '''
+        Create UT-END keyword from UTC-END
+        '''
+
+        #try to get from header unmapped and mark if update needed
+        utc = self.get_keyword('UTC-END')
+        if utc == None: return True
+
+        self.set_keyword('UT-END', utc, 'KOA: Duplicate of UTC-END')
+
+        return True
+
