@@ -406,7 +406,7 @@ class Hires(instrument.Instrument):
         dark = 0
         if koaimtyp == 'bias' or koaimtyp == 'dark': dark = 1
         
-        keyList = ['CAFCAL', 'COFCAL', 'DECKCAL', 'ECHCAL', 'FIL1CAL', 'FILE2CAL',
+        keyList = ['CAFCAL', 'COFCAL', 'DECKCAL', 'ECHCAL', 'FIL1CAL', 'FIL2CAL',
                    'LFILCAL', 'LSELCAL', 'SLITCAL', 'TVACAL', 'TVFCAL', 'TVF1CAL',
                    'TVF2CAL', 'XDCAL', 'TEMPDET']
         
@@ -556,10 +556,41 @@ class Hires(instrument.Instrument):
         '''
         Assign values for CCD gain and read noise
         '''
-        self.log.info('set_gain: Setting ...')
 
-        gain = {'low':[], 'high':[]}
-        readnoise = {'low':[], 'high':[]}
+        self.log.info('set_gain: Setting CCDGN and CCDRN keywords')
+
+        gain = {}
+        gain['low']  = [1.20, 1.95, 1.13, 2.09, 1.26, 2.09]
+        gain['high'] = [0.48, 0.78, 0.45, 0.84, 0.50, 0.89]
+        readnoise = {}
+        readnoise['low']  = [2.20, 2.90, 2.50, 3.00, 2.90, 3.10]
+        readnoise['high'] = [2.00, 2.34, 2.50, 2.40, 2.60, 2.84]
+
+        ccdgn = ['', 'null', 'null', 'null', 'null', 'null', 'null']
+        ccdrn = ['', 'null', 'null', 'null', 'null', 'null', 'null']
+
+        ccdgain = self.get_keyword('CCDGAIN')
+        for ext in range(1, len(self.fitsHdu)):
+            ccdgain = ccdgain.strip()
+            amploc  = self.fitsHdu[ext].header['AMPLOC']
+            if amploc != None and ccdgain != None:
+                amploc = int(amploc.strip()) - 1
+
+                ccdgn[ext] = gain[ccdgain][amploc]
+                ccdrn[ext] = readnoise[ccdgain][amploc]
+
+        self.set_keyword('CCDGN01', ccdgn[1], 'KOA: CCD gain extension 1')
+        self.set_keyword('CCDGN02', ccdgn[2], 'KOA: CCD gain extension 2')
+        self.set_keyword('CCDGN03', ccdgn[3], 'KOA: CCD gain extension 3')
+        self.set_keyword('CCDGN04', ccdgn[4], 'KOA: CCD gain extension 4')
+        self.set_keyword('CCDGN05', ccdgn[5], 'KOA: CCD gain extension 5')
+        self.set_keyword('CCDGN06', ccdgn[6], 'KOA: CCD gain extension 6')
+        self.set_keyword('CCDRN01', ccdrn[1], 'KOA: CCD read noise extension 1')
+        self.set_keyword('CCDRN02', ccdrn[2], 'KOA: CCD read noise extension 2')
+        self.set_keyword('CCDRN03', ccdrn[3], 'KOA: CCD read noise extension 3')
+        self.set_keyword('CCDRN04', ccdrn[4], 'KOA: CCD read noise extension 4')
+        self.set_keyword('CCDRN05', ccdrn[5], 'KOA: CCD read noise extension 5')
+        self.set_keyword('CCDRN06', ccdrn[6], 'KOA: CCD read noise extension 6')
 
         return True
     
@@ -602,6 +633,7 @@ class Hires(instrument.Instrument):
             eramode = self.get_keyword('ERAMODE', default='')
             mosmode = self.get_keyword('MOSMODE', default='')
             if eramode != mosmode or reamode != 'B,G,R':
+                pass
                 # Find the start of the sequence
 
                 # Find the end of the sequence
