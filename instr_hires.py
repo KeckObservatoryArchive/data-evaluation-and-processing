@@ -544,10 +544,11 @@ class Hires(instrument.Instrument):
         else:
             self.log.info('set_slit_values: Unable to set slit scale keywords')
 
-        self.set_keyword('SLITLEN', slitlen, 'KOA: Slit length projected on sky (arcsec)')
-        self.set_keyword('SLITWIDT', slitwidt, 'KOA: Slit width projected on sky (arcsec)')
-        self.set_keyword('SPATSCAL', spatscal, 'KOA: CCD pixel scale (arcsec/pixel)')
-        self.set_keyword('SPECRES', specres, 'KOA: Nominal spectral resolution')
+        self.set_keyword('SLITLEN', round(slitlen, 3), 'KOA: Slit length projected on sky (arcsec)')
+        self.set_keyword('SLITWIDT', round(slitwidt, 3), 'KOA: Slit width projected on sky (arcsec)')
+        self.set_keyword('SPATSCAL', round(spatscal, 3), 'KOA: CCD pixel scale (arcsec/pixel)')
+        self.set_keyword('SPECRES', int(specres), 'KOA: Nominal spectral resolution')
+        self.set_keyword('DISPSCAL', round(dispscal, 3), 'KOA: CCD pixel scale, dispersion (arcsec/pixel)')
 
         return True
     
