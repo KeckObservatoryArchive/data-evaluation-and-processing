@@ -255,6 +255,29 @@ class Nirspec(instrument.Instrument):
         return True
 
 
+    def set_filter(self):
+        '''
+        If FILTER keyword doesn't exist, create from SCIFILT1 and 2
+        '''
+
+        if self.get_keyword('FILTER', False) != None: return True
+
+        self.log.info('set_filter: setting FILTER keyword from SCIFILT1/2')
+
+        scifilt1 = self.get_keyword('SCIFILT1', default='')
+        scifilt2 = self.get_keyword('SCIFILT2', default='')
+
+        skip = ['thick', 'thin', 'open']
+        if scifilt1.lower() in skip: scifilt1 = ''
+        if scifilt2.lower() in skip: scifilt2 = ''
+
+        filter = ''.join((scifilt1, scifilt2))
+
+        #update keyword
+        self.set_keyword('FILTER', filter, 'KOA: set from SCIFILT1 and SCIFILT2')
+        return True
+
+
     def set_wavelengths(self):
         '''
         Sets WAVEBLUE, CNTR, RED based on FILTER value
@@ -286,8 +309,7 @@ class Nirspec(instrument.Instrument):
         filters['H2']        = {'blue':2.1100, 'cntr':2.1195, 'red':2.1290}
         filters['M-WIDE']    = {'blue':4.4200, 'cntr':4.9750, 'red':5.5300}
 
-        filter = self.get_keyword('FILTER')
-        if filter == None: return True
+        filter = self.get_keyword('FILTER', default='')
 
         waveblue = wavecntr = wavered = 'null'
         for filt, waves in filters.items():
