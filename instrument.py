@@ -378,7 +378,7 @@ class Instrument:
         #direct match?
         instrume = self.get_keyword('INSTRUME')
         if instrume:
-            if (self.instr == instrume.strip()): ok = True
+            if (instrume.startswith(self.instr)): ok = True
 
         #mira not ok
         outdir = self.get_keyword('OUTDIR')
