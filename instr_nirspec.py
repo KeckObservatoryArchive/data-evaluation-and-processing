@@ -48,6 +48,7 @@ class Nirspec(instrument.Instrument):
         if ok: ok = self.set_isao()
         if ok: ok = self.set_dispers()
         if ok: ok = self.set_slit_values()
+        if ok: ok = self.set_filter()
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_image_stats_keywords()
