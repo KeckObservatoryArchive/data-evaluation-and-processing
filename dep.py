@@ -71,17 +71,19 @@ class Dep:
         @type instr: string
         """
 
-        #process steps control (pair down ordered list if requested)
+        #process steps control (pair down ordered list if requested)        
         steps = ['obtain', 'locate', 'add', 'dqa', 'lev1', 'tar', 'koaxfr']
-        if (processStart != None and processStart not in steps):
+        if (processStart == None): processStart = steps[0]
+        elif (processStart != None and processStart not in steps):
             raise Exception('Incorrect use of processStart: ' + processStart)
             return False
-        if (processStop != None and processStop not in steps):
+        if (processStop == None): processStop = steps[-1]
+        elif (processStop != None and processStop not in steps):
             raise Exception('Incorrect use of processStop: ' + processStop)
             return False
         if processStart != None: steps = steps[steps.index(processStart):]
         if processStop  != None: steps = steps[:(steps.index(processStop)+1)]
-
+        print (f'DEP: process start: {processStart}, process stop: {processStop}')
 
         #check if full run.  Prompt if not full run and doing tpx updates
         fullRun = True if (processStart == 'obtain' and processStop == 'koaxfr') else False
