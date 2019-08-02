@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from astropy.visualization import ZScaleInterval, AsinhStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
+import scipy
 
 class Hires(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -59,7 +60,7 @@ class Hires(instrument.Instrument):
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_image_stats_keywords() # IM* and PST*, imagestat
         if ok: ok = self.set_npixsat(satVal=65535.0) # npixsat
-        if ok: ok = self.set_sig2nois() # still needed?
+        if ok: ok = self.set_sig2nois()
         if ok: ok = self.set_slit_values()
         if ok: ok = self.set_gain_and_readnoise() # ccdtype
         if ok: ok = self.set_skypa() # skypa
@@ -689,7 +690,52 @@ class Hires(instrument.Instrument):
         return True
 
 
+    def get_numamps(self):
+        '''
+        Determine number of amplifiers
+        '''
+
+        ampmode = self.get_keyword('AMPMODE', default='')
+        if 'DUAL:A+B' in ampmode: numamps = 2
+        elif ampmode == '':       numamps = 0
+        else:                     numamps = 1
+
+        return numamps
+
+
     def set_sig2nois(self):
+        '''
+        Calculates S/N for middle CCD image
+        '''
+
+        self.log.info('set_sig2nois: Adding SIG2NOIS')
+
+        numamps = self.get_numamps()
+
+        # Middle extension
+        ext = floor(len(self.fitsHdu)/2.0)
+        image = self.fitsHdu[ext].data
+
+        naxis1 = self.fitsHdu[ext].header['NAXIS1']
+        naxis2 = self.fitsHdu[ext].header['NAXIS2']
+        postpix = self.get_keyword('POSTPIX', default=0)
+        precol = self.get_keyword('PRECOL', default=0)
+
+        nx = (naxis2 - numamps * (precol + postpix))
+        c = [naxis1 / 2, 1.17 * nx / 2]
+
+        wsize = 10
+        spaflux = []
+        for i in range(wsize, int(naxis1)-wsize):
+            spaflux.append(np.median(image[int(c[1])-wsize:int(c[1])+wsize, i]))
+
+        maxflux = np.max(spaflux)
+        minflux = np.min(spaflux)
+
+        sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
+
+        self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
+
         return True
 
 
@@ -777,6 +823,7 @@ class Hires(instrument.Instrument):
                 image = self.fitsHdu[ext].data
                 pixSat = image[np.where(image >= satVal)]
                 nPixSat += len(image[np.where(image >= satVal)])
+                print(ext, nPixSat, np.max(image))
 
             self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
 
