@@ -64,7 +64,8 @@ class Hires(instrument.Instrument):
         if ok: ok = self.set_slit_values()
         if ok: ok = self.set_gain_and_readnoise() # ccdtype
         if ok: ok = self.set_skypa() # skypa
-        if ok: ok = self.set_subexp() # subexp
+        if ok: ok = self.set_subexp()
+        if ok: ok = self.set_roqual()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
@@ -621,57 +622,141 @@ class Hires(instrument.Instrument):
         return True
     
     
-    def set_subexp(self): # subexp
+    def set_subexp(self):
         '''
         Determine if file is part of a subexposure sequence
         '''
 
-        self.log.info('set_subexp: Setting ...')
+        self.log.info('set_subexp: Setting SUBEXP')
 
         subexp = 'False'
+        comment = ''
 
         # PEXPTIME and PEXPELAP == 0 for a regular exposure
-        if self.get_keyword('PEXPTIME') != 0 or self.get_keyword('PEXPELAP') != 0:
+        pexptime = self.get_keyword('PEXPTIME', default=-1)
+        pexpelap = self.get_keyword('PEXPELAP', default=-1)
+        if pexptime != 0 or pexpelap != 0:
             eramode = self.get_keyword('ERAMODE', default='')
             mosmode = self.get_keyword('MOSMODE', default='')
             if eramode != mosmode or reamode != 'B,G,R':
-                pass
+                # Stage directory listing
+                outdir = self.get_keyword('OUTDIR')
+                ofname = self.get_keyword('OFNAME')
+                dir = self.dirs['stage'] + outdir
+
+                # Find OFNAME
+                cmd = 'ls ' + dir + '*.fits'
+                cmdres = os.system(cmd)
+                i = np.where(cmdres == file)
+
                 # Find the start of the sequence
+                j = i.copy()
+                while j > 0:
+                    fitsfile = fits.open(cmdres[j])
+                    eramode2 = fitsfile.Hdu[0].header['ERAMODE']
+                    mosmode2 = fitsfile.Hdu[0].header['MOSMODE']
+                    if (j != i and eramode2 != mosfmode2) or (mosmode2 == 'B,G,R'):
+                        first = j
+                        break
+                    mosmode = mosmode2
+                    eramode = eramode2
+                    j -= 1
 
                 # Find the end of the sequence
+                j = i.copy()
+                while j < len(cmdres):
+                    fitsfile = fits.open(cmdres[j])
+                    eramode2 = fitsfile.Hdu[0].header['ERAMODE']
+                    mosmode2 = fitsfile.Hdu[0].header['MOSMODE']
+                    if (j != i and eramode2 != mosmode) or (mosmode2 == 'B,G,R'):
+                        last = j
+                        break
+                    mosmode = mosmode2
+                    eramode = eramode2
+                    j += 1
 
+                if first != last:
+                    subexp = 'True'
+                    num1 = i - first + 1
+                    num2 = last - first + 1
+                    comment = ' (' + str(num1) + ' of ' + str(num2) + ')'
+
+        self.set_keyword('SUBEXP',  subexp,   'KOA: Sub-exposure' + comment)
 
         return True
 
+
+    def set_roqual(self):
+        '''
+        Determine if an electronic glitch has compromised data
+        Just setting to Good since the glitch has been fixed since 20110421
+        '''
+
+        self.set_keyword('ROQUAL',  'Good',   'KOA: Postscan row quality')
+
+        return True
  
+
     def set_image_stats_keywords(self):
         '''
         Adds mean, median, std keywords to header
         '''
 
+        precol  = self.get_keyword('PRECOL')
+        postpix = self.get_keyword('POSTPIX')
+        binning = self.get_keyword('BINNING')
+        bin = binning.split(',')
+        xbin = int(bin[0])
+        ybin = int(bin[1])
+
+        # Size of sampling box 15x15
+        nx = postpix / xbin
+        nx = nx - nx / 3
+        if nx > 15: nx = 15
+        ny = nx
+
         # Can be up to 6 extensions
         for ext in range(1, 7):
             imageStd = imageMean = imageMedian = 'null'
             postStd = postMean = postMedian = 'null'
-            precol  = self.get_keyword('PRECOL')
-            postpix = self.get_keyword('POSTPIX')
             if ext < len(self.fitsHdu):
                 image = self.fitsHdu[ext].data
-                # postpix boundary
-                x = len(image) - postpix
-                # image area
-                start = precol + int(x*0.10)
-                end   = x - int(x*0.10)
-                imageStd    = float("%0.2f" % np.std(image[start:end, :]))
-                imageMean   = float("%0.2f" % np.mean(image[start:end, :]))
-                imageMedian = float("%0.2f" % np.median(image[start:end, :]))
-                if postpix != None:
-                    # postscan area
-                    start = x + int(postpix*0.10)
-                    end   = -1 * int(postpix*0.10)
-                    postStd    = float("%0.2f" % np.std(image[start:end, :]))
-                    postMean   = float("%0.2f" % np.mean(image[start:end, :]))
-                    postMedian = float("%0.2f" % np.median(image[start:end, :]))
+
+                # Rotate so same IDL equations work
+                image = np.rot90(image, 3)
+                plt.imshow(image)
+                plt.savefig('test.png')
+                naxis1 = self.fitsHdu[ext].header['NAXIS1']
+                naxis2 = self.fitsHdu[ext].header['NAXIS2']
+
+                # image pixels and start of postscan
+                nxi = naxis1 - postpix / xbin - precol / xbin
+                px1 = precol / xbin + nxi - 1
+
+                # Center of image and postcan
+                cxi = precol / xbin + nxi / 2
+                cyi = naxis2 / 2
+                cxp = px1 + postpix / xbin / 2
+
+                # Image area
+                x1 = int(cxi-nx/2)
+                x2 = int(cxi+nx/2)
+                y1 = int(cyi-ny/2)
+                y2 = int(cyi+ny/2)
+                img = image[x1:x2, y1:y2]
+                imageStd    = float("%0.2f" % np.std(img))
+                imageMean   = float("%0.2f" % np.mean(img))
+                imageMedian = float("%0.2f" % np.median(img))
+
+                # postscan area
+                x1 = int(cxp-nx/2)
+                x2 = int(cxp+nx/2)
+                y1 = int(naxis2*0.03-ny/2)
+                y2 = int(naxis2*0.03+ny/2)
+                img = image[x1:x2, y1:y2]
+                postStd    = float("%0.2f" % np.std(img))
+                postMean   = float("%0.2f" % np.mean(img))
+                postMedian = float("%0.2f" % np.median(img))
 
             key = str(ext).zfill(2)
             key_mn = 'IM01MN' + key
@@ -823,7 +908,6 @@ class Hires(instrument.Instrument):
                 image = self.fitsHdu[ext].data
                 pixSat = image[np.where(image >= satVal)]
                 nPixSat += len(image[np.where(image >= satVal)])
-                print(ext, nPixSat, np.max(image))
 
             self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
 
