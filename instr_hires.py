@@ -51,7 +51,7 @@ class Hires(instrument.Instrument):
 #        if ok: ok = self.set_numccds() # needed?
         if ok: ok = self.set_koaimtyp() # imagetyp
         if ok: ok = self.set_koaid()
-        if ok: ok = self.set_blank()
+#        if ok: ok = self.set_blank()
         if ok: ok = self.fix_binning()
         if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
@@ -190,19 +190,19 @@ class Hires(instrument.Instrument):
         return 'object'
 
 
-    def set_blank(self):
-        '''
-        If BLANK keyword does not exist, create and set to -32768
-        '''
-        
-        if self.get_keyword('Blank', False) != None: return True
-
-        self.log.info('set_blank: Creating BLANK keyword with value -32768')
-
-        #add keyword
-        self.set_keyword('BLANK', -32768, 'KOA: ')
-        
-        return True
+#    def set_blank(self):
+#        '''
+#        If BLANK keyword does not exist, create and set to -32768
+#        '''
+#        
+#        if self.get_keyword('Blank', False) != None: return True
+#
+#        self.log.info('set_blank: Creating BLANK keyword with value -32768')
+#
+#        #add keyword
+#        self.set_keyword('BLANK', -32768, 'KOA: ')
+#        
+#        return True
 
 
     def fix_binning(self):
