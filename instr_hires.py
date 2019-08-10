@@ -459,14 +459,14 @@ class Hires(instrument.Instrument):
         xd = {'RED':['RCCVOPEN', 'RCCVCLOS'], 'BLUE':['BCCVOPEN', 'BCCVCLOS']}
 
         open = 0
+        hatopen = self.get_keyword('HATOPEN')
+        hatclos = self.get_keyword('HATCLOS')
         if xdispers == 'RED':
             if self.get_keyword(xd[xdispers][0]) == 1 and self.get_keyword(xd[xdispers][1]) == 0:
                 open = 1
             if not open and not dark: inststat = 0
 
             # Hatch
-            hatopen = self.get_keyword('HATOPEN')
-            hatclos = self.get_keyword('HATCLOS')
             if hatopen == None or hatclos == None:
                 inststat = -1
         else:
