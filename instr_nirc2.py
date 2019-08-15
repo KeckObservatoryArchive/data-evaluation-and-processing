@@ -125,13 +125,13 @@ class Nirc2(instrument.Instrument):
         Sets koaimtyp based on keyword values
         '''
         #define python replica of IDL strtrim
-        strtrim = lambda x: x.replace(' ','')
+        #strtrim = lambda x: x.replace(' ','')
 
-        grsname = strtrim(self.get_keyword('GRSNAME'))
-        shrname = strtrim(self.get_keyword('SHRNAME'))
-        obsfname = strtrim(self.get_keyword('OBSFNAME'))
-        domestat = strtrim(self.get_keyword('DOMESTAT'))
-        axestat = strtrim(self.get_keyword('AXESTAT'))
+        grsname = self.get_keyword('GRSNAME')
+        shrname = self.get_keyword('SHRNAME')
+        obsfname = self.get_keyword('OBSFNAME')
+        domestat = self.get_keyword('DOMESTAT')
+        axestat = self.get_keyword('AXESTAT')
 
         imagetyp = 'undefined'
         imgmean = self.get_keyword('IMGMEAN')
@@ -152,9 +152,9 @@ class Nirc2(instrument.Instrument):
                         imagetyp = 'flatlamp'
                     return imagetyp
                 #if domelamps keyword exists
-                if (strtrim(self.get_keyword('FLIMAGIN'))):
-                    flspectr = strtrim(self.get_keyword('FLSPECTR'))
-                    flimagin = strtrim(self.get_keyword('FLIMAGIN'))
+                if self.get_keyword('FLIMAGIN'):
+                    flspectr = self.get_keyword('FLSPECTR')
+                    flimagin = self.get_keyword('FLIMAGIN')
                     if flimagin == 'on' or flspectr == 'on':
                         imagetyp = 'flatlamp'
                     else:
@@ -174,13 +174,13 @@ class Nirc2(instrument.Instrument):
             elif obsfname == 'telsim':
                 if self.get_keyword('ARGONPWR'):
                     #get element power boolean
-                    argonpwr = strtrim(self.get_keyword('ARGONPWR'))
-                    xenonpwr = strtrim(self.get_keyword('XENONPWR'))
-                    kryptpwr = strtrim(self.get_keyword('KRYPTPWR'))
-                    neonpwr = strtrim(self.get_keyword('NEONPWR'))
-                    lamppwr = strtrim(self.get_keyword('LAMPPWR'))
+                    argonpwr = self.get_keyword('ARGONPWR')
+                    xenonpwr = self.get_keyword('XENONPWR')
+                    kryptpwr = self.get_keyword('KRYPTPWR')
+                    neonpwr = self.get_keyword('NEONPWR')
+                    lamppwr = self.get_keyword('LAMPPWR')
                     #compare dates for special logic after 2011-10-10
-                    dateobs = strtrim(self.get_keyword('DATE-OBS'))
+                    dateobs = self.get_keyword('DATE-OBS')
                     date = dateobs.split('-')
                     dateval = dt.date(date[0],date[1],date[2])
                     dlmpvalid = dt.date(2011,10,10)
@@ -219,7 +219,7 @@ class Nirc2(instrument.Instrument):
                         imagetyp = 'flatlamp'
         #dark or bias
         elif shrname == 'closed':
-            itime = strtrim(self.get_keyword('ITIME'))
+            itime = self.get_keyword('ITIME')
             if itime == 0.0:
                 imagetyp = 'bias'
             else:
