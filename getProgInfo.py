@@ -263,7 +263,7 @@ class ProgSplit:
 
 #---------------------------- END ASSIGN SINGLE TO PI-------------------------------------------
 
-   def assign_single_by_time(self, filenum):
+    def assign_single_by_time(self, filenum):
         ok = False
 
         file = self.fileList[filenum]
