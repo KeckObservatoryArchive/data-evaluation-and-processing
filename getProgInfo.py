@@ -263,20 +263,23 @@ class ProgSplit:
 
 #---------------------------- END ASSIGN SINGLE TO PI-------------------------------------------
 
-    def assign_single_by_time(self, filenum):
+   def assign_single_by_time(self, filenum):
         ok = False
 
         file = self.fileList[filenum]
         fileTime = datetime.strptime(file['utc'],'%H:%M:%S.%f')
 
         #look for program that file time falls within
+        #NOTE: We actually are now just looking that the time is less than the end time of the program.
+        #This means that if we actually get to the last resort of assigning by time, a time before 
+        #the start of the night will just go to the first program.
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
             if not prog['StartTime'] or not prog['EndTime']:
                 continue
             progStartTime = datetime.strptime(prog['StartTime'],'%H:%M')
-            progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')
-            if (progStartTime <= fileTime <= progEndTime):
+            progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')            
+            if fileTime <= progEndTime or idx == len(self.programs)-1:
                 self.log.warning('getProgInfo: Assigning ' + os.path.basename(file['file']) + ' by time.')
                 self.assign_single_to_pi(filenum, idx)
                 ok = True
