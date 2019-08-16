@@ -9,7 +9,7 @@ NIRC2 specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 import numpy as np
-import scipy
+import scipy.stats
 
 class Nirc2(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -111,7 +111,7 @@ class Nirc2(instrument.Instrument):
 
         koaimtyp = self.get_koaimtyp()
         if koaimtyp in ['flatTBD','specTBD','telTBD']:
-            koaimtyp = self.set_caltype(koaimtype)
+            koaimtyp = self.set_caltype(koaimtyp)
         #warn if undefined
         if (koaimtyp == 'undefined'):
             self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
@@ -134,7 +134,8 @@ class Nirc2(instrument.Instrument):
         obsfname = self.get_keyword('OBSFNAME')
         domestat = self.get_keyword('DOMESTAT')
         axestat = self.get_keyword('AXESTAT')
-
+        print(shrname, obsfname)
+        imagetyp = 'undefined'
         #shutter open
         if shrname == 'open':
             if obsfname == 'telescope':
@@ -197,7 +198,7 @@ class Nirc2(instrument.Instrument):
             else:
                 imagetyp = 'dark'
             print('Image Type: ',imagetyp)
-        
+
         self.log.info('get_koaimtyp: getting KOAIMTYP')
         return imagetyp
 
@@ -454,7 +455,8 @@ class Nirc2(instrument.Instrument):
         image = self.fitsHdu[0].data
         imgmean = np.mean(image)
         imgstdv = np.std(image)
-        krtosis = scipy.stats.kurtosis(image)
+        krtosis = scipy.stats.kurtosis(image, axis=None)
+        print(imgmean,imgstdv,krtosis)
         #determine lamp when 'flatTBD'
         if imagetyp == "flatTBD":
             if imgmean > 500:
