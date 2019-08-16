@@ -9,6 +9,7 @@ NIRC2 specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 import numpy as np
+import scipy
 
 class Nirc2(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -109,7 +110,8 @@ class Nirc2(instrument.Instrument):
         '''
 
         koaimtyp = self.get_koaimtyp()
-        
+        if koaimtyp in ['flatTBD','specTBD','telTBD']:
+            koaimtyp = self.set_caltype(koaimtype)
         #warn if undefined
         if (koaimtyp == 'undefined'):
             self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
@@ -133,23 +135,13 @@ class Nirc2(instrument.Instrument):
         domestat = self.get_keyword('DOMESTAT')
         axestat = self.get_keyword('AXESTAT')
 
-        imagetyp = 'undefined'
-        imgmean = self.get_keyword('IMGMEAN')
-        imgstdv = self.get_keyword('IMG_STDV')
-        krtosis = self.get_keyword('KRTOSIS')
         #shutter open
         if shrname == 'open':
             if obsfname == 'telescope':
                 imagetyp = 'object'
             if (obsfname == 'telescope') and (domestat != 'tracking') and (axestat != 'tracking'):
                 if grsname != 'clear':
-                    #from nirc2_caltype
-                    imagetyp = 'undefined'
-                    if imgmean < 1000:
-                        if imgstdv < 300 and krtosis > 300:
-                            imagetyp = 'flatlampoff'
-                    elif imgmean < 10000:
-                        imagetyp = 'flatlamp'
+                    imagetyp = 'telTBD'
                     return imagetyp
                 #if domelamps keyword exists
                 if self.get_keyword('FLIMAGIN'):
@@ -163,12 +155,7 @@ class Nirc2(instrument.Instrument):
                 else:
                     el = float(self.get_keyword('EL'))
                     if (el > 44.99 and el < 45.01) and (domestat != 'tracking' and axestat != 'tracking'):
-                        #from nirc2_caltype
-                        imagetyp = 'undefined'
-                        if imgmean > 500:
-                            imgtyp = 'flatlamp'
-                        else:
-                            imagetyp='flatlampoff'
+                        imagetyp = 'flatTBD'
 
             #arclamp
             elif obsfname == 'telsim':
@@ -186,19 +173,12 @@ class Nirc2(instrument.Instrument):
                     dlmpvalid = dt.date(2011,10,10)
                     if dateval > dlmpvalid:
                         if lamppwr == 1:
+                            print("lamppower")
                             imagetyp = 'flatlamp'
                         elif 1 in [argonpwr,xenonpwr,kryptpwr,neonpwr]:
                             imagetyp = 'arclamp'
                         else:
-                            #from nirc2_caltype
-                            imagetyp = 'undefined'
-                            if imgmean < 1000:
-                                if imgstdv > 1000 and krtosis < 300:
-                                    imagetyp = 'arclamp'
-                                elif imgstdv < 300 and krtosis > 300:
-                                    imagetyp = 'flatlampoff'
-                            elif imgmean < 10000:
-                                imagetyp = 'flatlamp'
+                            imagetyp = 'specTBD'
                         print('Image Type: ',imagetyp)
                         print('Lamp Power: ',lamppwr)
                         print('Ne: ',neonpwr)
@@ -208,15 +188,7 @@ class Nirc2(instrument.Instrument):
             #use grsname keyword instead
             else:
                 if grsname in ['lowres','medres','GRS1','GRS2']:
-                    #from nirc2_caltype
-                    imagetyp = 'undefined'
-                    if imgmean < 1000:
-                        if imgstdv > 1000 and krtosis < 300:
-                            imagetyp = 'arclamp'
-                        elif imgstdv < 300 and krtosis > 300:
-                            imagetyp = 'flatlampoff'
-                    elif imgmean < 10000:
-                        imagetyp = 'flatlamp'
+                    imagetyp = 'specTBD'
         #dark or bias
         elif shrname == 'closed':
             itime = self.get_keyword('ITIME')
@@ -477,3 +449,38 @@ class Nirc2(instrument.Instrument):
             self.set_keyword('NONLIN', int(satVal), 'KOA: 3% nonlinearity level (80% full well)')
 
         return True
+
+    def set_caltype(self,imagetyp):
+        image = self.fitsHdu[0].data
+        imgmean = np.mean(image)
+        imgstdv = np.std(image)
+        krtosis = scipy.stats.kurtosis(image)
+        #determine lamp when 'flatTBD'
+        if imagetyp == "flatTBD":
+            if imgmean > 500:
+                imagetyp = 'flatlamp'
+            else:
+                imagetyp = 'flatlampoff'
+            print('flatTBD => '+imagetyp)
+        #determine lamp for spectra when 'specTBD'
+        elif imagetyp == "specTBD":
+            imagetyp = 'undefined'
+            if imgmean < 1000:
+                if imgstdv > 1000 and krtosis < 300:
+                    imagetyp = 'arclamp'
+                elif imgstdv < 300 and krtosis > 300:
+                    imagetyp = 'flatlampoff'
+            elif imgmean < 10000:
+                imagetyp = 'flatlamp'
+            print('specTBD => '+imagetyp)
+        #determine lamp for spectra when 'telTBD'
+        elif imagetyp == "telTBD":
+            imagetyp = 'undefined'
+            if imgmean < 1000:
+                if imgstdv < 300 and krtosis > 300:
+                    imagetyp = 'flatlampoff'
+            elif imgmean < 10000:
+                imagetyp = 'flatlamp'
+            print('telTBD => '+imagetyp)
+
+        return imagetyp
