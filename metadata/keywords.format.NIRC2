@@ -214,7 +214,7 @@ POYPOS3	double	20	Y
 PROGID	char	68	N
 PROGINST	char	9	N
 PROGPI	char	68	N
-PROGTITL	char	210	N
+PROGTITL	char	210	Y
 PSIDIST	double	20	Y
 PSINAME	char	20	Y
 PSIRAW	integer	20	Y
