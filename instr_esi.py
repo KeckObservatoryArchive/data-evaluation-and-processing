@@ -44,11 +44,12 @@ class Esi(instrument.Instrument):
         if ok: ok = self.set_utc()
         self.get_dispmode(update=True)
         self.get_camera(update=True)
+        if ok: ok = self.set_instrume_esi(self)
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ut()
         if ok: ok = self.set_frameno()
-        if ok: ok = self.set_ofName()
+        if ok: ok = self.set_esiofName()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
@@ -69,7 +70,13 @@ class Esi(instrument.Instrument):
 
 
     @staticmethod
-    def get_dir_list():
+    def set_instrume_esi(self):
+        instr = self.get_keyword("INSTRUME")
+        if "ESI" in instr:
+            self.set_keyword('INSTRUME','ESI','KOA: Instrument')
+        return True
+
+    def get_dir_list(self):
         '''
         Function to generate the paths to all the ESI accounts, including engineering
         Returns the list of paths
@@ -110,6 +117,25 @@ class Esi(instrument.Instrument):
 
         # Update keyword
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
+
+        return True
+
+    def set_esiofName(self):
+        '''
+        Sets OFNAME keyword from OUTFILE and FRAMENO
+        '''
+
+        outfile = self.get_keyword('OUTFILE', False)
+        frameno = self.get_keyword('FRAMENO', False)
+        if outfile == None or frameno == None:
+            self.log.info('set_ofName: Could not detrermine OFNAME')
+            ofname = ''
+            return False
+    
+        frameno = str(frameno).zfill(4)
+        ofName = ''.join((outfile, frameno, '.fits'))
+        self.log.info('set_ofName: OFNAME = {}'.format(ofName))
+        self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
 
         return True
 
@@ -227,11 +253,14 @@ class Esi(instrument.Instrument):
                         return 'focus'
                     if obstype == 'dmflat' and not axeTracking and flatPos: 
                         return 'focus'
-            idfltnam = self.get_keyword('IDFLTNAM').lower()
-            if prismnam == 'out' and infltnam == 'in' and idfltnam == 'out': 
-                return 'focus'
-            if prismnam == 'in' and infltnam == 'out' and dwfilnam == 'clear_s': 
-                return 'focus'
+            try:
+                idfltnam = self.get_keyword('IDFLTNAM').lower()
+                if prismnam == 'out' and infltnam == 'in' and idfltnam == 'out': 
+                    return 'focus'
+                if prismnam == 'in' and infltnam == 'out' and dwfilnam == 'clear_s': 
+                    return 'focus'
+            except:
+                pass
         #if not hole in slmsknam
         else:
             #if hatch closed
@@ -271,22 +300,21 @@ class Esi(instrument.Instrument):
             #esifilter = self.get_keyword('TVFILNAM')
             esifilter = self.get_keyword('DWFILNAM')
             if esifilter == 'B':
-              self.set_keyword('WAVERED' , 5400, 'KOA: Red end wavelength')
-              self.set_keyword('WAVECNTR', 4400, 'KOA: Center wavelength')
-              self.set_keyword('WAVEBLUE', 3700, 'KOA: Blue end wavelength')
+                self.set_keyword('WAVERED' , 5400, 'KOA: Red end wavelength')
+                self.set_keyword('WAVECNTR', 4400, 'KOA: Center wavelength')
+                self.set_keyword('WAVEBLUE', 3700, 'KOA: Blue end wavelength')
             elif esifilter == 'V':
-              self.set_keyword('WAVERED' , 6450, 'KOA: Red end wavelength')  
-              self.set_keyword('WAVECNTR', 5200, 'KOA: Center wavelength')
-              self.set_keyword('WAVEBLUE', 4900, 'KOA: Blue end wavelength')
-            elif esifilter = 'R':
-              self.set_keyword('WAVERED' , 7400, 'KOA: Red end wavelength')  
-              self.set_keyword('WAVECNTR', 6500, 'KOA: Center wavelength')
-              self.set_keyword('WAVEBLUE', 6000, 'KOA: Blue end wavelength')
-            elif esifilter = 'I':
-              pass
-            # self.set_keyword('WAVERED' , 10900, 'KOA: Red end wavelength')
-            # self.set_keyword('WAVECNTR',  7400, 'KOA: Center wavelength')
-            # self.set_keyword('WAVEBLUE',  3900, 'KOA: Blue end wavelength')
+                self.set_keyword('WAVERED' , 6450, 'KOA: Red end wavelength')  
+                self.set_keyword('WAVECNTR', 5200, 'KOA: Center wavelength')
+                self.set_keyword('WAVEBLUE', 4900, 'KOA: Blue end wavelength')
+            elif esifilter == 'R':
+                self.set_keyword('WAVERED' , 7400, 'KOA: Red end wavelength')  
+                self.set_keyword('WAVECNTR', 6500, 'KOA: Center wavelength')
+                self.set_keyword('WAVEBLUE', 6000, 'KOA: Blue end wavelength')
+            elif esifilter == 'I':
+                self.set_keyword('WAVERED' , 9000, 'KOA: Red end wavelength')
+                self.set_keyword('WAVECNTR', 8000, 'KOA: Center wavelength')
+                self.set_keyword('WAVEBLUE', 7000, 'KOA: Blue end wavelength')
 
         #spec:
         elif (camera == 'spec'):
@@ -318,6 +346,7 @@ class Esi(instrument.Instrument):
             #
             #from echellette table https://www.keck.hawaii.edu/realpublic/inst/esi/Sensitivities.html
             specres = 4125.406/self.get_keyword('SLITWIDT')
+            specres = np.round(specres,-1)
             self.set_keyword('SPECRES' , specres,  'KOA: Nominal spectral resolution')
         return True
 
@@ -366,8 +395,15 @@ class Esi(instrument.Instrument):
             #set slitwidth
             slitwidt = None
             slmsknam = self.get_keyword('SLMSKNAM')
+            print(slmsknam)
             if slmsknam:
-                slitwidt = float(slmsknam.split('_')[0])
+                if slmsknam == 'MultiHoles':
+                    slitwidt = 0.5
+                else:
+                    try:
+                        slitwidt = float(slmsknam.split('_')[0])
+                    except:
+                        slitwidt = float(slmsknam.split('_')[1])
             self.set_keyword('SLITWIDT' , slitwidt, 'KOA: Slit width projected on sky')
 
         return True
