@@ -25,6 +25,42 @@ class Kcwi(instrument.Instrument):
         # Generate the paths to the KCWI datadisk accounts
         self.paths = self.get_dir_list()
 
+        def run_dqa_checks(self, progData):
+            '''
+            Run all DQA checks unique to this instrument.
+            '''
+
+            # todo: check that all of these do not need a subclass version if base class func was used.
+            ok = True
+            if ok: ok = self.set_instr()
+            if ok: ok = self.set_dateObs()
+            if ok: ok = self.set_utc()
+            self.get_dispmode(update=True)
+            self.get_camera(update=True)
+            if ok: ok = self.set_koaimtyp()
+            if ok: ok = self.set_koaid()
+            if ok: ok = self.set_ut()
+            if ok: ok = self.set_frameno()
+            if ok: ok = self.set_ofName()
+            if ok: ok = self.set_semester()
+            if ok: ok = self.set_prog_info(progData)
+            if ok: ok = self.set_propint(progData)
+            if ok: ok = self.set_datlevel(0)
+            if ok: ok = self.set_image_stats_keywords()
+            if ok: ok = self.set_weather_keywords()
+            if ok: ok = self.set_oa()
+            if ok: ok = self.set_npixsat(65535)
+
+            if ok: ok = self.set_wavelengths()
+            if ok: ok = self.set_specres()
+            if ok: ok = self.set_slit_dims()
+            if ok: ok = self.set_spatscal()
+            if ok: ok = self.set_dispscal()
+
+            if ok: ok = self.set_dqa_vers()
+            if ok: ok = self.set_dqa_date()
+            return ok
+
 
     def get_dir_list(self):
         '''
