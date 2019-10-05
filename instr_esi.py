@@ -97,7 +97,7 @@ class Esi(instrument.Instrument):
     def get_prefix(self):
 
         instr = self.get_instr()
-        if instr == 'esi': prefix = 'EI'
+        if instr == 'esi': prefix = 'ES'
         else             : prefix = ''
         return prefix
 
@@ -254,10 +254,10 @@ class Esi(instrument.Instrument):
                     if obstype == 'dmflat' and not axeTracking and flatPos: 
                         return 'focus'
             try:
-                idfltnam = self.get_keyword('IDFLTNAM').lower()
-                if prismnam == 'out' and infltnam == 'in' and idfltnam == 'out': 
+                ldfltnam = self.get_keyword('LDFLTNAM').lower()
+                if prismnam == 'out' and imfltnam == 'in' and ldfltnam == 'out': 
                     return 'focus'
-                if prismnam == 'in' and infltnam == 'out' and dwfilnam == 'clear_s': 
+                if prismnam == 'in' and imfltnam == 'out' and dwfilnam == 'clear_s': 
                     return 'focus'
             except:
                 pass
@@ -292,7 +292,9 @@ class Esi(instrument.Instrument):
 
         # self.log.info('set_wavelengths: setting wavelength keyword values')
 
-        #todo: verify these values below
+        # Default null values
+        wavered = wavecntr = waveblue = 'null'
+
         camera  = self.get_camera()
 
         #imaging:
@@ -300,27 +302,31 @@ class Esi(instrument.Instrument):
             #esifilter = self.get_keyword('TVFILNAM')
             esifilter = self.get_keyword('DWFILNAM')
             if esifilter == 'B':
-                self.set_keyword('WAVERED' , 5400, 'KOA: Red end wavelength')
-                self.set_keyword('WAVECNTR', 4400, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 3700, 'KOA: Blue end wavelength')
+                wavered  = 5400
+                wavecntr = 4400
+                waveblue = 3700
             elif esifilter == 'V':
-                self.set_keyword('WAVERED' , 6450, 'KOA: Red end wavelength')  
-                self.set_keyword('WAVECNTR', 5200, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 4900, 'KOA: Blue end wavelength')
+                wavered  = 6450  
+                wavecntr = 5200
+                waveblue = 4900
             elif esifilter == 'R':
-                self.set_keyword('WAVERED' , 7400, 'KOA: Red end wavelength')  
-                self.set_keyword('WAVECNTR', 6500, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 6000, 'KOA: Blue end wavelength')
+                wavered  = 7400  
+                wavecntr = 6500
+                waveblue = 6000
             elif esifilter == 'I':
-                self.set_keyword('WAVERED' , 9000, 'KOA: Red end wavelength')
-                self.set_keyword('WAVECNTR', 8000, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 7000, 'KOA: Blue end wavelength')
+                wavered  = 9000
+                wavecntr = 8000
+                waveblue = 7000
 
         #spec:
         elif (camera == 'spec'):
-            self.set_keyword('WAVERED' , 10900, 'KOA: Red end wavelength')
-            self.set_keyword('WAVECNTR',  7400, 'KOA: Center wavelength')
-            self.set_keyword('WAVEBLUE',  3900, 'KOA: Blue end wavelength')
+            wavered = 10900
+            wavecntr =  7400
+            waveblue =  3900
+
+        self.set_keyword('WAVERED' , wavered, 'KOA: Red end wavelength')
+        self.set_keyword('WAVECNTR', wavecntr, 'KOA: Center wavelength')
+        self.set_keyword('WAVEBLUE', waveblue, 'KOA: Blue end wavelength')
 
         return True
 
@@ -332,6 +338,7 @@ class Esi(instrument.Instrument):
 
         # self.log.info('set_specres: setting SPECRES keyword values')
 
+        specres = 'null'
         camera   = self.get_camera()
         if (camera == 'spec'):
             #spectral resolution R found over all wavelengths and dispersions between orders 6-15
@@ -347,7 +354,7 @@ class Esi(instrument.Instrument):
             #from echellette table https://www.keck.hawaii.edu/realpublic/inst/esi/Sensitivities.html
             specres = 4125.406/self.get_keyword('SLITWIDT')
             specres = np.round(specres,-1)
-            self.set_keyword('SPECRES' , specres,  'KOA: Nominal spectral resolution')
+        self.set_keyword('SPECRES' , specres,  'KOA: Nominal spectral resolution')
         return True
 
 
@@ -385,17 +392,18 @@ class Esi(instrument.Instrument):
         camera   = self.get_camera()
         dispmode = self.get_dispmode()
 
-        #add keywords for 'spec' only
+        slitlen = 'null'
+        slitwidt = 'null'
+
+        #values for 'spec' only
         if (camera == 'spec'):
+
             #set slitlength
-            slitlen = None
             if   dispmode == 'low' : slitlen = 8*60 #8 arcminutes = 480 arcseconds
-            elif dispmode == 'high': slitlen = 20 #20 arcseconds
-            self.set_keyword('SLITLEN'  , slitlen,  'KOA: Slit length projected on sky')
+            elif dispmode == 'high': slitlen = 20   #20 arcseconds
+
             #set slitwidth
-            slitwidt = None
             slmsknam = self.get_keyword('SLMSKNAM')
-            print(slmsknam)
             if slmsknam:
                 if slmsknam == 'MultiHoles':
                     slitwidt = 0.5
@@ -404,6 +412,8 @@ class Esi(instrument.Instrument):
                         slitwidt = float(slmsknam.split('_')[0])
                     except:
                         slitwidt = float(slmsknam.split('_')[1])
-            self.set_keyword('SLITWIDT' , slitwidt, 'KOA: Slit width projected on sky')
+
+        self.set_keyword('SLITWIDT' , slitwidt, 'KOA: Slit width projected on sky')
+        self.set_keyword('SLITLEN'  , slitlen,  'KOA: Slit length projected on sky')
 
         return True
