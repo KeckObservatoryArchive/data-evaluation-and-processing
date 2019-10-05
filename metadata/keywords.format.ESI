@@ -203,7 +203,7 @@ ROTCASID	char	32	Y
 ROTDEST	double	16	Y
 ROTDEST	double	16	Y
 ROTERCNT	double	16	Y
-ROTERRS	char	16	Y
+ROTERRS	char	48	Y
 ROTMODE	char	32	Y
 ROTOFF	double	16	Y
 ROTPDSTS	double	16	Y
