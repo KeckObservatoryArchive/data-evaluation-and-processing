@@ -3,6 +3,7 @@ import shutil
 import tarfile
 import gzip
 import hashlib
+import subprocess
 
 import common
 
@@ -37,7 +38,7 @@ def dep_add(instrObj):
 
     #get date vars
     year, month, day = instrObj.utDate.split('-')
-    year = int(year) - 2000
+    year = year[2:4]
 
 
     # Make ancDir/[nightly,udf]
@@ -59,24 +60,34 @@ def dep_add(instrObj):
         source = None
         source1 = '/s' + nightlyDir + file
         source2 = '/h' + nightlyDir + file
+        source3 = '/s' + nightlyDir + file + '.Z'
+        source4 = '/h' + nightlyDir + file + '.Z'
         if   os.path.exists(source1): source = source1
         elif os.path.exists(source2): source = source2
+        elif os.path.exists(source3): source = source3
+        elif os.path.exists(source4): source = source4
 
         if source:
-            destination = ''.join((instrObj.dirs['anc'], '/nightly/', file))
+            fname = os.path.basename(source)
+            destination = ''.join((instrObj.dirs['anc'], '/nightly/', fname))
             instrObj.log.info('dep_add.py copying {} to {}'.format(source, destination))
             shutil.copyfile(source, destination)
+            if destination.endswith('.Z'):
+                output = subprocess.call(['gunzip', destination])
         else:
             instrObj.log.warning('dep_add.py: Could not find {}'.format(file))
             continue
 
         #re-open file and look for bad lines with NUL chars and remove those lines and resave.
         #(The bad characters are a result of copying a file that is being modified every few seconds)
+        #Also look for column delimitation format issue
         if destination and os.path.exists(destination):
             newLines = []
             with open(destination, 'r') as f:
                 for line in f:
                     if '\0' in line: continue
+                    if '"UNIXTime""HSTdate' in line:
+                        line = line.replace('"UNIXTime""HSTdate', '"UNIXTime","HSTdate')
                     newLines.append(line)
             with open(destination, 'w') as f:
                 f.write("".join(newLines))
