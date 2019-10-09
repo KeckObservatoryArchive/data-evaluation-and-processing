@@ -177,6 +177,8 @@ class Instrument:
         try:
             self.fitsHdu = fits.open(filename, ignore_missing_end=True)
             self.fitsHeader = self.fitsHdu[0].header
+            # print('hdu0',type(self.fitsHeader
+            # print('hdu1',type(self.fitsHdu[1]))
             #self.fitsHeader = fits.getheader(filename)
             self.fitsFilepath = filename
         except:
@@ -192,7 +194,7 @@ class Instrument:
 
 
 
-    def get_keyword(self, keyword, useMap=True, default=None):
+    def get_keyword(self, keyword, useMap=True, default=None, ext=None):
         '''
         Gets keyword value from the FITS header as defined in keywordMap class variable.  
         NOTE: FITS file must be loaded first with self.set_fits_file
@@ -200,12 +202,15 @@ class Instrument:
         @param keyword: keyword value or ordered list of keyword values to search for
         @type instr: string or list
         '''
-
         # check for loaded fitsHeader
-        if not self.fitsHeader:
-             raise Exception('get_keyword: ERROR: no FITS header loaded')
-             return default
-
+        if ext == None:
+            if not self.fitsHeader:
+                 raise Exception('get_keyword: ERROR: no FITS header loaded')
+                 return default
+        else:
+             if not self.fitsHdu[ext].header:
+                 raise Exception('get_keyword: ERROR: no FITS header loaded')
+                 return default
         #use keyword mapping?
         if useMap:
     
@@ -219,16 +224,20 @@ class Instrument:
             mappedKeys = [mappedKeys]
 
         #loop
-        for mappedKey in mappedKeys:
-            val = self.fitsHeader.get(mappedKey)
-            if val != None: return val
-
+        if ext == None:
+            for mappedKey in mappedKeys:
+                val = self.fitsHeader.get(mappedKey)
+                if val != None: return val
+        else:
+            for mappedKey in mappedKeys:
+                val = self.fitsHdu[ext].header.get(mappedKey)
+                if val != None: return val
         #return None if we didn't find it
         return default
 
 
 
-    def set_keyword(self, keyword, value, comment='', useMap=False):
+    def set_keyword(self, keyword, value, comment='', useMap=False, ext=None):
         '''
         Sets keyword value in FITS header.
         NOTE: Mapped values are only used if "useMap" is set to True, otherwise keyword name is as provided.
@@ -251,7 +260,11 @@ class Instrument:
             keyword = keyword[0]
 
         #ok now we can update
-        self.fitsHeader.update({keyword : (value, comment)})
+        if ext == None:
+            self.fitsHeader.update({keyword : (value, comment)})
+        else:
+            (self.fitsHdu[ext].header).update({keyword : (value, comment)})
+
 
 
 
@@ -469,7 +482,6 @@ class Instrument:
         #try to get from header mapped
         if utc == None:
             utc = self.get_keyword('UTC')
-
         #validate
         valid = False
         if utc: 
@@ -486,11 +498,9 @@ class Instrument:
             utc = utc.strftime('%H:%M:%S.00')
             update = True
             self.log.warning('set_utc: set UTC value from FITS file time')
-
         #update/add if need be
         if update:
             self.set_keyword('UTC', utc, 'KOA: UTC keyword corrected')
-
         return True
 
 
@@ -722,7 +732,7 @@ class Instrument:
         return True
 
 
-    def set_npixsat(self, satVal=None):
+    def set_npixsat(self, satVal=None, ext=0):
         '''
         Determines number of saturated pixels and adds NPIXSAT to header
         '''
@@ -735,10 +745,10 @@ class Instrument:
         if satVal == None:
             self.log.warning("set_npixsat: Could not find SATURATE keyword")
         else:
-            image = self.fitsHdu[0].data     
+            image = self.fitsHdu[ext].data     
             pixSat = image[np.where(image >= satVal)]
             nPixSat = len(image[np.where(image >= satVal)])
-            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
+            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels',ext=ext)
 
         return True
 
@@ -1021,3 +1031,49 @@ class Instrument:
 
         self.log.info('run_drp: no DRP defined for {}'.format(self.instr))
         return True
+
+    def set_numccds(self):
+        try:
+            panelist = self.get_keyword('PANELIST')
+        except:
+            self.set_keyword('NUMCCDS',0,'KOA: Number of CCDs')
+            return True
+        if panelist == '0':
+            numccds = 0
+        #mosaic data
+        elif panelist == 'PANE':
+            pane = self.get_keyword('PANE')
+            plist = pane.split(',')
+            dx = float(plist[2])
+            if dx < 8192:
+                numccds = 4
+            elif dx < 6144:
+                numccds = 3
+            elif dx < 4096:
+                numccds = 2
+            elif dx < 2048:
+                numccds = 1
+            if 'LRISBLUE' in self.get_keyword('INSTRUME'):
+                numccds = 1
+                amplist = (self.get_keyword('AMPLIST')).split(',')
+                if float(amplist[1]) > 2:
+                    numccds = 2
+        else:
+            plist = panelist.split(',')
+            numccds = 0
+            for i,val in enumerate(plist):
+                kywrd = f'PANE{str(val)}'
+                pane = self.get_keyword(kywrd)
+                plist2 = pane.split(',')
+                dx = float(plist2[2])
+                if dx < 2048:
+                    numccds += 1
+                else:
+                    if dx < 4096:
+                        numccds += 2
+                    else:
+                        numccds += 3
+
+        self.set_keyword('NUMCCDS',numccds,'KOA: Number of CCDs')
+        return True
+
