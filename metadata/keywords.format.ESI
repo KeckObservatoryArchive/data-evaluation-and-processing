@@ -96,8 +96,8 @@ CTRLFAN1	char	8	Y
 CURRINST	char	16	Y
 DATE	char	16	Y
 DATE-OBS	char	16	N
-DEC	char	16	N
-DECOFF	double	16	N
+DEC	char	16	Y
+DECOFF	double	16	Y
 DETECTOR	char	72	Y
 DOMESTAT	char	16	Y
 DWFILCAL	char	16	Y
@@ -195,7 +195,7 @@ PRISMRAW	integer	16	Y
 PRISMSTA	char	16	Y
 PRISMTOR	double	16	Y
 PWRBLOK	double	16	Y
-RA	char	16	N
+RA	char	16	Y
 RAOFF	double	16	Y
 ROTBASE	double	16	Y
 ROTCALAN	double	16	Y
@@ -212,7 +212,7 @@ ROTPPOSN	double	16	Y
 ROTREFAN	double	16	Y
 ROTSEL	char	32	Y
 ROTSRVER	double	16	Y
-ROTSTST	char	16	Y
+ROTSTST	char	32	Y
 ROTZERO	double	16	Y
 ROWSHFT	integer	8	Y
 SECFOCUS	double	16	Y
