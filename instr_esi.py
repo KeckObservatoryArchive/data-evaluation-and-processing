@@ -26,6 +26,7 @@ class Esi(instrument.Instrument):
         # Other vars that subclass can overwrite
         #TODO: Ack! Looks like the old DEP has an hour difference between this value and the actual cron time!
         self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
+        self.keywordSkips   = ['PMFM']
 
 
         # Generate the paths to the NIRES datadisk accounts
@@ -184,24 +185,24 @@ class Esi(instrument.Instrument):
         koaimtyp = 'undefined'
 
         # Check OBSTYPE first
-        obstype = self.get_keyword('OBSTYPE').lower()
+        obstype = self.get_keyword('OBSTYPE', default='').lower()
 
         if obstype == 'bias': return 'bias'
         if obstype == 'dark': return 'dark'
 
-        slmsknam = self.get_keyword('SLMSKNAM').lower()
-        hatchpos = self.get_keyword('HATCHPOS').lower()
-        lampqtz1 = self.get_keyword('LAMPQTZ1').lower()
-        lampar1 = self.get_keyword('LAMPAR1').lower()
-        lampcu1 = self.get_keyword('LAMPCU1').lower()
-        lampne1 = self.get_keyword('LAMPNE1').lower()
-        lampne2 = self.get_keyword('LAMPNE2').lower()
-        prismnam = self.get_keyword('PRISMNAM').lower()
-        imfltnam = self.get_keyword('IMFLTNAM').lower()
-        axestat = self.get_keyword('AXESTAT').lower()
-        domestat = self.get_keyword('DOMESTAT').lower()
+        slmsknam = self.get_keyword('SLMSKNAM', default='').lower()
+        hatchpos = self.get_keyword('HATCHPOS', default='').lower()
+        lampqtz1 = self.get_keyword('LAMPQTZ1', default='').lower()
+        lampar1 = self.get_keyword('LAMPAR1', default='').lower()
+        lampcu1 = self.get_keyword('LAMPCU1', default='').lower()
+        lampne1 = self.get_keyword('LAMPNE1', default='').lower()
+        lampne2 = self.get_keyword('LAMPNE2', default='').lower()
+        prismnam = self.get_keyword('PRISMNAM', default='').lower()
+        imfltnam = self.get_keyword('IMFLTNAM', default='').lower()
+        axestat = self.get_keyword('AXESTAT', default='').lower()
+        domestat = self.get_keyword('DOMESTAT', default='').lower()
         el = self.get_keyword('EL')
-        dwfilnam = self.get_keyword('DWFILNAM').lower()
+        dwfilnam = self.get_keyword('DWFILNAM', default='').lower()
 
         # Hatch
         hatchOpen = 1
@@ -213,7 +214,7 @@ class Esi(instrument.Instrument):
 
         # Is telescope pointed at flat screen?
         flatPos = 0
-        if el >= 44.0 and el <= 46.01: flatPos = 1
+        if el != None and el >= 44.0 and el <= 46.01: flatPos = 1
 
         # Is an arc lamp on?
         arc = 0
@@ -299,7 +300,6 @@ class Esi(instrument.Instrument):
 
         #imaging:
         if (camera == 'imag'):
-            #esifilter = self.get_keyword('TVFILNAM')
             esifilter = self.get_keyword('DWFILNAM')
             if esifilter == 'B':
                 wavered  = 5400
@@ -398,20 +398,29 @@ class Esi(instrument.Instrument):
         #values for 'spec' only
         if (camera == 'spec'):
 
-            #set slitlength
-            if   dispmode == 'low' : slitlen = 8*60 #8 arcminutes = 480 arcseconds
-            elif dispmode == 'high': slitlen = 20   #20 arcseconds
+            slmsknam = self.get_keyword('SLMSKNAM', default='').lower()
 
-            #set slitwidth
-            slmsknam = self.get_keyword('SLMSKNAM')
-            if slmsknam:
-                if slmsknam == 'MultiHoles':
+            #IFU (5 slices that are 1.13 arcseconds wide)
+            if slmsknam == 'ifu':
+                slitwidt = 4.0
+                slitlen  = 5.65 
+
+            #standard
+            else:
+                if   dispmode == 'low' : slitlen = 8*60 #8 arcminutes = 480 arcseconds
+                elif dispmode == 'high': slitlen = 20   #20 arcseconds
+
+                if 'multiholes' in slmsknam:
                     slitwidt = 0.5
-                else:
+                elif '_' in slmsknam:
+                    parts = slmsknam.split('_')
                     try:
-                        slitwidt = float(slmsknam.split('_')[0])
+                        slitwidt = float(parts[0])
                     except:
-                        slitwidt = float(slmsknam.split('_')[1])
+                        try:
+                            slitwidt = float(parts[1])
+                        except:
+                            slitwidt = 'null'
 
         self.set_keyword('SLITWIDT' , slitwidt, 'KOA: Slit width projected on sky')
         self.set_keyword('SLITLEN'  , slitlen,  'KOA: Slit length projected on sky')
