@@ -46,7 +46,7 @@ def envlog(logFile, logType, telnr, dateObs, utc):
     try:
         #TODO: NOTE: added 'dtype=object' to skip low memory warning due to
         #column mixed data types. We should define dtypes for columns to speed up.
-        data = pd.read_csv(logFile, skiprows=[0,2], dtype=object)
+        data = pd.read_csv(logFile, skiprows=[0,2], dtype=object, skipinitialspace=True)
     except Exception as e:
         print ('envlog: Unable to open: {}!'.format(logFile))
         return False
@@ -55,22 +55,23 @@ def envlog(logFile, logType, telnr, dateObs, utc):
     #
     if 'UNIXDate' in data.keys():
         hstKeys = ['HSTdate', 'HSTtime']
-        keys = [' "k0:met:dewpointRaw"', 
-                ' "k0:met:humidityRaw"', 
-                ' "k0:met:tempRaw"', 
-                ' "k'+telnr+':met:tempRaw"', 
-                ' "k'+telnr+':met:humidityRaw"', 
-                ' "k0:met:pressureRaw"', 
-                ' "k'+telnr+':met:windSpeedRaw"', 
-                ' "k'+telnr+':met:windAzRaw"']
+        keys = ['k0:met:dewpointRaw', 
+                'k0:met:humidityRaw', 
+                'k0:met:tempRaw', 
+                'k'+telnr+':met:tempRaw', 
+                'k'+telnr+':met:humidityRaw', 
+                'k0:met:pressureRaw', 
+                'k'+telnr+':met:windSpeedRaw', 
+                'k'+telnr+':met:windAzRaw']
         if logType == 'envFocus':
-            keys = [' "k'+telnr+':dcs:pnt:cam0:fwhm"']
+            keys = ['k'+telnr+':dcs:pnt:cam0:fwhm']
     else:
+        assert False, "ERROR: This numerically indexed column method is possibly unreliable.  Asserting here to see if it ever happens."
         hstKeys = [2, 3]
         keys = [5, 8, 10, 18, 20, 22, 24, 27]
         if logType == 'envFocus':
             keys = [26]
-        data = pd.read_csv(logFile, skiprows=[0,1,2], header=None, dtype=object)
+        data = pd.read_csv(logFile, skiprows=[0,1,2], header=None, dtype=object, skipinitialspace=True)
     #
     # Convert DATE-OBS/UT to HST
     #
@@ -85,28 +86,33 @@ def envlog(logFile, logType, telnr, dateObs, utc):
     dt2 = utDatetime + timedelta(seconds=interval)
     dt2 = dt2.strftime('%Y-%m-%d %H:%M:%S.%f')
     envDatetime = data[hstKeys[0]][0:] + ' ' + data[hstKeys[1]][0:]
-    envEntries = pd.to_datetime(envDatetime, format=' %d-%b-%Y %H:%M:%S.%f').between(dt1, dt2)
+    envEntries = pd.to_datetime(envDatetime, format='%d-%b-%Y %H:%M:%S.%f').between(dt1, dt2)
     envIndex = envEntries.index[envEntries]
     if len(envIndex) == 0:
         return values
     #
     # Timestamp of this entry in UT
     #
-    mTime = data[hstKeys[0]][envIndex[0]] + ' ' + data[hstKeys[1]][envIndex[0]]
-    mTime = datetime.strptime(mTime, ' %d-%b-%Y %H:%M:%S.%f')
+    mTime = data[hstKeys[0]][envIndex[0]] + ' ' + data[hstKeys[1]][envIndex[0]]    
+    mTime = datetime.strptime(mTime, '%d-%b-%Y %H:%M:%S.%f')
     mTime += timedelta(hours=10)
     #todo: truncating microseconds b/c strftime does not support rounding overflow
     mTime = mTime.strftime('%H:%M:%S.%f')[:-4]
-
-
     values['time'] = mTime
     #
     # Set individual values for this entry
+    # NOTE: looking for the 'k0' version if k{1|2} col not found
     #
     for index, key in enumerate(keys):
+        value = 'null'
         try:
-#           value = float(round(data[key][envIndex[0]], 2))
-            value = float("%0.2f" % float(data[key][envIndex[0]]))
+            if key in data.keys(): 
+                value = data[key][envIndex[0]]
+            elif key.startswith('k1:') or key.startswith('k2:'):
+                key = key[0]+'0'+key[2:]
+                if key in data.keys(): 
+                    value = data[key][envIndex[0]]
+            value = float("%0.2f" % float(value))
         except (ValueError, KeyError):
             value = 'null'
         values[output[index]] = value
