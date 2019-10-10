@@ -352,8 +352,12 @@ class Esi(instrument.Instrument):
             #                       slitwidth                      slitwidth
             #
             #from echellette table https://www.keck.hawaii.edu/realpublic/inst/esi/Sensitivities.html
-            specres = 4125.406/self.get_keyword('SLITWIDT')
-            specres = np.round(specres,-1)
+            try:
+                slitwidt = self.get_keyword('SLITWIDT')
+                specres = 4125.406 / slitwidt
+                specres = np.round(specres,-1)
+            except:
+                pass
         self.set_keyword('SPECRES' , specres,  'KOA: Nominal spectral resolution')
         return True
 
