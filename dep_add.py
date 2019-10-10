@@ -74,8 +74,9 @@ def dep_add(instrObj):
             shutil.copyfile(source, destination)
             if destination.endswith('.Z'):
                 output = subprocess.call(['gunzip', destination])
+                destination = destination.replace('.Z', '')
         else:
-            instrObj.log.warning('dep_add.py: Could not find {}'.format(file))
+            instrObj.log.error('dep_add.py: Could not find {}'.format(file))
             continue
 
         #re-open file and look for bad lines with NUL chars and remove those lines and resave.
