@@ -406,8 +406,8 @@ class Esi(instrument.Instrument):
 
             #IFU (5 slices that are 1.13 arcseconds wide)
             if slmsknam == 'ifu':
-                slitwidt = 4.0
-                slitlen  = 5.65 
+                slitwidt = 1.13
+                slitlen  = 4.0 
 
             #standard
             else:
