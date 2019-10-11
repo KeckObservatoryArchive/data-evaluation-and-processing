@@ -1,3 +1,7 @@
+'''
+This is just a quick-and-dirty wrapper script to dep_go.py to run a range of dates specific to reprocessing old data.  
+See input array below for usage.
+'''
 import sys
 import os
 import datetime as dt
@@ -6,7 +10,7 @@ import subprocess
 
 # usage
 if len(sys.argv) <= 6:
-    print ("USAGE: dep_go_reprocess.py instr startDate endDate tpx procStart procStop searchDirBase metaDirBase")
+    print ("USAGE: dep_go_reprocess.py instr startDate endDate tpx procStart procStop useHdrProg searchDirBase metaDirBase")
     sys.exit(0)
 
 
