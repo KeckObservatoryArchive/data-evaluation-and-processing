@@ -34,7 +34,7 @@ WXDWPT	double	16	Y
 WXOUTHUM	double	16	Y
 WXOUTTMP	double	16	Y
 WXPRESS	double	16	Y
-WXTIME	double	16	Y
+WXTIME	char	16	Y
 WXWNDIR	double	16	Y
 WXWNDSP	double	16	Y
 UTC	char	16	N
@@ -200,7 +200,6 @@ RAOFF	double	16	Y
 ROTBASE	double	16	Y
 ROTCALAN	double	16	Y
 ROTCASID	char	32	Y
-ROTDEST	double	16	Y
 ROTDEST	double	16	Y
 ROTERCNT	double	16	Y
 ROTERRS	char	48	Y
