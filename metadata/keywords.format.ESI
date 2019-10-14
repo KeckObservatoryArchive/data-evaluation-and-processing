@@ -95,7 +95,7 @@ CTRLFAN0	char	8	Y
 CTRLFAN1	char	8	Y
 CURRINST	char	16	Y
 DATE	char	16	Y
-DATE-OBS	char	16	N
+DATE-OBS	date	16	N
 DEC	char	16	Y
 DECOFF	double	16	Y
 DETECTOR	char	72	Y
