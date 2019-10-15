@@ -8,6 +8,7 @@ LRIS specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 import numpy as np
+from decimal import Decimal, ROUND_HALF_UP
 
 class Lris(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -19,14 +20,8 @@ class Lris(instrument.Instrument):
         self.ancDir = ''.join(seq)
         seq = (self.rootDir, '/stage')
         self.stageDir = ''.join(seq)
-        # Generate the paths to the LRIS datadisk accounts
-        # self.paths = self.get_dir_list()
 
-
-        # Other vars that subclass can overwrite
-        #TODO: Ack! Looks like the old DEP has an hour difference between this value and the actual cron time!
         self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
-
 
         # Generate the paths to the LRIS datadisk accounts
         self.sdataList = self.get_dir_list()
@@ -41,8 +36,6 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_utc()
-        # self.get_dispmode(update=True)
-        # self.get_camera(update=True)
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ut()
@@ -55,25 +48,20 @@ class Lris(instrument.Instrument):
         # if ok: ok = self.set_image_stats_keywords()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_oa()
-
         if ok: ok = self.set_numccds()
         if ok: ok = self.set_numamps()
         if ok: ok = self.get_nexten()
         for i in range(1,self.nexten+1):
-            print(f'EXTENSION {i}')
             if ok: ok = self.set_npixsat(32768,ext=i)
         if ok: ok = self.set_obsmode()
         if ok: ok = self.set_wavelengths()
-
-        # if ok: ok = self.set_ccdtype()
+        if ok: ok = self.set_sig2nois()
+        if ok: ok = self.set_ccdtype()
         if ok: ok = self.set_slit_dims()
-        print('SLIT DIMS SUCCESSFUL')
-        # if ok: ok = self.set_spatscal()
-        # if ok: ok = self.set_dispscal()
-        # if ok: ok = self.set_specres()
+        if ok: ok = self.set_wcs()
+        if ok: ok = self.set_imagestat()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
-        print('DQA SUCCESSFUL?')
         return ok
 
     def get_dir_list(self):
@@ -92,6 +80,9 @@ class Lris(instrument.Instrument):
         return dirs
 
     def get_prefix(self):
+        '''
+        Get FITS file prefix
+        '''
         instr = self.get_instr()
         if instr == 'lrisblue':
             prefix = 'LB'
@@ -105,7 +96,6 @@ class Lris(instrument.Instrument):
         '''
         Sets OFNAME keyword from OUTFILE and FRAMENO
         '''
-
         outfile = self.get_keyword('OUTFILE', False)
         frameno = self.get_keyword('FRAMENO', False)
         if outfile == None or frameno == None:
@@ -113,7 +103,6 @@ class Lris(instrument.Instrument):
             self.log.info('set_ofName: Could not detrermine OFNAME')
             ofname = ''
             return False
-        
         frameno = str(frameno).zfill(4)
         ofName = ''.join((outfile, frameno, '.fits'))
         self.log.info('set_ofName: OFNAME = {}'.format(ofName))
@@ -126,12 +115,10 @@ class Lris(instrument.Instrument):
         Add KOAIMTYP based on algorithm
         Calls get_koaimtyp for algorithm
         '''
-
         koaimtyp = self.get_koaimtyp()
         #warn if undefined
         if (koaimtyp == 'undefined'):
             self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
-
         #update keyword
         self.set_keyword('IMAGETYP', koaimtyp, 'KOA: Image type')
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
@@ -139,6 +126,7 @@ class Lris(instrument.Instrument):
         return True
 
     def get_koaimtyp(self):
+        #if instrument not defined, return
         imagetyp = 'undefined'
         try:
             instrume = self.get_keyword('INSTRUME')
@@ -221,6 +209,9 @@ class Lris(instrument.Instrument):
                     return 'dark'
 
     def set_obsmode(self):
+        '''
+        Determine observation mode
+        '''
         grism = self.get_keyword('GRISNAME')
         grating = self.get_keyword('GRANAME')
         angle = self.get_keyword('GRANGLE')
@@ -241,13 +232,15 @@ class Lris(instrument.Instrument):
         return True
 
     def set_wavelengths(self):
+        '''
+        Get blue, center, and red wavelengths [WAVEBLUE,WAVECNTR,WAVERED]
+        '''
         instr = self.get_keyword('INSTRUME')
-        # IMAGING #
         slitname = self.get_keyword('SLITNAME')
         obsmode = self.get_keyword('OBSMODE')
-        print('obs',self.get_keyword('OBSMODE'))
+
+        #Imaging mode
         if obsmode == 'IMAGING':
-            print('IMAGING',instr)
             if instr == 'LRIS':
                 flt = self.get_keyword('REDFILT')
                 wavearr = dict({'clear':[3500,9000],
@@ -278,12 +271,12 @@ class Lris(instrument.Instrument):
                                 'NB4170':[0,0]})
             if flt == 'Clear':
                 flt = 'clear'
-        else: #if spectroscopy mode
-            print('SPECTROSCOPY',instr)
+
+        #Spectroscopy mode
+        else:
             if instr == 'LRIS':
                 wlen = self.get_keyword('WAVELEN')
                 grating = self.get_keyword('GRANAME')
-                print('GRATING',grating)
                 wavearr = dict({'150/7500':[wlen-12288/2,wlen+12288/2],
                                 '300/5000':[wlen-6525/2,wlen+6525/2],
                                 '400/8500':[wlen-4762/2,wlen+4762/2],
@@ -297,7 +290,7 @@ class Lris(instrument.Instrument):
                 dateobs = self.get_keyword('DATE-OBS')
                 date = dt.datetime.strptime(dateobs,'%Y-%M-%d')
                 newthreshold = dt.datetime(2015,5,14)
-
+                #if observing date before May 14th, 2015, use different set of gratings
                 if date < newthreshold:
                     wavearr = dict({'150/7500':[wlen-9830/2,wlen+9830/2],
                                     '158/8500':[wlen-9830/2,wlen+9830/2],
@@ -311,18 +304,14 @@ class Lris(instrument.Instrument):
                                     '1200/7500':[wlen-1310/2,wlen+1310/2]})
             elif instr == 'LRISBLUE':
                 grism = self.get_keyword('GRISNAME')
-                print('GRISM',grism)
                 slitmask = str(self.get_keyword('SLITMASK'))
-                print(slitmask)
                 #longslit
                 if 'long_' in slitmask or 'pol_' in slitmask:
-                    print('longslit')
                     wavearr = dict({'300/5000':[1570,7420],
                                     '400/3400':[1270,5740],
                                     '600/4000':[3010,5600],
                                     '1200/3400':[2910,3890]})
                 else:
-                    print('slitmask is int')
                     wavearr = dict({'300/5000':[2210,8060],
                                     '400/3400':[1760,6220],
                                     '600/4000':[3300,5880],
@@ -332,7 +321,6 @@ class Lris(instrument.Instrument):
 
         #dichroic cutoff
         dichname = self.get_keyword('DICHNAME')
-        print('DICHROIC',dichname)
         if dichname == '460':
             minmax = 4874
         elif dichname == '500':
@@ -343,29 +331,28 @@ class Lris(instrument.Instrument):
             minmax = 6800
         else:
             minmax = 0
-        print('MINMAX',minmax)
         #determine wavelength range
-        print(wavearr)
         if obsmode == 'IMAGING':
-            print(flt)
             waveblue,wavered = wavearr.get(flt)
         elif obsmode == 'SPEC':
             try:
-                print(grating)
                 waveblue,wavered = wavearr.get(grating)
             except:
-                print(grism)
                 waveblue,wavered = wavearr.get(grism)
+        #if wavelength range encompasses dichroic cutoff
+        #LRIS: minmax to wavered
+        #LRISBLUE: waveblue to minmax
         if instr == 'LRIS':
             if waveblue < minmax:
                 waveblue = minmax
         elif instr == 'LRISBLUE':
             if wavered > minmax:
                 wavered = minmax
+        #round to the nearest 10 angstroms
         wavered = np.round(wavered,-1)
         waveblue = np.round(waveblue,-1)
         wavecntr = (waveblue + wavered)/2
-        print('R,C,B',wavered,wavecntr,waveblue)
+
         self.set_keyword('WAVERED',round(wavered,0),'KOA: Red wavelength')
         self.set_keyword('WAVEBLUE',round(waveblue,0),'KOA: Blue wavelength')
         self.set_keyword('WAVECNTR',round(wavecntr,0),'KOA: Center wavelength')
@@ -373,11 +360,14 @@ class Lris(instrument.Instrument):
         return True
 
     def set_ccdtype(self):
+        '''
+        Set CCD gain and read noise
+        '''
         ccdgain = 'null'
-        rdnoise = 'null'
-        #gain
-        gainblue = [1.55,1.56,1.63,1.70]
-        rnblue = [3.9,4.2,3.6,3.6]
+        readnoise = 'null'
+        #gain and read noise values per extension
+        gainblue = [1.70,1.55,1.56,1.63]
+        rnblue = [3.6,3.9,4.2,3.6]
         gainred = [1.255,1.180,1.191,1.162]
         rnred = [4.64,4.76,4.54,4.62]
         #red or blue?
@@ -385,42 +375,28 @@ class Lris(instrument.Instrument):
         if instr == 'LRISBLUE':
             gain = gainblue
             rn = rnblue
+            offset = -1
         elif instr == 'LRIS':
             gain = gainred
             rn = rnred
-        print('AMPLOC',self.get_keyword('AMPLOC'))
-        print(gain,rn)
-        ccdgain = self.get_keyword('CCDGAIN')
-        for ext in range(1, len(self.fitsHdu)):
-            ccdgain = ccdgain.strip()
-            print(ccdgain)
-            amploc  = self.fitsHdu[ext].header['AMPLOC']
-            if amploc != None and ccdgain != None:
-                amploc = int(amploc.strip()) - 1
-
-                ccdgn[ext] = gain[ccdgain][amploc]
-                ccdrn[ext] = readnoise[ccdgain][amploc]
-        print('ccdgn',ccdgn)
-        print('ccdrn',ccdrn)
-        #determine amp to use
-        # EXT? #
+            offset = 0
+        for ext in range(1, self.nexten+1):
+            self.set_keyword(f'CCDGN0{ext+offset}',gain[ext-1],'KOA: CCD Gain')
+            self.set_keyword(f'CCDRN0{ext+offset}',rn[ext-1],'KOA: CCD Gain')
         return True
 
     def set_sig2nois(self):
         '''
         Calculates S/N for middle CCD image
         '''
+        numamps = self.get_keyword('NUMAMPS')
 
-        self.log.info('set_sig2nois: Adding SIG2NOIS')
-
-        numamps = self.get_numamps()
-
-        # Middle extension
-        ext = floor(len(self.fitsHdu)/2.0)
+        #find middle extension
+        ext = int(np.floor(self.nexten/2.0))
         image = self.fitsHdu[ext].data
 
-        naxis1 = self.fitsHdu[ext].header['NAXIS1']
-        naxis2 = self.fitsHdu[ext].header['NAXIS2']
+        naxis1 = self.get_keyword('NAXIS1',ext=ext)
+        naxis2 = self.get_keyword('NAXIS2',ext=ext)
         postpix = self.get_keyword('POSTPIX', default=0)
         precol = self.get_keyword('PRECOL', default=0)
 
@@ -447,9 +423,14 @@ class Lris(instrument.Instrument):
         '''
 
         ampmode = self.get_keyword('AMPMODE', default='')
-        if 'DUAL:A+B' in ampmode: numamps = 2
-        elif ampmode == '':       numamps = 0
-        else:                     numamps = 1
+        if 'SINGLE:L' in ampmode: 
+            numamps = 1
+        elif 'SINGLE:R' in ampmode:
+            numamps = 1
+        elif 'DUAL:L+R' in ampmode:       
+            numamps = 2
+        else:                     
+            numamps = 0
 
         self.set_keyword('NUMAMPS',numamps,'KOA: Number of amplifiers')
         return True
@@ -458,25 +439,12 @@ class Lris(instrument.Instrument):
         '''
         Determine number of FITS HDU extensions
         '''
-        # numamps = self.get_keyword('NUMAMPS')
-        # numccds = self.get_keyword('NUMCCDS')
-        # try:
-        #     self.nexten = numamps * numccds
-        # except:
-        #     self.nexten = 'undefined'
         self.nexten = len(self.fitsHdu)-1
-        return True
-
-    def set_imagestat(self):
-        pass
         return True
 
     def set_wcs(self):
         pixelscale = 0.135 #arcsec
-        hdu = self.fitsHdu.header
         rotposn = self.get_keyword('ROTPOSN')
-        ra = self.get_keywrord('RA')
-        dec = self.get_keyword('DEC')
         poname = self.get_keyword('PONAME')
         pixcorrect = lambda x: (x/pixelscale) + 1024
 
@@ -504,20 +472,27 @@ class Lris(instrument.Instrument):
         cdelt1_arr = []
         cdelt2_arr = []
         #for each FITS header extension, calculate CRPIX1/2 and CDELT1/2
-        for i in range(1,len(self.nexten)):
-            crpix1 = self.get_keyword('CRPIX1')
-            crpix2 = self.get_keyword('CRPIX2')
-            crval1 = self.get_keyword('CRVAL1')
-            crval2 = self.get_keyword('CRVAL2')
-            cd11 = self.get_keyword('CD1_1')
-            cd22 = self.get_keyword('CD2_2')
-            naxis1 = self.get_keyword('NAXIS1')
-            naxis2 = self.get_keyword('NAXIS2')
+        for i in range(1,self.nexten):
+            crpix1 = self.get_keyword('CRPIX1',ext=i)
+            crpix2 = self.get_keyword('CRPIX2',ext=i)
+            crval1 = self.get_keyword('CRVAL1',ext=i)
+            crval2 = self.get_keyword('CRVAL2',ext=i)
+            cd11 = self.get_keyword('CD1_1',ext=i)
+            cd22 = self.get_keyword('CD2_2',ext=i)
+            naxis1 = self.get_keyword('NAXIS1',ext=i)
+            naxis2 = self.get_keyword('NAXIS2',ext=i)
+            crpix1_new = crpix1 + ((xcen - crval1)/cd11)
+            crpix2_new = crpix2 + ((ycen - crval2)/cd22)
+            cdelt1_new = cd11 * pixelscale
+            cdelt2_new = cd22 * pixelscale
 
-            crpix1_arr[i] = crpix1 + ((xcen - crval1)/cd11)
-            crpix2_arr[i] = crpix2 + ((ycen - crval2)/cd22)
-            cdelt1_arr[i] = cd11 * pixelscale
-            cdelt2_arr[i] = cd22 * pixelscale
+            self.set_keyword('CRPIX1',crpix1_new,'KOA: CRPIX1',ext=i)#?
+            self.set_keyword('CRPIX2',crpix2_new,'KOA: CRPIX2',ext=i)#?
+            self.set_keyword('CDELT1',cdelt1_new,'KOA: CDELT1',ext=i)#?
+            self.set_keyword('CDELT2',cdelt2_new,'KOA: CDELT2',ext=i)#?
+            self.set_keyword('CTYPE1','RA---TAN','KOA: CTYPE1',ext=i)#?
+            self.set_keyword('CTYPE2','DEC--TAN','KOA: CTYPE2',ext=i)#?
+            self.set_keyword('CROTA2',rotposn,'KOA: Rotator position',ext=i)
 
         return True
 
@@ -536,19 +511,16 @@ class Lris(instrument.Instrument):
         if irot2ang == None or parang == None or el == None:
             self.log.info('set_skypa: Could not set skypa')
             return True
-
         skypa = (2.0 * float(irot2ang) + float(parang) + float(el) + offset) % (360.0)
-
         self.log.info('set_skypa: Setting skypa')
         self.set_keyword('SKYPA', round(skypa, 4), 'KOA: Position angle on sky (deg)')
 
         return True
 
-    def set_imagestats(self):
-        #running into more extension issues
-        return True
-
     def set_slit_dims(self):
+        '''
+        Set SLITLEN, SLITWIDT, SPECRES, SPATSCAL
+        '''
         slitname = self.get_keyword('SLITNAME')
         if slitname in ['GOH_LRIS','direct']:
             return True
@@ -590,7 +562,10 @@ class Lris(instrument.Instrument):
                               '400/3400':[1.09,6.80],
                               '600/4000':[0.63,3.95],
                               '1200/3400':[0.24,1.56]})
-            [dispersion,fwhm] = grismdict.get(grism)
+            try:
+                [dispersion,fwhm] = grismdict.get(grism)
+            except:
+                dispersion,fwhm = 0,0
         specres = 'null'
         slit = 1.0
         if slitwidt != 'null':
@@ -605,5 +580,80 @@ class Lris(instrument.Instrument):
         self.set_keyword('SLITWIDT',slitwidt,'KOA: Slit width')
         self.set_keyword('SPECRES',specres,'KOA: Spectral resolution')
         self.set_keyword('SPATSCAL',spatscal,'KOA: Spatial resolution')
+
+        return True
+
+    def set_imagestat(self):
+        '''
+        Get mean, median, and standard deviation of middle 225 pixels of image and postscan
+        ''' 
+        #cycle through FITS extensions
+        for ext in range(1,self.nexten+1):
+            #get image header and image
+            header = self.fitsHdu[ext].header
+            image = np.array(self.fitsHdu[ext].data)
+            #find widths of pre/postscan regions, whole image dimensions
+            precol = self.get_keyword('PRECOL')
+            postpix = self.get_keyword('POSTPIX')
+            naxis1 = self.get_keyword('NAXIS1',ext=ext)
+            naxis2 = self.get_keyword('NAXIS2',ext=ext)
+
+            # TRANSPOSED IMAGE
+
+            #precol        imx         postpix
+            #.................................  ^
+            #.      .                 .      .  |
+            #.      .                 .      .  |
+            #.      .                 .      .  |
+            #.      .                 .      . NAXIS2
+            #.      .                 .      .  |
+            #.      .                 .      .  |
+            #.      .                 .      .  |
+            #.................................  v
+
+            #<------------NAXIS1------------->
+
+            #find image columns
+            imx = naxis1 - precol - postpix
+            #find image and postscan centers
+            imcntr = [int(precol+imx/2),int(naxis2/2)]
+            pscntr = [int(naxis1-postpix/2),int(naxis2/2)]
+            
+            #transpose image to correspond with precol/postpix parameters
+            image = np.transpose(image)
+
+            #take statistics of middle 225 pixels of image
+            imsample = image[imcntr[0]-7:imcntr[0]+7,imcntr[1]-7:imcntr[1]+7]
+            im1mn = np.mean(imsample)
+            im1stdv = np.std(imsample)
+            im1md = np.median(imsample)      
+            #take statistics of middle 225 pixels of postscan
+            pssample = image[pscntr[0]-7:pscntr[0]+7,pscntr[1]-7:pscntr[1]+7]
+            pst1mn = np.mean(pssample)
+            pst1stdv = np.std(pssample)
+            pst1md = np.median(pssample)
+
+            #if LRISBLUE, increment CCD location by 1
+            ccdloc = int(self.get_keyword('CCDLOC',ext=ext))
+            if self.get_keyword('INSTRUME') == 'LRISBLUE':
+                ccdloc += 1
+            #get amplifier location
+            amploc = int(self.get_keyword('AMPLOC',ext=ext))
+
+            #create and set image keywords
+            mnkey = f'IM0{ccdloc}MN0{amploc}'
+            stdvkey = f'IM0{ccdloc}SD0{amploc}'
+            mdkey = f'IM0{ccdloc}MD0{amploc}'
+            self.set_keyword(mnkey,im1mn,f'KOA: Imaging mean CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(stdvkey,im1stdv,f'KOA: Imaging standard deviation CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mdkey,im1md,f'KOA: Imaging median CCD {ccdloc}, amp location {amploc}')
+
+            #create and set postscan keywords
+            mnkey = f'PT0{ccdloc}MN0{amploc}'
+            stdvkey = f'PT0{ccdloc}SD0{amploc}'
+            mdkey = f'PT0{ccdloc}MD0{amploc}'
+            self.set_keyword(mnkey,pst1mn,f'KOA: Postscan mean CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(stdvkey,pst1stdv,f'KOA: Postscan standard deviation CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mdkey,pst1md,f'KOA: Postscan median CCD {ccdloc}, amp location {amploc}')
 
         return True
