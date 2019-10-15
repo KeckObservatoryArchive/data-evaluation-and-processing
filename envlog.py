@@ -104,17 +104,16 @@ def envlog(logFile, logType, telnr, dateObs, utc):
         values['time'] = mTime
         #
         # Set individual values for this entry
-        # NOTE: looking for the 'k0' version if k{1|2} col not found
         #
         for index, key in enumerate(keys):
             value = 'null'
             try:
                 if key in data.keys(): 
                     value = data[key][envIndex[0]]
-                elif key.startswith('k1:') or key.startswith('k2:'):
-                    key = key[0]+'0'+key[2:]
-                    if key in data.keys(): 
-                        value = data[key][envIndex[0]]
+                # elif key.startswith('k1:') or key.startswith('k2:'):
+                #     key = key[0]+'0'+key[2:]
+                #     if key in data.keys(): 
+                #         value = data[key][envIndex[0]]
                 value = float("%0.2f" % float(value))
             except (ValueError, KeyError):
                 value = 'null'
