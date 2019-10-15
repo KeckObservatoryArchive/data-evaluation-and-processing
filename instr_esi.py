@@ -26,7 +26,7 @@ class Esi(instrument.Instrument):
         # Other vars that subclass can overwrite
         #TODO: Ack! Looks like the old DEP has an hour difference between this value and the actual cron time!
         self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
-        self.keywordSkips   = ['PMFM']
+        self.keywordSkips   = ['PMFM', 'RECNO', 'CHECKSUM', 'DATASUM']
 
 
         # Generate the paths to the NIRES datadisk accounts
