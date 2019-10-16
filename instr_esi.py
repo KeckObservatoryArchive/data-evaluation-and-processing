@@ -39,17 +39,17 @@ class Esi(instrument.Instrument):
 
         #todo: check that all of these do not need a subclass version if base class func was used.
         ok = True
+<<<<<<< Updated upstream
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_utc()
         self.get_dispmode(update=True)
         self.get_camera(update=True)
-        if ok: ok = self.set_instrume_esi(self)
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ut()
         if ok: ok = self.set_frameno()
-        if ok: ok = self.set_esiofName()
+        if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
@@ -60,23 +60,47 @@ class Esi(instrument.Instrument):
         if ok: ok = self.set_npixsat(65535)
 
         if ok: ok = self.set_wavelengths()
+        if ok: ok = self.set_specres()
         if ok: ok = self.set_slit_dims()
         if ok: ok = self.set_spatscal()
         if ok: ok = self.set_dispscal()
-        if ok: ok = self.set_specres()
+
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
+=======
+        # if ok: ok = self.set_instr()
+        # if ok: ok = self.set_dateObs()
+        # if ok: ok = self.set_utc()
+        # self.get_dispmode(update=True)
+        # self.get_camera(update=True)
+        # if ok: ok = self.set_instrume_esi(self)
+        # if ok: ok = self.set_koaimtyp()
+        # if ok: ok = self.set_koaid()
+        # if ok: ok = self.set_ut()
+        # if ok: ok = self.set_frameno()
+        # if ok: ok = self.set_esiofName()
+        # if ok: ok = self.set_semester()
+        # if ok: ok = self.set_prog_info(progData)
+        # if ok: ok = self.set_propint(progData)
+        # if ok: ok = self.set_datlevel(0)
+        # if ok: ok = self.set_image_stats_keywords()
+        # if ok: ok = self.set_weather_keywords()
+        # if ok: ok = self.set_oa()
+        # if ok: ok = self.set_npixsat(65535)
+
+        if ok: ok = self.set_wavelengths()
+        # if ok: ok = self.set_slit_dims()
+        # if ok: ok = self.set_spatscal()
+        # if ok: ok = self.set_dispscal()
+        # if ok: ok = self.set_specres()
+        # if ok: ok = self.set_dqa_vers()
+        # if ok: ok = self.set_dqa_date()
+>>>>>>> Stashed changes
         return ok
 
 
     @staticmethod
-    def set_instrume_esi(self):
-        instr = self.get_keyword("INSTRUME")
-        if "ESI" in instr:
-            self.set_keyword('INSTRUME','ESI','KOA: Instrument')
-        return True
-
-    def get_dir_list(self):
+    def get_dir_list():
         '''
         Function to generate the paths to all the ESI accounts, including engineering
         Returns the list of paths
@@ -117,25 +141,6 @@ class Esi(instrument.Instrument):
 
         # Update keyword
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
-
-        return True
-
-    def set_esiofName(self):
-        '''
-        Sets OFNAME keyword from OUTFILE and FRAMENO
-        '''
-
-        outfile = self.get_keyword('OUTFILE', False)
-        frameno = self.get_keyword('FRAMENO', False)
-        if outfile == None or frameno == None:
-            self.log.info('set_ofName: Could not detrermine OFNAME')
-            ofname = ''
-            return False
-    
-        frameno = str(frameno).zfill(4)
-        ofName = ''.join((outfile, frameno, '.fits'))
-        self.log.info('set_ofName: OFNAME = {}'.format(ofName))
-        self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
 
         return True
 
@@ -228,59 +233,33 @@ class Esi(instrument.Instrument):
         # This is a trace or focus
         if 'hole' in slmsknam:
             if not hatchOpen:
-                if flat and not arc and prismnam == 'in' and imfltnam == 'out': 
-                    return 'trace'
-                if flat and not arc and prismnam != 'in' and imfltnam != 'out': 
-                    return 'focus'
-                if not flat and arc and prismnam == 'in' and imfltnam == 'out': 
-                    return 'focus'
+                if flat and not arc and prismnam == 'in' and imfltnam == 'out': return 'trace'
+                if flat and not arc and prismnam != 'in' and imfltnam != 'out': return 'focus'
+                if not flat and arc and prismnam == 'in' and imfltnam == 'out': return 'focus'
             else:
                 if prismnam == 'in' and imfltnam == 'out':
-                    if obstype == 'dmflat' and not domeTracking and flatPos: 
-                        return 'trace'
-                    if not axeTracking and not domeTracking and flatPos: 
-                        return 'trace'
-                    if obstype == 'dmflat' and not axeTracking and not domeTracking and flatPos: 
-                        return 'trace'
-                    if obstype == 'dmflat' and not axeTracking and flatPos: 
-                        return 'trace'
+                    if obstype == 'dmflat' and not domeTracking and flatPos: return 'trace'
+                    if not axeTracking and not domeTracking and flatPos: return 'trace'
+                    if obstype == 'dmflat' and not axeTracking and not domeTracking and flatPos: return 'trace'
+                    if obstype == 'dmflat' and not axeTracking and flatPos: return 'trace'
                 else:
-                    if obstype == 'dmflat' and not domeTracking and flatPos: 
-                        return 'focus'
-                    if not axeTracking and not domeTracking and flatPos: 
-                        return 'focus'
-                    if obstype == 'dmflat' and not axeTracking and not domeTracking and flatPos: 
-                        return 'focus'
-                    if obstype == 'dmflat' and not axeTracking and flatPos: 
-                        return 'focus'
-            try:
-                idfltnam = self.get_keyword('IDFLTNAM').lower()
-                if prismnam == 'out' and infltnam == 'in' and idfltnam == 'out': 
-                    return 'focus'
-                if prismnam == 'in' and infltnam == 'out' and dwfilnam == 'clear_s': 
-                    return 'focus'
-            except:
-                pass
-        #if not hole in slmsknam
+                    if obstype == 'dmflat' and not domeTracking and flatPos: return 'focus'
+                    if not axeTracking and not domeTracking and flatPos: return 'focus'
+                    if obstype == 'dmflat' and not axeTracking and not domeTracking and flatPos: return 'focus'
+                    if obstype == 'dmflat' and not axeTracking and flatPos: return 'focus'
+            idfltnam = self.get_keyword('IDFLTNAM').lower()
+            if prismnam == 'out' and infltnam == 'in' and idfltnam == 'out': return 'focus'
+            if prismnam == 'in' and infltnam == 'out' and dwfilnam == 'clear_s': return 'focus'
         else:
-            #if hatch closed
             if not hatchOpen:
-                if flat and not arc: 
-                    return 'flatlamp'
-                if not flat and arc and prismnam == 'in' and imfltnam == 'out': 
-                    return 'arclamp'
-            #if hatch open
+                if flat and not arc: return 'flatlamp'
+                if not flat and arc and prismnam == 'in' and imfltnam == 'out': return 'arclamp'
             else:
-                if obstype == 'dmflat' and not domeTracking and flatPos: 
-                    return 'flatlamp'
-                if not axeTracking and not domeTracking and flatPos: 
-                    return 'flatlamp'
-                if obstype == 'dmflat' and not axeTracking and not domeTracking: 
-                    return 'flatlamp'
-                if obstype == 'dmflat' and not axeTracking and flatPos: 
-                    return 'flatlamp'
-                if not flat and not arc: 
-                    return 'object'
+                if obstype == 'dmflat' and not domeTracking and flatPos: return 'flatlamp'
+                if not axeTracking and not domeTracking and flatPos: return 'flatlamp'
+                if obstype == 'dmflat' and not axeTracking and not domeTracking: return 'flatlamp'
+                if obstype == 'dmflat' and not axeTracking and flatPos: return 'flatlamp'
+                if not flat and not arc: return 'object'
 
         return 'undefined'
 
@@ -297,24 +276,9 @@ class Esi(instrument.Instrument):
 
         #imaging:
         if (camera == 'imag'):
-            #esifilter = self.get_keyword('TVFILNAM')
-            esifilter = self.get_keyword('DWFILNAM')
-            if esifilter == 'B':
-                self.set_keyword('WAVERED' , 5400, 'KOA: Red end wavelength')
-                self.set_keyword('WAVECNTR', 4400, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 3700, 'KOA: Blue end wavelength')
-            elif esifilter == 'V':
-                self.set_keyword('WAVERED' , 6450, 'KOA: Red end wavelength')  
-                self.set_keyword('WAVECNTR', 5200, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 4900, 'KOA: Blue end wavelength')
-            elif esifilter == 'R':
-                self.set_keyword('WAVERED' , 7400, 'KOA: Red end wavelength')  
-                self.set_keyword('WAVECNTR', 6500, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 6000, 'KOA: Blue end wavelength')
-            elif esifilter == 'I':
-                self.set_keyword('WAVERED' , 9000, 'KOA: Red end wavelength')
-                self.set_keyword('WAVECNTR', 8000, 'KOA: Center wavelength')
-                self.set_keyword('WAVEBLUE', 7000, 'KOA: Blue end wavelength')
+            self.set_keyword('WAVERED' , 10900, 'KOA: Red end wavelength')
+            self.set_keyword('WAVECNTR',  7400, 'KOA: Center wavelength')
+            self.set_keyword('WAVEBLUE',  3900, 'KOA: Blue end wavelength')
 
         #spec:
         elif (camera == 'spec'):
@@ -332,21 +296,10 @@ class Esi(instrument.Instrument):
 
         # self.log.info('set_specres: setting SPECRES keyword values')
 
+        #todo: verify these values below
         camera   = self.get_camera()
         if (camera == 'spec'):
-            #spectral resolution R found over all wavelengths and dispersions between orders 6-15
-            #
-            #           wavelength           0.1542[arcsec/pixel] * wavelength[angstroms]
-            # R    =   -----------     =    ---------------------------------------------
-            #         deltawavelength       slitwidth[arcsec] * dispersion[angstroms/pixel]
-            # 
-            #           MEAN(0.1542*wavelength/dispersion)         4125.406
-            # R    =    -----------------------------------   =   -----------
-            #                       slitwidth                      slitwidth
-            #
-            #from echellette table https://www.keck.hawaii.edu/realpublic/inst/esi/Sensitivities.html
-            specres = 4125.406/self.get_keyword('SLITWIDT')
-            specres = np.round(specres,-1)
+            specres = 3500.0
             self.set_keyword('SPECRES' , specres,  'KOA: Nominal spectral resolution')
         return True
 
@@ -355,11 +308,11 @@ class Esi(instrument.Instrument):
         '''
         Adds CCD pixel scale, dispersion (arcsec/pixel) keyword to header.
         '''
-        #set dispersion scale to 0.1542 for imaging and spectroscopy
+
         camera   = self.get_camera()
         dispscal = None
-        if camera in ['imag','spec']: 
-            dispscal = 0.1542 #arcsec/pixel
+        if   (camera == 'imag'): dispscal = 0.1542
+        elif (camera == 'spec'): dispscal = 0.1542
         self.set_keyword('DISPSCAL' , dispscal, 'KOA: CCD pixel scale, dispersion')
         return True
 
@@ -368,11 +321,11 @@ class Esi(instrument.Instrument):
         '''
         Adds spatial scale keyword to header.
         '''
-        #set spatial scale to 0.1542 for imaging and spectroscopy
+
         camera   = self.get_camera()
         spatscal = None
-        if camera in ['imag','spec']: 
-            spatscal = 0.1542 #arsec/pixel
+        if   (camera == 'imag'): spatscal = 0.1542
+        elif (camera == 'spec'): spatscal = 0.1542
         self.set_keyword('SPATSCAL' , spatscal, 'KOA: CCD pixel scale, spatial')
         return True
 
@@ -387,23 +340,16 @@ class Esi(instrument.Instrument):
 
         #add keywords for 'spec' only
         if (camera == 'spec'):
-            #set slitlength
+
             slitlen = None
-            if   dispmode == 'low' : slitlen = 8*60 #8 arcminutes = 480 arcseconds
-            elif dispmode == 'high': slitlen = 20 #20 arcseconds
+            if   dispmode == 'low' : slitlen = 18.1*60
+            elif dispmode == 'high': slitlen = 20
             self.set_keyword('SLITLEN'  , slitlen,  'KOA: Slit length projected on sky')
-            #set slitwidth
+
             slitwidt = None
             slmsknam = self.get_keyword('SLMSKNAM')
-            print(slmsknam)
             if slmsknam:
-                if slmsknam == 'MultiHoles':
-                    slitwidt = 0.5
-                else:
-                    try:
-                        slitwidt = float(slmsknam.split('_')[0])
-                    except:
-                        slitwidt = float(slmsknam.split('_')[1])
+                slitwidt = float(slmsknam.split('_')[0])
             self.set_keyword('SLITWIDT' , slitwidt, 'KOA: Slit width projected on sky')
 
         return True

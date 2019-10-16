@@ -3,23 +3,29 @@ This is the class to handle all the NIRC2 specific attributes
 NIRC2 specific DR techniques can be added to it in the future
 
 12/14/2017 M. Brown - Created initial file
-08/07/2019 E. Lucas - updated to conform to new class standards
 '''
 
 import instrument
 import datetime as dt
-import numpy as np
-import scipy.stats
 
 class Nirc2(instrument.Instrument):
-    def __init__(self, instr, utDate, rootDir, log=None):
-
-        # Call parent init to get all the shared variables
-        super().__init__(instr, utDate, rootDir, log)
+    def __init__(self, endTime=dt.datetime.now(), rDir=''):
+        # Call the parent init to get all the shared variables
+        super().__init__(endTime, rDir)
 
         # NIRC2 uses ROOTNAME instead of OUTDIR
-        self.ofName = 'FILENAME'
+        self.ofName = 'ROOTNAME'
+        # Set the NIRC2 specific paths to anc and stage
+        seq = (self.rootDir,'/NIRC2/', self.utDate, '/anc')
+        self.ancDir = ''.join(seq)
+        seq = (self.rootDir, '/stage')
+        self.stageDir = ''.join(seq)
+        # Generate the paths to the NIRC2 datadisk accounts
+        self.paths = self.get_dir_list()
+        self.prefix = 'N2'
 
+<<<<<<< Updated upstream
+=======
         # set endtime to 9AM
         self.endTime = '19:00:00' #UT
 
@@ -53,8 +59,8 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_npixsat(satVal = self.get_keyword('COADDS')*18000.0) # npixsat
         if ok: ok = self.set_nlinear(satVal = self.get_keyword('COADDS')*5000.0)
         if ok: ok = self.set_isao()
-#        if ok: ok = self.set_sig2nois()
-#        if ok: ok = self.set_slit_values()
+        if ok: ok = self.set_sig2nois()
+        if ok: ok = self.set_dims()
 #        if ok: ok = self.set_gain_and_readnoise() # ccdtype
 #        if ok: ok = self.set_skypa() # skypa
 #        if ok: ok = self.set_subexp()
@@ -64,6 +70,7 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_propint(progData)
 #        if ok: ok = self.fix_propint()
         return ok
+>>>>>>> Stashed changes
 
     def get_dir_list(self):
         '''
@@ -75,21 +82,24 @@ class Nirc2(instrument.Instrument):
         for i in range(5):
             joinSeq = (path, str(i), '/nirc')
             path2 = ''.join(joinSeq)
-            for j in range(1,11):
+            for j in range(1,21):
                 joinSeq = (path2, str(j))
                 path3 = ''.join(joinSeq)
                 dirs.append(path3)
-            joinSeq = (path2, '2eng')
+            joinSeq(path2, '2eng')
             path3 = ''.join(joinSeq)
             dirs.append(path3)
         return dirs
 
-    def get_prefix(self):
-        if self.get_keyword('INSTRUME') == self.instr:
+    def get_prefix(self, keys):
+        instr = self.get_prefix(keys)
+        if instr == 'nirc2':
             prefix = 'N2'
         else:
             prefix = ''
         return prefix
+<<<<<<< Updated upstream
+=======
 
     def set_instr(self):
         '''
@@ -485,4 +495,138 @@ class Nirc2(instrument.Instrument):
                 imagetyp = 'flatlamp'
             print('telTBD => '+imagetyp)
 
+
         return imagetyp
+
+    def get_numamps(self):
+        '''
+        Determine number of amplifiers
+        '''
+
+        ampmode = self.get_keyword('AMPMODE', default='')
+        if 'DUAL:A+B' in ampmode: numamps = 2
+        elif ampmode == '':       numamps = 0
+        else:                     numamps = 1
+
+        return numamps
+
+    def set_sig2nois(self):
+        '''
+        Calculates S/N ratio
+        '''
+
+        self.log.info('set_sig2nois: Adding SIG2NOIS')
+
+        numamps = self.get_numamps()
+        image = self.fitsHdu[0].data
+        naxis1 = self.get_keyword('NAXIS1')
+        naxis2 = self.get_keyword('NAXIS2')
+        postpix = self.get_keyword('POSTPIX', default=0)
+        precol = self.get_keyword('PRECOL', default=0)
+
+        nx = (naxis2 - numamps * (precol + postpix))
+        c = [naxis1 / 2, 1.17 * nx / 2]
+        wsize = 10
+
+        if c[1] > naxis1-wsize:
+            c[1] = c[0]
+            
+        spaflux = []
+        for i in range(wsize, int(naxis1)-wsize):
+            spaflux.append(np.median(image[int(c[1])-wsize:int(c[1])+wsize, i]))
+
+        maxflux = np.max(spaflux)
+        minflux = np.min(spaflux)
+
+        sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
+
+        self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
+
+        return True
+
+    def set_dims(self):
+        '''
+        Sets dispersion scale, spectral resolution, spatial scale, slitlength (null), and slitwidth 
+        '''
+
+        #preset to null
+        self.set_keyword('SLITWIDT','null','KOA: Slitwidth')
+        self.set_keyword('SLITLEN','null','KOA: Slitlength') #I guess this never gets set?
+        self.set_keyword('DISPSCAL','null','KOA: Dispersion Scale')
+        self.set_keyword('SPECRES','null','KOA: Spectral Resolution')
+        self.set_keyword('SPATSCAL','null','KOA: Spatial Scale')
+
+        self.log.info('set_slitdims: Adding SLITWIDT, SPATSCAL, SPECRES, DISPSCAL; SLITLEN null')
+
+        print('GRSNAME: ',self.get_keyword('GRSNAME'))
+        #only process if spectra/grism is lowres or medres
+        if self.get_keyword('GRSNAME') not in ['lowres','medres']:
+            return True
+        grsname = self.get_keyword('GRSNAME')
+        #get slitname --> slitxxxx where xxxx = slitwidth
+        if not self.get_keyword('SLITNAME'):
+            return True
+        elif 'slit' not in self.get_keyword('SLITNAME'):
+            return True
+        else:
+            slitname = self.get_keyword('SLITNAME')
+            tempwidth = slitname[4:-1]
+            slitwidt = int(tempwidth)/1000
+            self.set_keyword('SLITWIDT',slitwidt,'KOA: Slitwidth')
+
+        #determine spatscal from camera name
+        if not self.get_keyword('CAMNAME'):
+            return True
+        camname = self.get_keyword('CAMNAME')
+        if camname == 'narrow':
+            spatscal = 0.009952
+        elif camname == 'medium':
+            spatscal = 0.019829
+        elif camname == 'wide':
+            spatscal = 0.039686
+        else:
+            return True
+        self.set_keyword('SPATSCAL',spatscal,'KOA: Spatial Scale')
+        self.set_keyword('DISPSCAL',spatscal,'KOA: Dispersion Scale')
+        #get xxxx from filter "xxxx + yyyyy"
+        if not self.get_keyword('FILTER'):
+            return True
+
+        fltr = self.get_keyword('FILTER')
+        fltr = fltr.replace(' ','')
+        filval = fltr.split('+')
+        filstr = filval[0]
+        rpower = -1
+        slitpix = slitwidt/spatscal
+
+        #determine rpower for nirc2 table (observation modes)
+        fltrlist = ['J','H','Ks','K','Kp']
+        if grsname == 'lowres':
+            if camname == 'narrow':
+                rpow = [19380,17580,17330,17330,16760]
+            elif camname == 'medium':
+                rpow = [9690,8790,8670,8670,8380]
+            elif camname == 'wide':
+                rpow = [4830,4770,4320,4320,4180]
+
+        elif grsname == 'medres':
+            if camname == 'narrow':
+                rpow = [11430,10030,10240,10240,9910]
+            elif camname == 'medium':
+                rpow = [5700,5020,5340,5340,5160]
+            elif camname == 'wide':
+                rpow = [2850,2500,2670,2670,2580]
+
+        else:
+            return True
+
+        for i,fil in enumerate(fltrlist):
+            if filstr == fil:
+                rpower = rpow[i]
+
+        if rpower > 0:
+            specres = rpower/slitpix
+            self.set_keyword('SPECRES',specres,'KOA: Spectral Resolution')
+
+        return True
+>>>>>>> Stashed changes
