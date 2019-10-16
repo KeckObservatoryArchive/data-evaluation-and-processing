@@ -8,8 +8,7 @@ LRIS specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 import numpy as np
-from decimal import Decimal, ROUND_HALF_UP
-
+from astropy.convolution import convolve,Box1DKernel
 class Lris(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
         # Call the parent init to get all the shared variables
@@ -45,21 +44,18 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
         if ok: ok = self.set_datlevel(0)
-        # if ok: ok = self.set_image_stats_keywords()
+        if ok: ok = self.get_nexten()
+        if ok: ok = self.set_image_stats_keywords()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_oa()
-        if ok: ok = self.set_numccds()
-        if ok: ok = self.set_numamps()
-        if ok: ok = self.get_nexten()
-        for i in range(1,self.nexten+1):
-            if ok: ok = self.set_npixsat(32768,ext=i)
+        if ok: ok = self.get_numamps()
+        if ok: ok = self.set_npixsat(32768)
         if ok: ok = self.set_obsmode()
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_sig2nois()
         if ok: ok = self.set_ccdtype()
         if ok: ok = self.set_slit_dims()
         if ok: ok = self.set_wcs()
-        if ok: ok = self.set_imagestat()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
         return ok
@@ -389,7 +385,7 @@ class Lris(instrument.Instrument):
         '''
         Calculates S/N for middle CCD image
         '''
-        numamps = self.get_keyword('NUMAMPS')
+        numamps = self.numamps
 
         #find middle extension
         ext = int(np.floor(self.nexten/2.0))
@@ -400,16 +396,21 @@ class Lris(instrument.Instrument):
         postpix = self.get_keyword('POSTPIX', default=0)
         precol = self.get_keyword('PRECOL', default=0)
 
-        nx = (naxis2 - numamps * (precol + postpix))
-        c = [naxis1 / 2, 1.17 * nx / 2]
-
+        nx = (naxis2 - numamps*(precol + postpix))
+        c = [naxis1/2, 1.17*nx/2]
         wsize = 10
         spaflux = []
+
+        #necessary?
+        if c[1] > naxis1-wsize:
+            c[1] = c[0]
+
         for i in range(wsize, int(naxis1)-wsize):
             spaflux.append(np.median(image[int(c[1])-wsize:int(c[1])+wsize, i]))
 
-        maxflux = np.max(spaflux)
-        minflux = np.min(spaflux)
+        spaflux = convolve(spaflux,Box1DKernel(3))
+        maxflux = np.max(spaflux[precol:naxis1-1])
+        minflux = np.min(spaflux[precol:naxis1-1])
 
         sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
 
@@ -417,7 +418,7 @@ class Lris(instrument.Instrument):
 
         return True
 
-    def set_numamps(self):
+    def get_numamps(self):
         '''
         Determine number of amplifiers
         '''
@@ -432,7 +433,7 @@ class Lris(instrument.Instrument):
         else:                     
             numamps = 0
 
-        self.set_keyword('NUMAMPS',numamps,'KOA: Number of amplifiers')
+        self.numamps = numamps
         return True
 
     def get_nexten(self):
@@ -580,12 +581,37 @@ class Lris(instrument.Instrument):
         self.set_keyword('SLITWIDT',slitwidt,'KOA: Slit width')
         self.set_keyword('SPECRES',specres,'KOA: Spectral resolution')
         self.set_keyword('SPATSCAL',spatscal,'KOA: Spatial resolution')
+        self.set_keyword('DISPSCAL',dispersion,'KOA: Dispersion scale')
 
         return True
 
-    def set_imagestat(self):
+    def set_npixsat(self, satVal=None):
         '''
-        Get mean, median, and standard deviation of middle 225 pixels of image and postscan
+        Determines number of saturated pixels and adds NPIXSAT to header
+        '''
+
+        self.log.info('set_npixsat: setting pixel saturation keyword value')
+
+        if satVal == None:
+            satVal = self.get_keyword('SATURATE')
+
+        if satVal == None:
+            self.log.warning("set_npixsat: Could not find SATURATE keyword")
+        else:
+            nPixSat = 0
+            for ext in range(1, self.nexten):
+                image = self.fitsHdu[ext].data
+                pixSat = image[np.where(image >= satVal)]
+                nPixSat += len(image[np.where(image >= satVal)])
+
+            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
+
+        return True
+
+
+    def set_image_stats_keywords(self):
+        '''
+        Get mean, median, and standard deviation of middle 225 (15x15) pixels of image and postscan
         ''' 
         #cycle through FITS extensions
         for ext in range(1,self.nexten+1):
