@@ -24,8 +24,6 @@ class Nirc2(instrument.Instrument):
         self.paths = self.get_dir_list()
         self.prefix = 'N2'
 
-<<<<<<< Updated upstream
-=======
         # set endtime to 9AM
         self.endTime = '19:00:00' #UT
 
@@ -70,7 +68,6 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_propint(progData)
 #        if ok: ok = self.fix_propint()
         return ok
->>>>>>> Stashed changes
 
     def get_dir_list(self):
         '''
@@ -98,8 +95,6 @@ class Nirc2(instrument.Instrument):
         else:
             prefix = ''
         return prefix
-<<<<<<< Updated upstream
-=======
 
     def set_instr(self):
         '''
