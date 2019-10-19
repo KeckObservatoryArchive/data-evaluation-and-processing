@@ -45,12 +45,11 @@ class Esi(instrument.Instrument):
         if ok: ok = self.set_utc()
         self.get_dispmode(update=True)
         self.get_camera(update=True)
-        if ok: ok = self.set_instrume_esi(self)
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ut()
         if ok: ok = self.set_frameno()
-        if ok: ok = self.set_esiofName()
+        if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
@@ -71,13 +70,7 @@ class Esi(instrument.Instrument):
 
 
     @staticmethod
-    def set_instrume_esi(self):
-        instr = self.get_keyword("INSTRUME")
-        if "ESI" in instr:
-            self.set_keyword('INSTRUME','ESI','KOA: Instrument')
-        return True
-
-    def get_dir_list(self):
+    def get_dir_list():
         '''
         Function to generate the paths to all the ESI accounts, including engineering
         Returns the list of paths
@@ -121,7 +114,7 @@ class Esi(instrument.Instrument):
 
         return True
 
-    def set_esiofName(self):
+    def set_ofName(self):
         '''
         Sets OFNAME keyword from OUTFILE and FRAMENO
         '''
@@ -129,8 +122,7 @@ class Esi(instrument.Instrument):
         outfile = self.get_keyword('OUTFILE', False)
         frameno = self.get_keyword('FRAMENO', False)
         if outfile == None or frameno == None:
-            self.log.info('set_ofName: Could not detrermine OFNAME')
-            ofname = ''
+            self.log.warning('set_ofName: Could not determine OFNAME')
             return False
     
         frameno = str(frameno).zfill(4)
