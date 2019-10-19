@@ -267,7 +267,7 @@ class ProgSplit:
         ok = False
 
         file = self.fileList[filenum]
-        fileTime = datetime.strptime(file['utc'],'%H:%M:%S.%f')
+        fileTime = datetime.strptime(file['utdate'] + ' ' + file['utc'], '%Y-%m-%d %H:%M:%S.%f')
 
         #look for program that file time falls within
         #NOTE: We actually are now just looking that the time is less than the end time of the program.
@@ -277,10 +277,10 @@ class ProgSplit:
             prog = self.programs[idx]
             if not prog['StartTime'] or not prog['EndTime']:
                 continue
-            progStartTime = datetime.strptime(prog['StartTime'],'%H:%M')
-            progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')            
+            progStartTime = datetime.strptime(self.utDate +  ' ' + prog['StartTime'],'%Y-%m-%d %H:%M')
+            progEndTime   = datetime.strptime(self.utDate +  ' ' + prog['EndTime'],'%Y-%m-%d %H:%M')
             if fileTime <= progEndTime or idx == len(self.programs)-1:
-                self.log.warning('getProgInfo: Assigning ' + os.path.basename(file['file']) + ' by time.')
+                self.log.warning('getProgInfo: Assigning ' + os.path.basename(file['file']) + ' by time ' + file['utdate'] + ' ' + file['utc'] + ' to ' + prog['ProjCode'])
                 self.assign_single_to_pi(filenum, idx)
                 ok = True
                 break

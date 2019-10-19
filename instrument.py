@@ -388,10 +388,12 @@ class Instrument:
 
         ok = False
 
-        #direct match?
+        #direct match (or starts with match)?
         instrume = self.get_keyword('INSTRUME')
-        if instrume:
-            if (instrume.startswith(self.instr)): ok = True
+        if instrume and instrume.startswith(self.instr):
+            if instrume != self.instr:
+                self.set_keyword('INSTRUME', self.instr, 'KOA: Instrument')
+            ok = True
 
         #mira not ok
         outdir = self.get_keyword('OUTDIR')
