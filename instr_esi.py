@@ -195,6 +195,7 @@ class Esi(instrument.Instrument):
         domestat = self.get_keyword('DOMESTAT', default='').lower()
         el = self.get_keyword('EL')
         dwfilnam = self.get_keyword('DWFILNAM', default='').lower()
+        ldfltnam = self.get_keyword('LDFLTNAM', default='').lower()
 
         # Hatch
         hatchOpen = 1
@@ -246,14 +247,10 @@ class Esi(instrument.Instrument):
                         return 'focus'
                     if obstype == 'dmflat' and not axeTracking and flatPos: 
                         return 'focus'
-            try:
-                ldfltnam = self.get_keyword('LDFLTNAM').lower()
-                if prismnam == 'out' and imfltnam == 'in' and ldfltnam == 'out': 
-                    return 'focus'
-                if prismnam == 'in' and imfltnam == 'out' and dwfilnam == 'clear_s': 
-                    return 'focus'
-            except:
-                pass
+            if prismnam == 'out' and imfltnam == 'in' and ldfltnam == 'out': 
+                return 'focus'
+            if prismnam == 'in' and imfltnam == 'out' and dwfilnam == 'clear_s': 
+                return 'focus'
         #if not hole in slmsknam
         else:
             #if hatch closed
