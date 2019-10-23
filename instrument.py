@@ -576,7 +576,7 @@ class Instrument:
         assert 'progid'   in data and data['progid'],   'PROGID not found.'
         assert 'progpi'   in data and data['progpi'],   'PROGPI not found.'
         assert 'proginst' in data and data['proginst'], 'PROGINST not found.'
-        assert 'progtitl' in data and data['progtitl'], 'PROGTITLPI not found.'
+        assert 'progtitl' in data and data['progtitl'], 'PROGTITL not found.'
 
         if data['progid']   == 'PROGID'  : data['progid']   = 'NONE'
         if data['progpi']   == 'PROGPI'  : data['progpi']   = 'NONE'
@@ -589,7 +589,8 @@ class Instrument:
 
         #extra warning for log
         if data['progid'] == 'NONE':
-            self.log.warning('set_prog_info: PROGID is NONE for ' + os.path.basename(self.fitsFilepath))
+            time = self.get_keyword('DATE-OBS') + ' ' + self.get_keyword('UTC')
+            self.log.warning(f"set_prog_info: PROGID is NONE for {os.path.basename(self.fitsFilepath)} (@{time})")
 
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:50]
