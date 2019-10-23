@@ -127,7 +127,6 @@ class Esi(instrument.Instrument):
     
         frameno = str(frameno).zfill(4)
         ofName = ''.join((outfile, frameno, '.fits'))
-        self.log.info('set_ofName: OFNAME = {}'.format(ofName))
         self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
 
         return True
