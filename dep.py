@@ -295,7 +295,7 @@ class Dep:
         subject = ''
         if (errCount  > 0): subject += '(ERR:'  + str(errCount) + ')'
         if (warnCount > 0): subject += '(WARN:' + str(warnCount) + ')'
-        subject += ' DEP: ' + self.instrObj.instr + ' ' + self.instrObj.utDate
+        subject += ' DEP : ' + self.instrObj.instr + ' ' + self.instrObj.utDate
 
 
         #form msg
