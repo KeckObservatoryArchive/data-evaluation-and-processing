@@ -590,7 +590,7 @@ class Instrument:
         #extra warning for log
         if data['progid'] == 'NONE':
             time = self.get_keyword('DATE-OBS') + ' ' + self.get_keyword('UTC')
-            self.log.warning(f"set_prog_info: PROGID is NONE for {os.path.basename(self.fitsFilepath)} (@{time})")
+            self.log.info(f"set_prog_info: PROGID is NONE for {os.path.basename(self.fitsFilepath)} (@{time})")
 
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:50]
