@@ -92,6 +92,7 @@ class ProgSplit:
         #var init
         self.fileList = []
         self.numFiles = 0
+        self.sciTotal = 0
         self.outdirs = {}
         self.programs = []
         self.suntimes = None
@@ -492,6 +493,7 @@ class ProgSplit:
                     if splitTimes[i][0] <= thistime and splitTimes[i][1] > thistime:
                         self.outdirs[fdir]['sciCounts'][i] += 1
                         self.outdirs[fdir]['sciTotal']     += 1
+                        self.sciTotal                      += 1
                         break
 
 
@@ -691,7 +693,8 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, 
     #no proj codes
     # TODO: only throw error if there was some science files (ie this could be engineering)
     else:
-        progSplit.log.warning('No ' + instrument + ' programs scheduled this night.')
+        if progSplit.sciTotal > 0:
+            progSplit.log.warning(f"No {instrument} programs scheduled this night but {self.sciTotal} science files taken.")
 
 
     #special reprocessing check to look in header for PROG* info if all else fails
