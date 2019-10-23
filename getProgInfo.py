@@ -622,7 +622,7 @@ class ProgSplit:
                         else:
                             self.fileList[idx][kw] = val
                             if kw == 'progid':
-                                self.log.warning("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
+                                self.log.info("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
                 elif use == 'force':
                     if val and val != file[kw]:
                         self.fileList[idx][kw] = val
@@ -630,6 +630,27 @@ class ProgSplit:
                             self.log.warning("getProgInfo: Force assigning " + kw.upper() + " from old header for: " + os.path.basename(file['file']))
 
 #--------------------------------------------------------------------
+
+    def logStats(self):
+
+        counts = {} 
+        for prog in self.programs:
+            pc = prog['ProjCode']
+            counts[pc] = 0
+
+        for progfile in self.fileList:
+            progid = progfile['progid']
+            if progid not in counts:
+                counts[progid] = 0
+            counts[progid] += 1
+
+        for key, count in counts.items():
+            if key == 'PROGID': key = 'NONE'
+            self.log.info(f"getProgInfo: PROGID COUNT: {key}: {count}")
+
+
+#--------------------------------------------------------------------
+
 
 
 def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, log=None, test=False):
@@ -691,6 +712,10 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, 
             line += "\t" + progfile['progtitl']
             line += "\n"
             ofile.writelines(line)
+
+    #log stats
+    progSplit.logStats()
+
 
     #return data written for convenience
     progSplit.log.info('getProgInfo: finished, {} created'.format(fname))
