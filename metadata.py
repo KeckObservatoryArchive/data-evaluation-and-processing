@@ -99,9 +99,9 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
 
     #warn only if counts
     if (warns['type'] > 0):
-        if log: log.warning('metadata.py: Found {} data type warnings (search "metadata check" in log).'.format(warns['type']))
+        if log: log.info('metadata.py: Found {} data type mismatches (search "metadata check" in log).'.format(warns['type']))
     if (warns['truncate'] > 0):
-        if log: log.warning('metadata.py: Found {} truncation warnings (search "metadata check" in log).'.format(warns['truncate']))
+        if log: log.warning('metadata.py: Found {} data truncations (search "metadata check" in log).'.format(warns['truncate']))
 
 
 
