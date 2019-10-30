@@ -7,7 +7,7 @@
 - Change DEP to look for optional full semid in progname/progid.  (ie 2019A_C123)
 - How do we keep track of new sdata dirs?  A: Added by Jchock and we aren't necessarily notified.  Need better system.
 - Overhaul scrubber checks system (which verifies data has been archived before deleting from sdata).
-- Q: Do we need 'ls -d' calls to ensure refresh of /s/sdata mounts?  Possibly not.
+- Q: Do we need 'ls -d' calls to ensure refresh of sdata mounts?  Possibly not.
 - Put in check/warning if cron/run is at a different hour than self.endTime 
 - Need end of day cron to ensure all instruments processing ran and completed (query koatpx?)
 - Find and fix remaining hard-coded API URLS.
@@ -37,7 +37,7 @@
 - Make more functions as independent processing steps instead of dependent on self.
 - Pull out metadata from DQA so it can be run as independent step after DQA? 
 - Change keyword metadata defs to database tables?  Coordinate with IPAC.
-- Change instr classes to use wildcard for locate dirs (see dep_locate.csh, ie set subdir = '/s/sdata7*/esi*')
+- Change instr classes to use wildcard for locate dirs (see dep_locate.csh, ie set subdir = 'sdata7*/esi*')
 
 
 ## REGRESSION TESTING
