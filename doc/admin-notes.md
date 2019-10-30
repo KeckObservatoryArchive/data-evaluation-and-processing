@@ -9,8 +9,8 @@ To tag with github:
 - Use "v0.0.0" versioning
 
 To release to server:
-- Use account: ssh koabuild@vm-koaserver5
-- cd to build folder: cd /kroot/archive/koa/dep/
+- Use build account
+- cd to build folder
 - Checkout as version folder: git clone https://github.com/KeckObservatoryArchive/data-evaluation-and-processing.git ./dep-v0.1.0
 - Create/edit "config.live.ini".
 - TEST!
@@ -18,7 +18,6 @@ To release to server:
 
 Verify cron job:
 - A cron job should be running on the server for each instrument using 'koaadmin' user account.  Example:
-    0 9 * * * /usr/local/anaconda3-5.0.0.1/bin/python /kroot/archive/koa/dep/default/dep_go.py NIRES `date -u +\%Y-\%m-\%d` 1 > /dev/null 2>&1
 
 
 
