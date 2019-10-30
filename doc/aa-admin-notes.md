@@ -1,29 +1,28 @@
-===Creating a metadata format file===
+# Creating Metadata Format File
 
 If you need to create or make changes to the keyword metadata definitions:
 
-- Get latest spreadsheet definition file (currently in Google docs, owned by Jeff)
+- Get latest spreadsheet definition file (currently as Google docs)
 - Export columns in this order: keyword, dataType, colSize, allowNull
 - Make sure KOAID is first keyword row
 - Save to repo as /metadata/keywords.format.<INSTR> (ie "keywords.format.NIRES")
 
 
+# Regression Testing
+TODO
 
-===TAG AND RELEASE===
 
-*** Before tagging:
+# Tag and Release Process
 
-- Update config.ini with new "DEP_VERSION"
-- Check in code to github.
+Before tagging:
+- Commit config.ini with new "DEP_VERSION" value
 
-*** To tag with github: 
-
+To tag with github: 
 - Go to 'Code' => 'Release' tab
 - Click "Create a new release"
-- Use v0.0.0 versioning
+- Use "v0.0.0" versioning
 
-*** To release to server:
-
+To release to server:
 - Use account: ssh koabuild@vm-koaserver5
 - cd to build folder: cd /kroot/archive/koa/dep/
 - Checkout as version folder: git clone https://github.com/KeckObservatoryArchive/data-evaluation-and-processing.git ./dep-v0.1.0
@@ -31,8 +30,6 @@ If you need to create or make changes to the keyword metadata definitions:
 - TEST!
 - change "default" symbolic link: ln -s dep-v0.1.0 release
 
-*** Verify cron job:
-
+Verify cron job:
 - A cron job should be running on the server for each instrument using 'koaadmin' user account.  Example:
-
-  0 9 * * * /usr/local/anaconda3-5.0.0.1/bin/python /kroot/archive/koa/dep/default/dep_go.py NIRES `date -u +\%Y-\%m-\%d` 1 > /dev/null 2>&1
+    0 9 * * * /usr/local/anaconda3-5.0.0.1/bin/python /kroot/archive/koa/dep/default/dep_go.py NIRES `date -u +\%Y-\%m-\%d` 1 > /dev/null 2>&1
