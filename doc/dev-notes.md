@@ -43,7 +43,7 @@
 - ~/.procmailrc
   - (File with procmail rules)
   - Example rule:
-	* ^From:.<TPX.Metadata@ipac.caltech.edu*
+	* ^From:
 	* ^Subject:.[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] KCWI
 	| /kroot/archive/tpx/default/tpx_email.php KCWI ${ARCHIVE_LOCATION}/msg.${DATE} kcwi
 
