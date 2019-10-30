@@ -8,20 +8,13 @@ DEP is the process and code by which Keck science data is processed, packaged an
 ### Processing Steps ###
 The DEP process is divided into the following logical steps:
 
-1. obtain
-  - retrieve the program information from the telescope schedule
-2. locate
-  - locate the instrument FITS files written to disk in the 24 hour period
-3. add
-  - add the focus and weather logs
-4. dqa (data quality assess)
-  - assess the raw FITS files and add metadata keywords</li>
-5. lev1
-  - level 1 data reduction
-6. tar
-  - tar and zip data for transfer
-7. koaxfr
-  - transfer the data to NExScI
+1. **obtain**: Retrieve the program information from the telescope schedule
+2. **locate**: Locate the instrument FITS files written to disk in the 24 hour period
+3. **add**: Add the focus and weather logs
+4. **dqa (data quality assess)**: assess the raw FITS files and add metadata keywords
+5. **lev1**: level 1 data reduction
+6. **tar**: tar and zip data for transfer
+7. **koaxfr**: transfer the data to NExScI
 
 
 ### Usage ###
