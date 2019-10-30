@@ -1,18 +1,4 @@
-# Creating Metadata Format File
-
-If you need to create or make changes to the keyword metadata definitions:
-
-- Get latest spreadsheet definition file (currently as Google docs)
-- Export columns in this order: keyword, dataType, colSize, allowNull
-- Make sure KOAID is first keyword row
-- Save to repo as /metadata/keywords.format.<INSTR> (ie "keywords.format.NIRES")
-
-
-# Regression Testing
-TODO
-
-
-# Tag and Release Process
+## Tag and Release Process
 
 Before tagging:
 - Commit config.ini with new "DEP_VERSION" value
@@ -33,3 +19,20 @@ To release to server:
 Verify cron job:
 - A cron job should be running on the server for each instrument using 'koaadmin' user account.  Example:
     0 9 * * * /usr/local/anaconda3-5.0.0.1/bin/python /kroot/archive/koa/dep/default/dep_go.py NIRES `date -u +\%Y-\%m-\%d` 1 > /dev/null 2>&1
+
+
+
+## Creating Metadata Format File
+
+If you need to create or make changes to the keyword metadata definitions:
+
+- Get latest spreadsheet definition file (currently as Google docs)
+- Export columns in this order: keyword, dataType, colSize, allowNull
+- Make sure KOAID is first keyword row
+- Save to repo as /metadata/keywords.format.<INSTR> (ie "keywords.format.NIRES")
+
+
+
+## Regression Testing
+TODO
+
