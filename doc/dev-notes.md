@@ -31,27 +31,26 @@
 
 - koa.koapi_send (koaserver DB)
   - Database table to store whether we have sent an email to PI for a program id. New record per unique SEMID. Record is re-used if consecutive nights, else new record for SEMID.)
-  - Simple view of koapi_send table: http://hawini.keck.hawaii.edu/koa/PI/pi_status.php?sem=2018A
+  - See pi_status.php for simple view of koapi_send table
 
-- vm-koaserver5:/kroot/archive/dep/dqa/default/dep_koapi.php
-  (NEW) https://www.keck.hawaii.edu/software/db_api/koa.php?cmd=updateKoapiSend&utdate=2018-07-21&semid=2018A_U172
+- dep_koapi.php
+  (NEW) [KOA API]?cmd=updateKoapiSend&utdate=2018-07-21&semid=2018A_U172
   (API called each time an image is DQA'd to figure out whether to insert/update to koapi_send table.)
 
-- koaadmin@koaserver:~/.forward
-  - Needed email forwarding file to get koaadmin@keck.hawaii.edu mail forwarded to procmail
-  - (for <koaadmin@hawini.keck.hawaii.edu>???)
+- ~/.forward
+  - Needed email forwarding file to get mail forwarded to procmail
 
-- koaadmin@koaserver:~/.procmailrc
+- ~/.procmailrc
   - (File with procmail rules)
   - Example rule:
 	* ^From:.<TPX.Metadata@ipac.caltech.edu*
 	* ^Subject:.[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] KCWI
 	| /kroot/archive/tpx/default/tpx_email.php KCWI ${ARCHIVE_LOCATION}/msg.${DATE} kcwi
 
-- koaserver:/kroot/archive/tpx/default/tpx_email.php
+- /kroot/archive/tpx/default/tpx_email.php
   - script called by procmail to do the email tasks
 
-- koaserver:/kroot/archive/dep/email/default/dep_pi_email.php
+- /kroot/archive/dep/email/default/dep_pi_email.php
   - Looks at the koapi_send database table to see if any emails need to be sent out to the KOA PI's
 
 
@@ -121,7 +120,7 @@ How to run DEP on test data:
 ## MISC notes:
 - The NIRES echelle spectrograph (NR) and slit viewing camera (NI) are spreadsheet columns 's'=spec, 'v'=imag
 - Percy Gomez is NIRES instrument master
-- The new Telescope schedule API is kept alive with a cron on www that runs every 10 minutes to make sure API is running.  You can stop it with: /home/www/public/software/db_api/pyServer/dbServer.csh stop 50001
+- The new Telescope schedule API is kept alive with a cron on www that runs every 10 minutes to make sure API is running.  You can stop it with: dbServer.csh stop 50001
 (Let the cron start it back up, though, until we fix the terminal issue.)
 
 	grep "metadata check" dep_MOSFIRE_*.log | grep -v "in log" | grep -v "(ROT" | grep -v "(DDEC=" | grep -v "(DECOFF=" | grep -v "(RAOFF=" | grep -v "(DRA=" | grep -v "(TARG" | grep -v "(DEC=" | grep -v "(RA=" | grep -v "(OBJECT=" | grep -v "(MASKNAME"
