@@ -8,7 +8,7 @@ PROGTITL	char	210	Y
 KOAIMTYP	char	32	N
 CAMERA	char	16	Y
 DATLEVEL	integer	8	Y
-DISPMODE	char	8	Y
+OBSMODE	char	8	Y
 DISPSCAL	double	16	Y
 DQA_DATE	char	32	Y
 DQA_VERS	char	32	Y
