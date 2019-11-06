@@ -337,6 +337,7 @@ class ProgSplit:
         #get array of names (first filter out garbage chars)
         file = self.fileList[filenum]
         observers = self.get_observer_array(file['observer'])
+        # print ('assign_single_by_observer: file observer array: ', observers)
         if len(observers) == 0: return False
 
         #look for program with any matching names both directions
@@ -344,6 +345,7 @@ class ProgSplit:
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
             progObservers = self.get_observer_array(prog['Observer'])
+            #print ('-- progObservers: ', progObservers)
             if len(progObservers) == 0: continue
 
             diff1 = len(set(observers) - set(progObservers))
@@ -353,6 +355,7 @@ class ProgSplit:
             diff2 = len(set(progObservers) - set(observers))
             perc2 = diff2 / len(progObservers) 
             ok2 = True if perc2 < 1.0 else False
+            #print ('-- result: ', diff1, perc1, ok1, diff2, perc2, ok2, matchIdx)
 
             #If observers match good enough then assign, but check multi program matching not ok
             if ok1 and ok2:
@@ -378,9 +381,11 @@ class ProgSplit:
             "Ellis, Konidaris, Belli, Newman, & Schenkar"
         '''
 
-        #replace whitespace and periods with comma
+        #replace whitespace, periods, slash and dash with comma
         obsvStr = re.sub("\s+", ",", obsvStr.strip())
         obsvStr = re.sub("\.+", ",", obsvStr.strip())
+        obsvStr = re.sub("\/+", ",", obsvStr.strip())
+        obsvStr = re.sub("\-+", ",", obsvStr.strip())
 
         #get rid of other unwanted things
         obsvStr = re.sub("\(.+?\)", "", obsvStr.strip())
