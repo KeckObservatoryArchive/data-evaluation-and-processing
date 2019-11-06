@@ -530,7 +530,7 @@ class ProgSplit:
             for i, count in data['sciCounts'].items():
                 perc = count / data['sciTotal'] if data['sciTotal'] > 0 else 0
                 self.log.info('--- prog' + str(i) + ': ' + str(count) + ' ('+str(round(perc*100,0))+'%)')
-                if perc > 0.85 and count > 10: 
+                if (perc > 0.85 and count > 10) or (perc > 0.95 and count > 3): 
                     self.outdirs[outdir]['assign'] = i
                     progid = self.programs[i]['ProjCode']
                     self.log.info('Mapping (by sci) outdir ' + outdir + " to progIndex: " + str(i) + ' ('+progid+').')
