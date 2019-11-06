@@ -43,6 +43,7 @@ class Esi(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_utc()
+        if ok: ok = self.set_filter()
         self.get_obsmode(update=True)
         if ok: ok = self.set_camera()
         if ok: ok = self.set_koaimtyp()
@@ -266,6 +267,16 @@ class Esi(instrument.Instrument):
                     return 'object'
 
         return 'undefined'
+
+
+    def set_filter(self):
+        '''
+        Add filter which is copy of DWFILNAM
+        '''
+        dwfilnam  = self.get_keyword('dwfilnam')
+        if dwfilnam:
+            self.set_keyword('FILTER', dwfilnam, 'KOA: Filter name copied from DWFILNAM.')
+        return True
 
 
     def set_wavelengths(self):
