@@ -134,7 +134,8 @@ class Dep:
 
 
         #email completion report
-        if fullRun: self.do_process_report_email()
+        if fullRun or int(self.config['MISC']['EMAIL_REPORT']) == 1: 
+            self.do_process_report_email()
 
 
         #complete
