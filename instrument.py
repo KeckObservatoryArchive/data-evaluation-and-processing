@@ -221,7 +221,7 @@ class Instrument:
         #loop
         for mappedKey in mappedKeys:
             val = self.fitsHeader.get(mappedKey)
-            if val != None: return val
+            if val != None and not isinstance(val, fits.Undefined): return val
 
         #return None if we didn't find it
         return default

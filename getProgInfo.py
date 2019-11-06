@@ -599,6 +599,14 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
+    def get_header_val(self, header, key, default=None):
+        val = header.get(key)
+        if val != None and not isinstance(val, fits.Undefined): 
+            return val
+        else:
+            return default
+
+
     def use_header_prog_vals(self, use):
 
         for idx, file in enumerate(self.fileList):
@@ -613,12 +621,14 @@ class ProgSplit:
             for kw in keywords:
                 val = ''
                 if kw == 'progtitl':
-                    if 'PROGTL1' in header                      : val +=       header['PROGTL1']
-                    if 'PROGTL2' in header and header['PROGTL2']: val += ' ' + header['PROGTL2']
-                    if 'PROGTL3' in header and header['PROGTL3']: val += ' ' + header['PROGTL3']
+                    val1 = self.get_header_val(header, 'PROGTL1', '')
+                    val2 = self.get_header_val(header, 'PROGTL2', '')
+                    val3 = self.get_header_val(header, 'PROGTL3', '')
+                    if val1: val +=       val1.strip()
+                    if val2: val += ' ' + val2.strip()
+                    if val3: val += ' ' + val3.strip()
                 else:
-                    if kw.upper() in header: 
-                        val = header[kw.upper()]
+                    val = self.get_header_val(header, kw.upper(), '')
 
                 #determine whether to use new or old val (only throw warn/error for PROGID)
                 if use == 'assist':
