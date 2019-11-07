@@ -20,7 +20,7 @@ class Deimos(instrument.Instrument):
 
         # Set any unique keyword index values here
         self.keywordMap['OFNAME']       = 'DATAFILE'        
-        self.keywordMap['FRAMENO']      = 'FRAMENUM'
+        self.keywordMap['FRAMENO']      = ''
 
 
         # Other vars that subclass can overwrite
