@@ -66,6 +66,10 @@ class Deimos(instrument.Instrument):
 
 
     def get_prefix(self):
+        '''
+        Returns the KOAID prefix to use, either DE for a DEIMOS science/calibration
+        exposure or DF for an FCS image.
+        '''
 
         instr = self.get_instr()
         outdir = self.get_keyword('OUTDIR')
