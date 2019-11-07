@@ -38,6 +38,16 @@ class Deimos(instrument.Instrument):
         # self.fcsimgfi = 'FCSIMGFI'
 
 
+    def run_dqa_checks(self, progData):
+        '''
+        Run all DQA check unique to this instrument
+        '''
+
+        ok = True
+
+        return ok
+
+
     def get_dir_list(self):
         """
         Function to generate the paths to all the DEIMOS accounts, including engineering
