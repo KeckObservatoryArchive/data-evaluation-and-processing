@@ -55,13 +55,13 @@ class Deimos(instrument.Instrument):
         """
         dirs = []
         path = '/s/sdata100'
-        for i in range(1,4):
+        for i in range(1,6):
             path2 = path + str(i)
             for j in range(1,21):
                 path3 = path2 + '/deimos' + str(j)
                 dirs.append(path3)
-            seq = path2 + 'dmoseng'
-            dirs.append(seq)
+            path3 = path2 + '/dmoseng'
+            dirs.append(path3)
         return dirs
 
 
