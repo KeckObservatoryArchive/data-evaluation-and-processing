@@ -66,7 +66,7 @@ while curDate <= endDate:
         if moveDataScript:
             params = ['/usr/local/anaconda3-5.0.0.1/bin/python',
                         moveDataScript,
-                        'ESI',
+                        instr,
                         year,
                         f'--month={month}',
                         f'--day={day}',
