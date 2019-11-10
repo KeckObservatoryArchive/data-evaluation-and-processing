@@ -50,6 +50,14 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ofName()
+        if ok: ok = self.set_semester()
+        if ok: ok = self.set_prog_info(progData)
+        if ok: ok = self.propint(progData)
+        if ok: ok = self.set_datlevel(0)
+        if ok: ok = self.set_weather_keywords()
+        if ok: ok = self.set_oa()
+        if ok: ok = self.set_dqa_vers()
+        if ok: ok = self.set_dqa_date()
 
         return ok
 
