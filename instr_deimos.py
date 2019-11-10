@@ -86,3 +86,72 @@ class Deimos(instrument.Instrument):
             prefix = ''
         return prefix
 
+
+    def set_koaimtyp(self):
+        '''
+        Calls get_koaimtyp to determine image type. 
+        Creates KOAIMTYP keyword.
+        '''
+
+        koaimtyp = self.get_koaimtyp()
+
+        # Warn if undefined
+        if koaimtyp == 'undefined':
+            self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
+
+        # Create the keyword
+        self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
+
+        return True
+
+
+    def get_koaimtyp(self):
+        '''
+        Return image type based on the algorithm provided by SA
+        '''
+
+        # Get relevant keywords from header
+        obstype  = self.get_keyword('OBSTYPE', default='').lower()
+        slmsknam = self.get_keyword('SLMSKNAM', default='').lower()
+        hatchpos = self.get_keyword('HATCHPOS', default='').lower()
+        flimagin = self.get_keyword('FLIMAGIN', default='').lower()
+        flspectr = self.get_keyword('FLSPECTR', default='').lower()
+        lamps    = self.get_keyword('LAMPS', default='').lower()
+        gratepos = self.get_keyword('GRATEPOS', default='').lower()
+
+        # if obstype is 'bias' we have a bias
+        if obstype == 'bias':
+            return 'bias'
+
+        # if obsmode is 'dark' we have a dark
+        if obstype == 'dark':
+            return 'dark'
+
+        # if slmsknam contains 'goh' we have a focus image
+        if slmsknam.startsWith('goh'):
+            return 'focus'
+
+        # if hatch is closed and lamps are quartz, then flat
+        if hatchpos == 'closed' and 'qz' in lamps:
+            return 'flatlamp'
+
+        # if hatch is open and flimagin or flspectr are on, then flat
+        if hatchpos == 'open' and (flimagin == 'on' or flspectr == 'on'):
+            return 'flatlamp'
+
+        # if lamps are not off/qz and grating position is 3 or 4, then arc
+        if hatchpos == 'closed' and ('off' not in lamps and 'qz' not in lamps)\
+           and (gratepos == '3' or gratepos == '4'):
+            return 'arclamp'
+
+        # if tracking then we must have an object science image
+        # otherwise, don't know what it is
+        if hatchpos == 'open':
+            return 'object'
+
+        # check for fcs image
+        outdir = self.get_keyword('OUTDIR', default='')
+        if 'fcs' in outdir:
+            return 'fcscal'
+
+        return 'undefined'
