@@ -48,6 +48,8 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_ut()
         if ok: ok = self.set_koaimtyp()
+        if ok: ok = self.set_koaid()
+        if ok: ok = self.set_ofName()
 
         return ok
 
@@ -85,6 +87,21 @@ class Deimos(instrument.Instrument):
         else:
             prefix = ''
         return prefix
+
+
+    def set_ofName(self):
+        '''
+        Sets OFNAME keyword from DATAFILE
+        '''
+
+        datafile = self.get_keyword('DATAFILE', False)
+        if datafile == None:
+            self.log.info('set_ofName: Could not determine OFNAME')
+            return False
+
+        self.set_keyword('OFNAME', datafile, 'KOA: Original file name')
+
+        return True
 
 
     def set_koaimtyp(self):
