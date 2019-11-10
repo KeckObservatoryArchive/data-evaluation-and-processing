@@ -44,6 +44,10 @@ class Deimos(instrument.Instrument):
         '''
 
         ok = True
+        if ok: ok = self.set_instr()
+        if ok: ok = self.set_dateObs()
+        if ok: ok = self.set_ut()
+        if ok: ok = self.set_koaimtyp()
 
         return ok
 
