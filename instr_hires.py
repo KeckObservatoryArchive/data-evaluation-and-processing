@@ -724,8 +724,6 @@ class Hires(instrument.Instrument):
 
                 # Rotate so same IDL equations work
                 image = np.rot90(image, 3)
-                plt.imshow(image)
-                plt.savefig('test.png')
                 naxis1 = self.fitsHdu[ext].header['NAXIS1']
                 naxis2 = self.fitsHdu[ext].header['NAXIS2']
 
