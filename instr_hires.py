@@ -260,7 +260,8 @@ class Hires(instrument.Instrument):
         keyflag=1
         keyvars = ['','','','','']
         for key_i,key_val in enumerate(['XDCAL','ECHCAL','XDSIGMAI','XDANGL','ECHANGL']):
-            if not self.get_keyword(key_val) or self.get_keyword(key_val) == 0:
+            if ((key_val != 'ECHANGL' and key_val != 'XDANGL') and 
+                (not self.get_keyword(key_val) or self.get_keyword(key_val) == 0)):
                 keyflag = 0
             else:
                 keyvars[key_i] = self.get_keyword(key_val)
