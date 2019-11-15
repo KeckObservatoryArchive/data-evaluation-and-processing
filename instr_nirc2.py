@@ -10,6 +10,7 @@ import instrument
 import datetime as dt
 import numpy as np
 import scipy.stats
+import os
 
 class Nirc2(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -486,3 +487,27 @@ class Nirc2(instrument.Instrument):
             print('telTBD => '+imagetyp)
 
         return imagetyp
+
+    def run_drp(self):
+        '''
+        Run the NIRC2 DRP
+        '''
+
+        import subprocess
+
+        drp = self.config[self.instr]['DRP']
+        if os.path.isfile(drp):
+            drp = f"{drp} {self.dirs['output']}"
+            print(drp)
+
+            cmd = []
+            for word in drp.split(' '):
+                cmd.append(word)
+
+            self.log.info(f'run_drp: Running DRP command: {" ".join(cmd)}')
+            p = subprocess.Popen(cmd)
+            p.wait()
+            self.log.info('run_drp: DRP finished')
+
+        return True
+
