@@ -119,14 +119,14 @@ class Instrument:
         self.metadataTablesDir = self.config['MISC']['METADATA_TABLES_DIR']
 
 
+        #check and create dirs
+        self.init_dirs(fullRun)
+
+
         #create log if it does not exist
         if not self.log:
             self.log = cl.create_log(self.rootDir, self.instr, self.utDate, True)
             self.log.info('instrument.py: log created')
-
-
-        #check and create dirs
-        self.init_dirs(fullRun)
 
 
         #create README (output dir with everything before /koadata##/... stripped off)
@@ -144,18 +144,17 @@ class Instrument:
         self.dirs = get_root_dirs(self.rootDir, self.instr, self.utDate)
 
 
-        # Create the directories, if they don't already exist
+        # Create the output directories, if they don't already exist.
+        # Unless this is a full pyDEP run, in which case we exit with warning
         for key, dir in self.dirs.items():
-            if key == 'process': continue # process dir should always exists
-            self.log.info('instrument.py: {} directory {}'.format(key, dir))
             if os.path.isdir(dir):
-                if (fullRun):
-                    raise Exception('instrument.py: staging and/or output directories already exist')
+                if fullRun and key != 'process':
+                    raise Exception('instrument.py: Full pyDEP run, but staging and/or output directories already exist')
             else:
                 try:
                     os.makedirs(dir)
                 except:
-                    raise Exception('instrument.py: could not create {}'.format(dir))
+                    raise Exception('instrument.py: could not create directory: {}'.format(dir))
 
 
         # Additions for NIRSPEC
