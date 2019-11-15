@@ -25,22 +25,21 @@ pyDEP is a port from a much older version written mostly in IDL and shell script
 
 
 ## Create test directories and test data
-- Create a test dir as you defined your config ROOTDIR and create these subdirs:
-	- /[INSTR]/
-	- /stage/
-	- /stage/[INSTR]
-
+- Create the ROOTDIR you defined in your config file.
 - Create a test dir that contains sample fits files.
-    - pyDEP is date-based, so not the YYYY-MM-DD that your test fits files were created (ie see DATE-OBS keyword)
 
 
 ## Run pyDEP
-**(IMPORTANT: If testing, be sure to set the tpx flag to 0 so you do not attempt insert/update the koatpx table!)**
+- **(IMPORTANT: If testing, be sure to set the tpx flag to 0 so you do not attempt insert/update the koatpx table!)**
+- NOTE: pyDEP normally looks for fits files in specific server directories and that were created or modified in the past 24 hours defined by the date you are archiving.  To override this for testing, we use the --modtimeOverride and --searchDir options below.  Your test fits files still should match the instrument and date you are running (see DATE-OBS keyword).
 
-python dep_go.py [instr] [utDate] [tpx] [procStart] [procStop]  --modtimeOverride=1 --searchDir=[fits dir]
+
+- Example run commands:
+```
+python dep_go.py [instr] [utDate] [tpx] [procStart] [procStop]  --modtimeOverride=1  --searchDir=[fits dir]
 
 python dep_go.py ESI 2019-08-29 0 obtain dqa --modtimeOverride=1 --searchDir=/Users/jriley/test/sdata/ESI/ 
-
+```
 
 ## Caveats to not running on a koa server:
     - You will not have access to the MET files used in the 'add' step.  Weather keywords will be set to 'none'.
