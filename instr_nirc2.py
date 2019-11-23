@@ -52,14 +52,9 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_npixsat(satVal = self.get_keyword('COADDS')*18000.0) # npixsat
         if ok: ok = self.set_nlinear(satVal = self.get_keyword('COADDS')*5000.0)
         if ok: ok = self.set_isao()
-#        if ok: ok = self.set_sig2nois()
-#        if ok: ok = self.set_slit_values()
-#        if ok: ok = self.set_gain_and_readnoise() # ccdtype
-#        if ok: ok = self.set_skypa() # skypa
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
-#        if ok: ok = self.fix_propint()
         if ok: ok = self.dqa_loc(delete=1)
         return ok
 
@@ -505,6 +500,7 @@ class Nirc2(instrument.Instrument):
             print('telTBD => '+imagetyp)
 
         return imagetyp
+
 
     def run_drp(self):
         '''
