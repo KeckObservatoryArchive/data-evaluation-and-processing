@@ -38,13 +38,8 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_ut() # may need to delete duplicate UTC?
-#        if ok: ok = self.set_utend()
-#        if ok: ok = self.set_numamps()
-#        if ok: ok = self.set_numccds() # needed?
         if ok: ok = self.set_koaimtyp() # imagetyp
         if ok: ok = self.set_koaid()
-#        if ok: ok = self.set_blank()
-#        if ok: ok = self.fix_binning()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_detdisp()
@@ -61,8 +56,6 @@ class Nirc2(instrument.Instrument):
 #        if ok: ok = self.set_slit_values()
 #        if ok: ok = self.set_gain_and_readnoise() # ccdtype
 #        if ok: ok = self.set_skypa() # skypa
-#        if ok: ok = self.set_subexp()
-#        if ok: ok = self.set_roqual()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
