@@ -11,6 +11,7 @@ import datetime as dt
 import numpy as np
 import scipy.stats
 import os
+import subprocess
 
 class Nirc2(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -29,6 +30,8 @@ class Nirc2(instrument.Instrument):
         Run all DQA checks unique to this instrument
         '''
         ok=True
+        if ok: ok = self.dqa_loc()
+        if ok: ok = self.start_psfr()
         if ok: ok = self.set_dqa_date()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_datlevel(0)
@@ -64,7 +67,30 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
 #        if ok: ok = self.fix_propint()
+        if ok: ok = self.dqa_loc(delete=1)
         return ok
+
+    def dqa_loc(self, delete=0):
+        '''
+        Creates or deletes the dqa.LOC file.
+        This file is needed for the PSF/TRS process.
+        '''
+
+        dqaLoc = f"{self.dirs['lev0']}/dqa.LOC"
+
+        if delete == 0:
+            if not os.path.isfile(dqaLoc):
+                self.log.info(f'dqa_loc: creating {dqaLoc}')
+                open(dqaLoc, 'w').close()
+        elif delete == 1:
+            if os.path.isfile(dqaLoc):
+                self.log.info(f'dqa_loc: removing {dqaLoc}')
+                os.remove(dqaLoc)
+        else:
+            self.log.info('dqa_loc: invalid input parameter')
+
+        return True
+
 
     def get_dir_list(self):
         '''
@@ -135,7 +161,6 @@ class Nirc2(instrument.Instrument):
         obsfname = self.get_keyword('OBSFNAME')
         domestat = self.get_keyword('DOMESTAT')
         axestat = self.get_keyword('AXESTAT')
-        print(shrname, obsfname)
         imagetyp = 'undefined'
         #shutter open
         if shrname == 'open':
@@ -321,12 +346,12 @@ class Nirc2(instrument.Instrument):
             cd1_2 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
             cd2_1 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
 
-            pixscale = round(pixscale[camname], 6)
+            pixscale = '%f' % round(pixscale[camname], 6)
 
-            cd1_1 = round(cd1_1, 7)
-            cd1_2 = round(cd1_2, 7)
-            cd2_1 = round(cd2_1, 7)
-            cd2_2 = round(cd2_2, 7)
+            cd1_1 = '%0.12lf' % round(cd1_1, 12)
+            cd1_2 = '%0.12lf' % round(cd1_2, 12)
+            cd2_1 = '%0.12lf' % round(cd2_1, 12)
+            cd2_2 = '%0.12lf' % round(cd2_2, 12)
 
             crpix1 = round(float((naxis1 + 1) / 2.0), 2)
             crpix2 = round(float((naxis2 + 1) / 2.0), 2)
@@ -493,11 +518,9 @@ class Nirc2(instrument.Instrument):
         Run the NIRC2 DRP
         '''
 
-        import subprocess
-
         drp = self.config[self.instr]['DRP']
         if os.path.isfile(drp):
-            drp = f"{drp} {self.dirs['output']}"
+            drp = f"{drp} {self.dirs['output']} -nodb"
             print(drp)
 
             cmd = []
@@ -508,6 +531,24 @@ class Nirc2(instrument.Instrument):
             p = subprocess.Popen(cmd)
             p.wait()
             self.log.info('run_drp: DRP finished')
+
+        return True
+
+
+    def start_psfr(self):
+        '''
+        Starts psfr process that runs parallel with DQA
+        '''
+
+        cmd = []
+        for word in self.config[self.instr]['TRS'].split(' '):
+            cmd.append(word)
+        cmd.append(self.instr)
+        cmd.append(self.utDate)
+        cmd.append(self.dirs['lev0'])
+
+        self.log.info(f'start_psfr: Starting TRS command: {" ".join(cmd)}')
+#        p = subprocess.Popen(cmd)
 
         return True
 
