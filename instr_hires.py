@@ -167,7 +167,7 @@ class Hires(instrument.Instrument):
             if lmirrin == 0 and hatclos == 1: koaimtyp = 'undefined'
             return koaimtyp
         elif 'ThAr' in lampname:
-            catcur = catcur2
+            catcur = catcur1
             if lampname == 'ThAr2': catcur = catcur2
             if catcur >= 5.0:
                 koaimtyp = 'arclamp'
