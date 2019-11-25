@@ -51,6 +51,7 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_image_stats_keywords() # IM* and PST*, imagestat
         if ok: ok = self.set_npixsat(satVal = self.get_keyword('COADDS')*18000.0) # npixsat
         if ok: ok = self.set_nlinear(satVal = self.get_keyword('COADDS')*5000.0)
+        if ok: ok = self.set_sig2nois()
         if ok: ok = self.set_isao()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
@@ -500,6 +501,35 @@ class Nirc2(instrument.Instrument):
             print('telTBD => '+imagetyp)
 
         return imagetyp
+
+
+    def set_sig2nois(self):
+        '''
+        Calculates S/N for CCD image
+        '''
+
+        self.log.info('set_sig2nois: Adding SIG2NOIS')
+
+        image = self.fitsHdu[0].data
+
+        naxis1 = self.get_keyword('NAXIS1')
+        naxis2 = self.get_keyword('NAXIS2')
+
+        c = [naxis1/2, naxis2/2]
+
+        wsize = 10
+        spaflux = []
+        for i in range(wsize, int(naxis2)-wsize):
+            spaflux.append(np.median(image[i, int(c[1])-wsize:int(c[1])+wsize]))
+
+        maxflux = np.max(spaflux)
+        minflux = np.min(spaflux)
+
+        sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
+
+        self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
+
+        return True
 
 
     def run_drp(self):
