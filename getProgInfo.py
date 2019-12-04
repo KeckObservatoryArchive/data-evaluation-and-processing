@@ -397,12 +397,13 @@ class ProgSplit:
         #replace multi commas with comma
         obsvStr = re.sub(",+" , ",", obsvStr.strip())
 
-        #just keep names of length > 2
+        #just keep names of length > 1
+        #NOTE: We used to have cutoff at len 2, but i think this is unneccessary now.
         observers = obsvStr.split(',' )
         final = []
         for name in observers:
             name = name.strip().lower()
-            if len(name) <= 2: continue
+            if len(name) <= 1: continue
             if name in final: continue
             final.append(name)
         return final
