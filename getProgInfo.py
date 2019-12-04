@@ -344,7 +344,8 @@ class ProgSplit:
         matchIdx = -1
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
-            progObservers = self.get_observer_array(prog['Observer'])
+            probObsvStr = prog['Observer'] + ',' + prog['Principal'] 
+            progObservers = self.get_observer_array(progObsvStr)
             #print ('-- progObservers: ', progObservers)
             if len(progObservers) == 0: continue
 
@@ -402,6 +403,7 @@ class ProgSplit:
         for name in observers:
             name = name.strip().lower()
             if len(name) <= 2: continue
+            if name in final: continue
             final.append(name)
         return final
 
