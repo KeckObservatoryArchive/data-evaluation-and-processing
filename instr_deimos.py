@@ -58,6 +58,10 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_oa()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
+        if ok: ok = self.set_camera()
+        if ok: ok = self.set_filter()
+        if ok: ok = self.set_mjd()
+        if ok: ok = self.set_obsmode()
 
         return ok
 
@@ -180,3 +184,91 @@ class Deimos(instrument.Instrument):
             return 'fcscal'
 
         return 'undefined'
+
+
+    def set_camera(self):
+        '''
+        Adds the keyword CAMERA to the header and sets its value to DEIMOS
+        '''
+        
+        camera = self.get_keyword('CAMERA', False)
+        if camera == None:
+            self.log.info('set_camera: Adding CAMERA keyword')
+            self.set_keyword('CAMERA', 'DEIMOS, 'KOA: Camera name')
+
+        return True
+
+
+    def set_filter(self):
+        '''
+        Adds the keyword FILTER to the header and sets its value to be the 
+        same as the DWFILNAM keyword.
+        '''
+
+        filter = self.get_keyword('DWFILNAM', False)
+        if filter == None:
+            self.log.info('set_filter: Could not set filter, no DWFILNAM value')
+        else:
+            self.log.info('set_filter: Adding FILTER keyword')
+            self.set_keyword('FILTER', filter, 'KOA: Filter name')
+        
+        return True
+
+
+    def set_mjd(self):
+        '''
+        Adds the keyword MJD to the header and sets its value equal to the 
+        MJD-OBS keyword.  MJD is the numeric respresentation of MJD-OBS.
+        '''
+
+        mjd = self.get_keyword('MJD-OBS', False)
+        if mjd == None:
+            self.log.info('set_mjd: Could not set MJD, no MJD-OBS value')
+        else:
+            self.log.info('set_mjd: Adding MJD keyword')
+            self.set_keyword('MJD', float(mjd), 'KOA: Modified julian day')
+        
+        return True
+
+
+    def set_obsmode(self):
+        '''
+        Adds the keyword OBSMODE to the header.
+        
+        UNKNOWN if:  GRATENAM = "Unknown", "None", or (blank)
+        IMAGING if:  GRATENAM = "Mirror"
+                     OR
+                     ( GRATEPOS = 3 and G3TLTNAM = "Zeroth_Order"
+                       OR
+                       GRATEPOS = 4 and G4TLTNAM = "Zeroth_Order"
+                     )
+        LONGSLIT if: GRATENAM != ["Mirror", "Unknown", "None", (blank)]
+                     AND
+                     SLMSKNAM contains "LVM*" or "Long*"
+        MOS if:      GRATENAM != ["Mirror", "Unknown", "None", (blank)]
+                     AND
+                     SLMSKNAM != ["LVM*", "Long*"]
+        '''
+
+        self.log.info('set_obsmode: Adding OBSMODE keyword')
+        
+        gratname = self.get_keyword('GRATENAM', default='').lower()
+        if gratname in ['', 'unknown', 'none']:
+            obsmode = 'UNKNOWN'
+        elif gratname == 'mirror':
+            gratepos = self.get_keyword('GRATEPOS', default=0)
+            if int(gratepos) == 3 or int(gratepos) == 4:
+                key = f'G{int(gratepos)}TLTNAM'
+                tilt = self.get_keyword(key, default='').lower()
+                if tilt == 'zeroth_order':
+                    obsmode = 'IMAGING'
+        else:
+            slmsknam = self.get_keyword('SLMSKNAM', default='')
+            if slmsknam.startswith('LVM') or slmsknam.startswith('Long'):
+                obsmode = 'LONGSLIT'
+            else:
+                obsmode = 'MOS'
+
+        self.set_keyword('OBSMOD', obsmode, 'KOA: Observing mode')
+
+        return True
