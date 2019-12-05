@@ -344,7 +344,7 @@ class ProgSplit:
         matchIdx = -1
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
-            probObsvStr = prog['Observer'] + ',' + prog['Principal'] 
+            progObsvStr = prog['Observer'] + ',' + prog['Principal'] 
             progObservers = self.get_observer_array(progObsvStr)
             #print ('-- progObservers: ', progObservers)
             if len(progObservers) == 0: continue
