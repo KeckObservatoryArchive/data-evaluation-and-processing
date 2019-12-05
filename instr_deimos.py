@@ -64,6 +64,7 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_obsmode()
         if ok: ok = self.set_nexten()
         if ok: ok = self.set_detsec()
+        if ok: ok = self.set_npixsat(satVal=65535.0)
 
         return ok
 
@@ -307,4 +308,30 @@ class Deimos(instrument.Instrument):
             self.set_keyword(key, detsec, comment)
 
         return True
-        
+
+
+    def set_npixsat(self, satVal=None):
+        '''
+        Determines number of saturated pixels and adds NPIXSAT to header
+        NPIXSAT is the sum of all image extensions.
+        '''
+
+        self.log.info('set_npixsat: setting pixel saturation keyword value')
+
+        if satVal == None:
+            satVal = self.get_keyword('SATURATE')
+
+        if satVal == None:
+            self.log.warning("set_npixsat: Could not find SATURATE keyword")
+        else:
+            nPixSat = 0
+            for ext in range(1, len(self.fitsHdu)):
+                image = self.fitsHdu[ext].data
+                pixSat = image[np.where(image >= satVal)]
+                nPixSat += len(image[np.where(image >= satVal)])
+
+            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
+
+        return True
+
+
