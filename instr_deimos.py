@@ -62,6 +62,8 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_filter()
         if ok: ok = self.set_mjd()
         if ok: ok = self.set_obsmode()
+        if ok: ok = self.set_nexten()
+        if ok: ok = self.set_detsec()
 
         return ok
 
@@ -272,3 +274,37 @@ class Deimos(instrument.Instrument):
         self.set_keyword('OBSMOD', obsmode, 'KOA: Observing mode')
 
         return True
+
+
+    def set_nexten(self):
+        '''
+        Adds the NEXTEN keyword and sets its value to the number of
+        imaging extensions for this file.
+        '''
+
+        self.log.info('set_nexten: Adding NEXTEN keyword')
+        self.set_keyword('NEXTEN', int(len(self.fitsHdu))-1, 'KOA: Number of image extensions')
+
+        return True
+
+
+    def set_detsec(self):
+        '''
+        Adds the DETSEC## keywords to the primary header.  Value of the
+        keyword is set equal to the DETSEC keyword value from the image
+        headers.  ## = 01 to 16.
+        '''
+
+        self.log.info('set_detsec: Adding DETSEC## keywords')
+
+        maxExtensions = 16
+        for i in range(1, maxExtensions+1):
+            key = f'DETSEC{str(i).zfill(2)}'
+            detsec = 'null'
+            if i < len(self.fitsHdu):
+                detsec = self.fitsHdu[i]['DETSEC']
+            comment = f'KOA: Mosaic detector section for HDU{str(i).zfill(2)}'
+            self.set_keyword(key, detsec, comment)
+
+        return True
+        
