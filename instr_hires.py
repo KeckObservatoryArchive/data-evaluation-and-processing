@@ -139,6 +139,7 @@ class Hires(instrument.Instrument):
 
         lampname = self.get_keyword('LAMPNAME', False)
         ttime = self.get_keyword('TTIME', False)
+        lmirrin = self.get_keyword('LMIRRIN', False)
         
         if self.get_keyword('AUTOSHUT', False) == 0:
             lampOn = ''
@@ -156,7 +157,6 @@ class Hires(instrument.Instrument):
         if deckname == None or catcur1 == None or catcur2 == None or hatclos == None:
             return koaimtyp
 
-        lmirrin = self.get_keyword('LMIRRIN', False)
         xcovclos = self.get_keyword('XCOVCLOS', False)
         ecovclos = self.get_keyword('ECOVCLOS', False)
 
