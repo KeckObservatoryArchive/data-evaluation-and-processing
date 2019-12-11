@@ -119,14 +119,14 @@ class Instrument:
         self.metadataTablesDir = self.config['MISC']['METADATA_TABLES_DIR']
 
 
+        #check and create dirs
+        self.init_dirs(fullRun)
+
+
         #create log if it does not exist
         if not self.log:
             self.log = cl.create_log(self.rootDir, self.instr, self.utDate, True)
             self.log.info('instrument.py: log created')
-
-
-        #check and create dirs
-        self.init_dirs(fullRun)
 
 
         #create README (output dir with everything before /koadata##/... stripped off)
@@ -144,18 +144,17 @@ class Instrument:
         self.dirs = get_root_dirs(self.rootDir, self.instr, self.utDate)
 
 
-        # Create the directories, if they don't already exist
+        # Create the output directories, if they don't already exist.
+        # Unless this is a full pyDEP run, in which case we exit with warning
         for key, dir in self.dirs.items():
-            if key == 'process': continue # process dir should always exists
-            self.log.info('instrument.py: {} directory {}'.format(key, dir))
             if os.path.isdir(dir):
-                if (fullRun):
-                    raise Exception('instrument.py: staging and/or output directories already exist')
+                if fullRun and key != 'process':
+                    raise Exception('instrument.py: Full pyDEP run, but staging and/or output directories already exist')
             else:
                 try:
                     os.makedirs(dir)
                 except:
-                    raise Exception('instrument.py: could not create {}'.format(dir))
+                    raise Exception('instrument.py: could not create directory: {}'.format(dir))
 
 
         # Additions for NIRSPEC
@@ -221,7 +220,7 @@ class Instrument:
         #loop
         for mappedKey in mappedKeys:
             val = self.fitsHeader.get(mappedKey)
-            if val != None: return val
+            if val != None and not isinstance(val, fits.Undefined): return val
 
         #return None if we didn't find it
         return default
@@ -375,10 +374,12 @@ class Instrument:
 
         ok = False
 
-        #direct match?
+        #direct match (or starts with match)?
         instrume = self.get_keyword('INSTRUME')
-        if instrume:
-            if (instrume.startswith(self.instr)): ok = True
+        if instrume and instrume.startswith(self.instr):
+            if instrume != self.instr:
+                self.set_keyword('INSTRUME', self.instr, 'KOA: Instrument')
+            ok = True
 
         #mira not ok
         outdir = self.get_keyword('OUTDIR')
@@ -574,7 +575,7 @@ class Instrument:
         assert 'progid'   in data and data['progid'],   'PROGID not found.'
         assert 'progpi'   in data and data['progpi'],   'PROGPI not found.'
         assert 'proginst' in data and data['proginst'], 'PROGINST not found.'
-        assert 'progtitl' in data and data['progtitl'], 'PROGTITLPI not found.'
+        assert 'progtitl' in data and data['progtitl'], 'PROGTITL not found.'
 
         if data['progid']   == 'PROGID'  : data['progid']   = 'NONE'
         if data['progpi']   == 'PROGPI'  : data['progpi']   = 'NONE'
@@ -587,7 +588,8 @@ class Instrument:
 
         #extra warning for log
         if data['progid'] == 'NONE':
-            self.log.warning('set_prog_info: PROGID is NONE for ' + os.path.basename(self.fitsFilepath))
+            time = self.get_keyword('DATE-OBS') + ' ' + self.get_keyword('UTC')
+            self.log.info(f"set_prog_info: PROGID is NONE for {os.path.basename(self.fitsFilepath)} (@{time})")
 
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
         progtl1 = data['progtitl'][0:50]

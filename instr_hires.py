@@ -139,6 +139,7 @@ class Hires(instrument.Instrument):
 
         lampname = self.get_keyword('LAMPNAME', False)
         ttime = self.get_keyword('TTIME', False)
+        lmirrin = self.get_keyword('LMIRRIN', False)
         
         if self.get_keyword('AUTOSHUT', False) == 0:
             lampOn = ''
@@ -156,7 +157,6 @@ class Hires(instrument.Instrument):
         if deckname == None or catcur1 == None or catcur2 == None or hatclos == None:
             return koaimtyp
 
-        lmirrin = self.get_keyword('LMIRRIN', False)
         xcovclos = self.get_keyword('XCOVCLOS', False)
         ecovclos = self.get_keyword('ECOVCLOS', False)
 
@@ -167,7 +167,7 @@ class Hires(instrument.Instrument):
             if lmirrin == 0 and hatclos == 1: koaimtyp = 'undefined'
             return koaimtyp
         elif 'ThAr' in lampname:
-            catcur = catcur2
+            catcur = catcur1
             if lampname == 'ThAr2': catcur = catcur2
             if catcur >= 5.0:
                 koaimtyp = 'arclamp'
@@ -260,7 +260,8 @@ class Hires(instrument.Instrument):
         keyflag=1
         keyvars = ['','','','','']
         for key_i,key_val in enumerate(['XDCAL','ECHCAL','XDSIGMAI','XDANGL','ECHANGL']):
-            if not self.get_keyword(key_val) or self.get_keyword(key_val) == 0:
+            if ((key_val != 'ECHANGL' and key_val != 'XDANGL') and 
+                (not self.get_keyword(key_val) or self.get_keyword(key_val) == 0)):
                 keyflag = 0
             else:
                 keyvars[key_i] = self.get_keyword(key_val)
@@ -724,8 +725,6 @@ class Hires(instrument.Instrument):
 
                 # Rotate so same IDL equations work
                 image = np.rot90(image, 3)
-                plt.imshow(image)
-                plt.savefig('test.png')
                 naxis1 = self.fitsHdu[ext].header['NAXIS1']
                 naxis2 = self.fitsHdu[ext].header['NAXIS2']
 
@@ -874,11 +873,20 @@ class Hires(instrument.Instrument):
                     interval = ZScaleInterval()
                     vmin, vmax = interval.get_limits(image)
                     norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
-                    plt.imshow(image, cmap='gray', origin='lower', norm=norm)
+                    fig = plt.figure()
+                    ax = plt.axes([0, 0, 1, 1])
+                    ax.get_xaxis().set_visible(False)
+                    ax.get_yaxis().set_visible(False)
+                    plt.imshow(np.rot90(image), cmap='gray', origin='lower', norm=norm)
                     plt.axis('off')
                     # save as png, then convert to jpg
-                    plt.savefig(pngFile)
-                    Image.open(pngFile).convert('RGB').rotate(-90).save(jpgFile)
+                    plt.savefig(pngFile, bbox_inches='tight', pad_inches=0)
+                    img = Image.open(pngFile).convert('RGB')
+                    basewidth = int(len(image)/2)
+                    wpercent = basewidth/float(img.size[0])
+                    hsize = int((float(img.size[1]) * float(wpercent)))
+                    img = img.resize((basewidth, hsize), Image.ANTIALIAS)
+                    img.save(jpgFile)
                     os.remove(pngFile)
                     plt.close()
                 except:
