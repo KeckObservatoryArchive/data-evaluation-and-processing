@@ -43,8 +43,9 @@ class Esi(instrument.Instrument):
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_utc()
-        self.get_dispmode(update=True)
-        self.get_camera(update=True)
+        if ok: ok = self.set_filter()
+        self.get_obsmode(update=True)
+        if ok: ok = self.set_camera()
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ut()
@@ -127,45 +128,38 @@ class Esi(instrument.Instrument):
     
         frameno = str(frameno).zfill(4)
         ofName = ''.join((outfile, frameno, '.fits'))
-        self.log.info('set_ofName: OFNAME = {}'.format(ofName))
         self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
 
         return True
 
 
-    def get_dispmode(self, update=False):
+    def get_obsmode(self, update=False):
         """
-        Determines spectrograph dispersion mode (low, high, null)
+        Determines spectrograph dispersion mode (low, high, image)
         """
 
-        dispmode = self.get_keyword('DISPMODE')
-        if dispmode == None:
+        obsmode = self.get_keyword('OBSMODE')
+        if obsmode == None:
             imfltnam = self.get_keyword('IMFLTNAM', default='').lower()
             ldfltnam = self.get_keyword('LDFLTNAM', default='').lower()
             prismnam = self.get_keyword('PRISMNAM', default='').lower()
 
-            if   imfltnam == 'out' and ldfltnam == 'in'  and prismnam == 'in' : dispmode = 'low'
-            elif imfltnam == 'out' and ldfltnam == 'out' and prismnam == 'in' : dispmode = 'high'
-            elif imfltnam == 'in'  and ldfltnam == 'out' and prismnam == 'out': dispmode = 'null'
+            if   imfltnam == 'out' and ldfltnam == 'in'  and prismnam == 'in' : obsmode = 'low'
+            elif imfltnam == 'out' and ldfltnam == 'out' and prismnam == 'in' : obsmode = 'high'
+            elif imfltnam == 'in'  and ldfltnam == 'out' and prismnam == 'out': obsmode = 'image'
 
-            if update: self.set_keyword('DISPMODE', dispmode, 'KOA: Spectrograph dispersion mode')
+            if update: self.set_keyword('OBSMODE', obsmode, 'KOA: Observation mode')
 
-        return dispmode
+        return obsmode
 
 
-    def get_camera(self, update=False):
+    def set_camera(self):
         '''
-        Determines instrument camera mode (imag or spec)
+        Set CAMERA keyword to constanct ESI
         '''
-        camera = self.get_keyword('CAMERA')
-        if camera == None:
-            dispmode = self.get_dispmode()
-            if dispmode in ('low', 'high'): camera = 'spec'
-            else                          : camera = 'imag'
-
-            if update: self.set_keyword('CAMERA', camera, 'KOA: Instrument camera mode')
-
-        return camera
+        camera = 'ESI'
+        self.set_keyword('CAMERA', camera, 'KOA: Instrument camera')
+        return True
 
 
     def get_koaimtyp(self):
@@ -275,6 +269,16 @@ class Esi(instrument.Instrument):
         return 'undefined'
 
 
+    def set_filter(self):
+        '''
+        Add filter which is copy of DWFILNAM
+        '''
+        dwfilnam  = self.get_keyword('dwfilnam')
+        if dwfilnam:
+            self.set_keyword('FILTER', dwfilnam, 'KOA: Filter name copied from DWFILNAM.')
+        return True
+
+
     def set_wavelengths(self):
         '''
         Adds wavelength keywords.
@@ -285,10 +289,10 @@ class Esi(instrument.Instrument):
         # Default null values
         wavered = wavecntr = waveblue = 'null'
 
-        camera  = self.get_camera()
+        obsmode  = self.get_keyword('OBSMODE')
 
         #imaging:
-        if (camera == 'imag'):
+        if obsmode == 'image':
             esifilter = self.get_keyword('DWFILNAM')
             if esifilter == 'B':
                 wavered  = 5400
@@ -308,7 +312,7 @@ class Esi(instrument.Instrument):
                 waveblue = 7000
 
         #spec:
-        elif (camera == 'spec'):
+        elif obsmode in ('low', 'high'):
             wavered = 10900
             wavecntr =  7400
             waveblue =  3900
@@ -328,8 +332,8 @@ class Esi(instrument.Instrument):
         # self.log.info('set_specres: setting SPECRES keyword values')
 
         specres = 'null'
-        camera   = self.get_camera()
-        if (camera == 'spec'):
+        obsmode   = self.get_keyword("OBSMODE")
+        if obsmode in ('low', 'high'):
             #spectral resolution R found over all wavelengths and dispersions between orders 6-15
             #
             #           wavelength           0.1542[arcsec/pixel] * wavelength[angstroms]
@@ -355,11 +359,7 @@ class Esi(instrument.Instrument):
         '''
         Adds CCD pixel scale, dispersion (arcsec/pixel) keyword to header.
         '''
-        #set dispersion scale to 0.1542 for imaging and spectroscopy
-        camera   = self.get_camera()
-        dispscal = None
-        if camera in ['imag','spec']: 
-            dispscal = 0.1542 #arcsec/pixel
+        dispscal = 0.1542 #arcsec/pixel
         self.set_keyword('DISPSCAL' , dispscal, 'KOA: CCD pixel scale, dispersion')
         return True
 
@@ -368,11 +368,7 @@ class Esi(instrument.Instrument):
         '''
         Adds spatial scale keyword to header.
         '''
-        #set spatial scale to 0.1542 for imaging and spectroscopy
-        camera   = self.get_camera()
-        spatscal = None
-        if camera in ['imag','spec']: 
-            spatscal = 0.1542 #arsec/pixel
+        spatscal = 0.1542 #arsec/pixel
         self.set_keyword('SPATSCAL' , spatscal, 'KOA: CCD pixel scale, spatial')
         return True
 
@@ -382,14 +378,13 @@ class Esi(instrument.Instrument):
         Adds slit length and width keywords to header.
         '''
 
-        camera   = self.get_camera()
-        dispmode = self.get_dispmode()
+        obsmode = self.get_obsmode()
 
         slitlen = 'null'
         slitwidt = 'null'
 
         #values for 'spec' only
-        if (camera == 'spec'):
+        if obsmode in ('low', 'high'):
 
             slmsknam = self.get_keyword('SLMSKNAM', default='').lower()
 
@@ -400,8 +395,8 @@ class Esi(instrument.Instrument):
 
             #standard
             else:
-                if   dispmode == 'low' : slitlen = 8*60 #8 arcminutes = 480 arcseconds
-                elif dispmode == 'high': slitlen = 20   #20 arcseconds
+                if   obsmode == 'low' : slitlen = 8*60 #8 arcminutes = 480 arcseconds
+                elif obsmode == 'high': slitlen = 20   #20 arcseconds
 
                 if 'multiholes' in slmsknam:
                     slitwidt = 0.5
