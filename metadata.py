@@ -52,7 +52,8 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
         #check col width is at least as big is the keyword name
         for index, row in keyDefs.iterrows():
             if (len(row['keyword']) > row['colSize']):
-                raise Exception("metadata.py: Alignment issue: Keyword column name {} is bigger than column size of {}".format(row['keyword'], row['colSize']))            
+                keyDefs.loc[index, 'colSize'] = len(row['keyword'])
+                #raise Exception("metadata.py: Alignment issue: Keyword column name {} is bigger than column size of {}".format(row['keyword'], row['colSize']))            
 
         for index, row in keyDefs.iterrows():
             out.write('|' + row['keyword'].ljust(row['colSize']))
@@ -159,6 +160,7 @@ def check_keyword_existance(header, keyDefs, log, dev=False, instrKeywordSkips=[
     #find all keywords in header that are not in metadata file
     skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3'] + instrKeywordSkips
     for keywordHdr in header:
+        if not keywordHdr: continue  #blank keywords can exist
         if keywordHdr not in keyDefList and not is_keyword_skip(keywordHdr, skips):
             log_msg(log, dev, 'metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
 
