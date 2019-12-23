@@ -1,6 +1,7 @@
 '''
 This is the class to handle all the LRIS specific attributes
-LRIS specific DR techniques can be added to it in the future
+
+https://www2.keck.hawaii.edu/inst/lris/instrument_key_list.html
 
 12/14/2017 M. Brown - Created initial file
 '''
@@ -9,27 +10,32 @@ import instrument
 import datetime as dt
 import numpy as np
 from astropy.convolution import convolve,Box1DKernel
+
+
 class Lris(instrument.Instrument):
+
     def __init__(self, instr, utDate, rootDir, log=None):
+
         # Call the parent init to get all the shared variables
         super().__init__(instr, utDate, rootDir, log)
 
-        # Set the lris specific paths to anc and stage
-        seq =(self.rootDir, '/LRIS/', self.utDate, '/anc')
-        self.ancDir = ''.join(seq)
-        seq = (self.rootDir, '/stage')
-        self.stageDir = ''.join(seq)
+        # Set any unique keyword index values here with self.keywordMap
 
-        self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
+        # Other vars that subclass can overwrite
+        self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
+        self.keywordSkips   = ['CCDGN00', 'CCDRN00']
+        #self.keywordSkips = ['IM01MN00', 'IM01SD00', 'IM01MD00', 'PT01MN00', 'PT01SD00', 'PT01MD00', 'IM01MN01', 'IM01SD01', 'IM01MD01', 'PT01MN01', 'PT01SD01', 'PT01MD01', 'IM02MN02', 'IM02SD02', 'IM02MD02', 'PT02MN02', 'PT02SD02', 'PT02MD02', 'IM02MN03', 'IM02SD03', 'IM02MD03', 'PT02MN03', 'PT02SD03', 'PT02MD03']
+
 
         # Generate the paths to the LRIS datadisk accounts
         self.sdataList = self.get_dir_list()
+
 
     def run_dqa_checks(self, progData):
         '''
         Run all DQA checks unique to this instrument.
         '''
-        print('Running DQA checks')
+
         #todo: check that all of these do not need a subclass version if base class func was used.
         ok = True
         if ok: ok = self.set_instr()
@@ -56,15 +62,20 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_ccdtype()
         if ok: ok = self.set_slit_dims()
         if ok: ok = self.set_wcs()
+        if ok: ok = self.set_skypa()        
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
         return ok
 
-    def get_dir_list(self):
+
+    @staticmethod
+    def get_dir_list():
         '''
         Function to generate the paths to all the LRIS accounts, including engineering
         Returns the list of paths
         '''
+        #todo: note: idl dep searches /s/sdata/2* , though it is known that the dirs are 241/242/243
+        #todo: note: There are subdirs /lris11/ thru /lris20/, though it is known that these are not used
         dirs = []
         path = '/s/sdata24'
         for i in range(1,4):
@@ -75,18 +86,32 @@ class Lris(instrument.Instrument):
             dirs.append(path2 + 'eng')
         return dirs
 
+
     def get_prefix(self):
         '''
         Get FITS file prefix
         '''
         instr = self.get_instr()
-        if instr == 'lrisblue':
-            prefix = 'LB'
-        elif instr == 'lris':
-            prefix = 'LR'
-        else:
-            prefix = ''
+        if   instr == 'lrisblue': prefix = 'LB'
+        elif instr == 'lris'    : prefix = 'LR'
+        else                    : prefix = ''
         return prefix
+
+
+    def set_instr(self):
+        '''
+        Override instrument.set_instr since that assumes a single INSTRUME name but we have LRIS and LRISBLUE
+        '''
+
+        #direct match (or starts with match)?
+        ok = False
+        instrume = self.get_keyword('INSTRUME')
+        if instrume in ('LRIS', 'LRISBLUE'):
+            ok = True
+        if (not ok):
+            self.log.error('set_instr: cannot determine if file is from ' + self.instr + '.  UDF!')
+        return ok
+
 
     def set_ofname(self):
         '''
@@ -95,16 +120,14 @@ class Lris(instrument.Instrument):
         outfile = self.get_keyword('OUTFILE', False)
         frameno = self.get_keyword('FRAMENO', False)
         if outfile == None or frameno == None:
-            print('could not determine ofname')
-            self.log.info('set_ofName: Could not detrermine OFNAME')
-            ofname = ''
+            self.log.warning('set_ofName: Could not determine OFNAME')
             return False
+    
         frameno = str(frameno).zfill(4)
-        ofName = ''.join((outfile, frameno, '.fits'))
-        self.log.info('set_ofName: OFNAME = {}'.format(ofName))
+        ofName = f'{outfile}{frameno}.fits'
         self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
-
         return True
+
 
     def set_koaimtyp(self):
         '''
@@ -112,31 +135,32 @@ class Lris(instrument.Instrument):
         Calls get_koaimtyp for algorithm
         '''
         koaimtyp = self.get_koaimtyp()
-        #warn if undefined
         if (koaimtyp == 'undefined'):
             self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
-        #update keyword
-        self.set_keyword('IMAGETYP', koaimtyp, 'KOA: Image type')
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
-        
         return True
 
+
     def get_koaimtyp(self):
+
         #if instrument not defined, return
         imagetyp = 'undefined'
         try:
             instrume = self.get_keyword('INSTRUME')
         except:
             return 'undefined'
+
         #focus
         slitname = self.get_keyword('SLITNAME')
         outfile = self.get_keyword('OUTFILE')
         if (slitname == 'GOH_LRIS') or (outfile == 'rfoc') or (outfile == 'bfoc'):
             return 'focus'
+
         #bias
         elaptime = self.get_keyword('ELAPTIME')
         if elaptime == 0:
             return 'bias'
+
         #flat, dark, wave, object
         try:
             trapdoor = self.get_keyword('TRAPDOOR')
@@ -204,6 +228,7 @@ class Lris(instrument.Instrument):
                 elif all(element == 'off' for element in [neon,argon,cadmium,zinc,halogen,krypton,xenon,feargon,deuterium]):
                     return 'dark'
 
+
     def set_obsmode(self):
         '''
         Determine observation mode
@@ -226,6 +251,7 @@ class Lris(instrument.Instrument):
 
         self.set_keyword('OBSMODE',obsmode,'KOA: Observation Mode (Imaging or Spec)')
         return True
+
 
     def set_wavelengths(self):
         '''
@@ -316,6 +342,7 @@ class Lris(instrument.Instrument):
                 return False
 
         #dichroic cutoff
+        #TODO: NOTE: Elysia fixed bug in IDL code concerning angstroms and nanometers
         dichname = self.get_keyword('DICHNAME')
         if dichname == '460':
             minmax = 4874
@@ -359,13 +386,17 @@ class Lris(instrument.Instrument):
         '''
         Set CCD gain and read noise
         '''
+        #NOTE: Arrays have been rearranged differently than IDL version.
+        #TODO: Note: It looks like the IDL version for LRIS BLUE was incorrectly writing "00" index 
+        # versions of these keywords to the header that didn't match the metadata file which only
+        #has 1-4.  And it was writing null for the "04" version.  We are mimicing this behavior below.
         ccdgain = 'null'
         readnoise = 'null'
         #gain and read noise values per extension
-        gainblue = [1.70,1.55,1.56,1.63]
-        rnblue = [3.6,3.9,4.2,3.6]
-        gainred = [1.255,1.180,1.191,1.162]
-        rnred = [4.64,4.76,4.54,4.62]
+        gainblue = [1.70,  1.55,  1.56,  1.63]
+        rnblue   = [3.6,   3.9,   4.2,   3.6]
+        gainred  = [1.255, 1.180, 1.191, 1.162]
+        rnred    = [4.64,  4.76,  4.54,  4.62]
         #red or blue?
         instr = self.get_keyword('INSTRUME')
         if instr == 'LRISBLUE':
@@ -378,7 +409,7 @@ class Lris(instrument.Instrument):
             offset = 0
         for ext in range(1, self.nexten+1):
             self.set_keyword(f'CCDGN0{ext+offset}',gain[ext-1],'KOA: CCD Gain')
-            self.set_keyword(f'CCDRN0{ext+offset}',rn[ext-1],'KOA: CCD Gain')
+            self.set_keyword(f'CCDRN0{ext+offset}',rn[ext-1],'KOA: CCD Read Noise')
         return True
 
     def set_sig2nois(self):
@@ -589,7 +620,7 @@ class Lris(instrument.Instrument):
         '''
         Determines number of saturated pixels and adds NPIXSAT to header
         '''
-
+        #todo: This may be wrong for all instruments
         self.log.info('set_npixsat: setting pixel saturation keyword value')
 
         if satVal == None:
@@ -650,36 +681,39 @@ class Lris(instrument.Instrument):
 
             #take statistics of middle 225 pixels of image
             imsample = image[imcntr[0]-7:imcntr[0]+7,imcntr[1]-7:imcntr[1]+7]
-            im1mn = np.mean(imsample)
-            im1stdv = np.std(imsample)
-            im1md = np.median(imsample)      
+            im1mn    = np.mean(imsample)
+            im1stdv  = np.std(imsample)
+            im1md    = np.median(imsample)
+
             #take statistics of middle 225 pixels of postscan
             pssample = image[pscntr[0]-7:pscntr[0]+7,pscntr[1]-7:pscntr[1]+7]
-            pst1mn = np.mean(pssample)
+            pst1mn   = np.mean(pssample)
             pst1stdv = np.std(pssample)
-            pst1md = np.median(pssample)
+            pst1md   = np.median(pssample)
 
-            #if LRISBLUE, increment CCD location by 1
+            #get ccdloc and adjust for type
             ccdloc = int(self.get_keyword('CCDLOC',ext=ext))
             if self.get_keyword('INSTRUME') == 'LRISBLUE':
                 ccdloc += 1
-            #get amplifier location
+
+            #get amplifier location and adjust for type
             amploc = int(self.get_keyword('AMPLOC',ext=ext))
+            if self.get_keyword('INSTRUME') == 'LRIS': amploc -= 1
 
             #create and set image keywords
-            mnkey = f'IM0{ccdloc}MN0{amploc}'
+            mnkey   = f'IM0{ccdloc}MN0{amploc}'
             stdvkey = f'IM0{ccdloc}SD0{amploc}'
-            mdkey = f'IM0{ccdloc}MD0{amploc}'
-            self.set_keyword(mnkey,im1mn,f'KOA: Imaging mean CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(stdvkey,im1stdv,f'KOA: Imaging standard deviation CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(mdkey,im1md,f'KOA: Imaging median CCD {ccdloc}, amp location {amploc}')
+            mdkey   = f'IM0{ccdloc}MD0{amploc}'
+            self.set_keyword(mnkey,   str(round(im1mn, 5)),   f'KOA: Imaging mean CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(stdvkey, str(round(im1stdv, 5)), f'KOA: Imaging standard deviation CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mdkey,   str(round(im1md, 5)),   f'KOA: Imaging median CCD {ccdloc}, amp location {amploc}')
 
             #create and set postscan keywords
-            mnkey = f'PT0{ccdloc}MN0{amploc}'
+            mnkey   = f'PT0{ccdloc}MN0{amploc}'
             stdvkey = f'PT0{ccdloc}SD0{amploc}'
-            mdkey = f'PT0{ccdloc}MD0{amploc}'
-            self.set_keyword(mnkey,pst1mn,f'KOA: Postscan mean CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(stdvkey,pst1stdv,f'KOA: Postscan standard deviation CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(mdkey,pst1md,f'KOA: Postscan median CCD {ccdloc}, amp location {amploc}')
+            mdkey   = f'PT0{ccdloc}MD0{amploc}'
+            self.set_keyword(mnkey,   str(round(pst1mn, 5)),   f'KOA: Postscan mean CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(stdvkey, str(round(pst1stdv, 5)), f'KOA: Postscan standard deviation CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mdkey,   str(round(pst1md, 5)),   f'KOA: Postscan median CCD {ccdloc}, amp location {amploc}')
 
         return True
