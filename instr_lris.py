@@ -394,24 +394,27 @@ class Lris(instrument.Instrument):
         #has 1-4.  And it was writing null for the "04" version.  We are mimicing this behavior below.
         ccdgain = 'null'
         readnoise = 'null'
+
         #gain and read noise values per extension
-        gainblue = [1.70,  1.55,  1.56,  1.63]
-        rnblue   = [3.6,   3.9,   4.2,   3.6]
+        gainblue = [1.55,  1.56,  1.63,  1.70]
+        rnblue   = [3.9,   4.2,   3.6,   3.6]
         gainred  = [1.255, 1.180, 1.191, 1.162]
         rnred    = [4.64,  4.76,  4.54,  4.62]
+
         #red or blue?
         instr = self.get_keyword('INSTRUME')
         if instr == 'LRISBLUE':
             gain = gainblue
             rn = rnblue
-            offset = -1
         elif instr == 'LRIS':
             gain = gainred
             rn = rnred
-            offset = 0
+
         for ext in range(1, self.nexten+1):
-            self.set_keyword(f'CCDGN0{ext+offset}',gain[ext-1],'KOA: CCD Gain')
-            self.set_keyword(f'CCDRN0{ext+offset}',rn[ext-1],'KOA: CCD Read Noise')
+            amploc = int(self.get_keyword('AMPLOC',ext=ext))
+            print ('test: ', instr, ext, amploc, gain[amploc-1], rn[amploc-1])
+            self.set_keyword(f'CCDGN0{amploc}', gain[amploc-1], 'KOA: CCD Gain')
+            self.set_keyword(f'CCDRN0{amploc}', rn[amploc-1], 'KOA: CCD Read Noise')
         return True
 
     def set_sig2nois(self):
