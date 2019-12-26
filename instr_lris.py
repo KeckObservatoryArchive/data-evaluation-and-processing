@@ -9,6 +9,7 @@ https://www2.keck.hawaii.edu/inst/lris/instrument_key_list.html
 import instrument
 import datetime as dt
 import numpy as np
+import math
 from astropy.convolution import convolve,Box1DKernel
 
 
@@ -55,7 +56,7 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_oa()
         if ok: ok = self.get_numamps()
-        if ok: ok = self.set_npixsat(32768)
+        if ok: ok = self.set_npixsat(satVal=65535)
         if ok: ok = self.set_obsmode()
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_sig2nois()
@@ -342,7 +343,8 @@ class Lris(instrument.Instrument):
                 return False
 
         #dichroic cutoff
-        #TODO: NOTE: Elysia fixed bug in IDL code concerning angstroms and nanometers
+        #NOTE: Elysia fixed bug in IDL code was incorrectly not truncating the wavelength range 
+        #bc the dichroic wavelength is in nanometers and the wavelength range is in angstroms.
         dichname = self.get_keyword('DICHNAME')
         if dichname == '460':
             minmax = 4874
@@ -453,17 +455,12 @@ class Lris(instrument.Instrument):
         '''
         Determine number of amplifiers
         '''
-
+        #todo: IDL code has separate logic for LRISBLUE
         ampmode = self.get_keyword('AMPMODE', default='')
-        if 'SINGLE:L' in ampmode: 
-            numamps = 1
-        elif 'SINGLE:R' in ampmode:
-            numamps = 1
-        elif 'DUAL:L+R' in ampmode:       
-            numamps = 2
-        else:                     
-            numamps = 0
-
+        if   'SINGLE:L' in ampmode: numamps = 1
+        elif 'SINGLE:R' in ampmode: numamps = 1
+        elif 'DUAL:L+R' in ampmode: numamps = 2
+        else                      : numamps = 0
         self.numamps = numamps
         return True
 
@@ -504,13 +501,13 @@ class Lris(instrument.Instrument):
         cdelt1_arr = []
         cdelt2_arr = []
         #for each FITS header extension, calculate CRPIX1/2 and CDELT1/2
-        for i in range(1,self.nexten):
+        for i in range(1,self.nexten+1):
             crpix1 = self.get_keyword('CRPIX1',ext=i)
             crpix2 = self.get_keyword('CRPIX2',ext=i)
             crval1 = self.get_keyword('CRVAL1',ext=i)
             crval2 = self.get_keyword('CRVAL2',ext=i)
-            cd11 = self.get_keyword('CD1_1',ext=i)
-            cd22 = self.get_keyword('CD2_2',ext=i)
+            cd11   = self.get_keyword('CD1_1',ext=i)
+            cd22   = self.get_keyword('CD2_2',ext=i)
             naxis1 = self.get_keyword('NAXIS1',ext=i)
             naxis2 = self.get_keyword('NAXIS2',ext=i)
             crpix1_new = crpix1 + ((xcen - crval1)/cd11)
@@ -620,9 +617,6 @@ class Lris(instrument.Instrument):
         '''
         Determines number of saturated pixels and adds NPIXSAT to header
         '''
-        #todo: This may be wrong for all instruments
-        self.log.info('set_npixsat: setting pixel saturation keyword value')
-
         if satVal == None:
             satVal = self.get_keyword('SATURATE')
 
@@ -630,7 +624,7 @@ class Lris(instrument.Instrument):
             self.log.warning("set_npixsat: Could not find SATURATE keyword")
         else:
             nPixSat = 0
-            for ext in range(1, self.nexten):
+            for ext in range(1, self.nexten+1):
                 image = self.fitsHdu[ext].data
                 pixSat = image[np.where(image >= satVal)]
                 nPixSat += len(image[np.where(image >= satVal)])
@@ -643,50 +637,77 @@ class Lris(instrument.Instrument):
     def set_image_stats_keywords(self):
         '''
         Get mean, median, and standard deviation of middle 225 (15x15) pixels of image and postscan
+        NOTE: We use integer division throughout to mimic IDL code.
         ''' 
+
+        # TRANSPOSED IMAGE
+
+        #precol        imx         postpix
+        #.................................  ^
+        #.      .                 .      .  |
+        #.      .                 .      .  |
+        #.      .                 .      .  |
+        #.      .                 .      . NAXIS2
+        #.      .                 .      .  |
+        #.      .                 .      .  |
+        #.      .                 .      .  |
+        #.................................  v
+        #<------------NAXIS1------------->
+
         #cycle through FITS extensions
         for ext in range(1,self.nexten+1):
+
             #get image header and image
             header = self.fitsHdu[ext].header
             image = np.array(self.fitsHdu[ext].data)
+
             #find widths of pre/postscan regions, whole image dimensions
             precol = self.get_keyword('PRECOL')
             postpix = self.get_keyword('POSTPIX')
+            binning = self.get_keyword('BINNING')
             naxis1 = self.get_keyword('NAXIS1',ext=ext)
             naxis2 = self.get_keyword('NAXIS2',ext=ext)
 
-            # TRANSPOSED IMAGE
+            # Size of sampling box: nx = 15 & ny = 15
+            xbin = 1
+            ybin = 1
+            if binning and ',' in binning:
+                binning = binning.replace(' ', '').split(',')
+                xbin = int(binning[0])
+                ybin = int(binning[1])
+            nx = postpix//xbin
+            nx = nx - nx//3
+            if nx > 15 or nx == 0: nx = 15
+            ny = nx
 
-            #precol        imx         postpix
-            #.................................  ^
-            #.      .                 .      .  |
-            #.      .                 .      .  |
-            #.      .                 .      .  |
-            #.      .                 .      . NAXIS2
-            #.      .                 .      .  |
-            #.      .                 .      .  |
-            #.      .                 .      .  |
-            #.................................  v
+            # x: number of imaging pixels and start of postscan 
+            nxi = naxis1 - postpix//xbin - precol//xbin
+            px1 = precol//xbin + nxi - 1
 
-            #<------------NAXIS1------------->
-
-            #find image columns
-            imx = naxis1 - precol - postpix
-            #find image and postscan centers
-            imcntr = [int(precol+imx/2),int(naxis2/2)]
-            pscntr = [int(naxis1-postpix/2),int(naxis2/2)]
-            
+            # center of imaging pixels and postscan 
+            cxi = precol//xbin + nxi//2
+            cyi = naxis2//2 
+            cxp = px1 + postpix//xbin//2
+       
             #transpose image to correspond with precol/postpix parameters
             image = np.transpose(image)
 
-            #take statistics of middle 225 pixels of image
-            imsample = image[imcntr[0]-7:imcntr[0]+7,imcntr[1]-7:imcntr[1]+7]
+            #take statistics of middle  pixels of image
+            x1 = int(cxi-nx//2)
+            x2 = int(cxi+nx//2)
+            y1 = int(cyi-ny//2)
+            y2 = int(cyi+ny//2)
+            imsample = image[x1:x2+1, y1:y2+1]
             im1mn    = np.mean(imsample)
             im1stdv  = np.std(imsample)
             im1md    = np.median(imsample)
 
-            #take statistics of middle 225 pixels of postscan
-            pssample = image[pscntr[0]-7:pscntr[0]+7,pscntr[1]-7:pscntr[1]+7]
+            #take statistics of middle pixels of postscan
+            x1 = int(cxp-nx//2)
+            x2 = int(cxp+nx//2)
+            y1 = int(cyi-ny//2)
+            y2 = int(cyi+ny//2)
+            pssample = image[x1:x2+1, y1:y2+1]
             pst1mn   = np.mean(pssample)
             pst1stdv = np.std(pssample)
             pst1md   = np.median(pssample)
@@ -697,23 +718,26 @@ class Lris(instrument.Instrument):
                 ccdloc += 1
 
             #get amplifier location and adjust for type
+            #NOTE: In order to mimic IDL behavior, we are not subtracting 1 from AMPLOC.
+            #This means read images will have null values for IM01MN02 and IM02MN04 in metadata but header will have these values.
             amploc = int(self.get_keyword('AMPLOC',ext=ext))
-            if self.get_keyword('INSTRUME') == 'LRIS': amploc -= 1
+            #if self.get_keyword('INSTRUME') == 'LRIS': amploc -= 1
 
             #create and set image keywords
+            #todo: confirm our fix when there are only 2 extentions is correct (idl code looks to have shifted red values up one)
             mnkey   = f'IM0{ccdloc}MN0{amploc}'
             stdvkey = f'IM0{ccdloc}SD0{amploc}'
             mdkey   = f'IM0{ccdloc}MD0{amploc}'
-            self.set_keyword(mnkey,   str(round(im1mn, 5)),   f'KOA: Imaging mean CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(stdvkey, str(round(im1stdv, 5)), f'KOA: Imaging standard deviation CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(mdkey,   str(round(im1md, 5)),   f'KOA: Imaging median CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mnkey,   str(round(im1mn, 2)),   f'KOA: Imaging mean CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(stdvkey, str(round(im1stdv, 2)), f'KOA: Imaging standard deviation CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mdkey,   str(round(im1md, 2)),   f'KOA: Imaging median CCD {ccdloc}, amp location {amploc}')
 
             #create and set postscan keywords
             mnkey   = f'PT0{ccdloc}MN0{amploc}'
             stdvkey = f'PT0{ccdloc}SD0{amploc}'
             mdkey   = f'PT0{ccdloc}MD0{amploc}'
-            self.set_keyword(mnkey,   str(round(pst1mn, 5)),   f'KOA: Postscan mean CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(stdvkey, str(round(pst1stdv, 5)), f'KOA: Postscan standard deviation CCD {ccdloc}, amp location {amploc}')
-            self.set_keyword(mdkey,   str(round(pst1md, 5)),   f'KOA: Postscan median CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mnkey,   str(round(pst1mn, 2)),   f'KOA: Postscan mean CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(stdvkey, str(round(pst1stdv, 2)), f'KOA: Postscan standard deviation CCD {ccdloc}, amp location {amploc}')
+            self.set_keyword(mdkey,   str(round(pst1md, 2)),   f'KOA: Postscan median CCD {ccdloc}, amp location {amploc}')
 
         return True
