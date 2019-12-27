@@ -388,8 +388,7 @@ class Lris(instrument.Instrument):
         '''
         Set CCD gain and read noise
         '''
-        #NOTE: Arrays have been rearranged differently than IDL version.
-        #TODO: Note: It looks like the IDL version for LRIS BLUE was incorrectly writing "00" index 
+        # NOTE: It looks like the IDL version for LRIS BLUE was incorrectly writing "00" index 
         # versions of these keywords to the header that didn't match the metadata file which only
         #has 1-4.  And it was writing null for the "04" version.  We are mimicing this behavior below.
         ccdgain = 'null'
@@ -412,7 +411,6 @@ class Lris(instrument.Instrument):
 
         for ext in range(1, self.nexten+1):
             amploc = int(self.get_keyword('AMPLOC',ext=ext))
-            print ('test: ', instr, ext, amploc, gain[amploc-1], rn[amploc-1])
             self.set_keyword(f'CCDGN0{amploc}', gain[amploc-1], 'KOA: CCD Gain')
             self.set_keyword(f'CCDRN0{amploc}', rn[amploc-1], 'KOA: CCD Read Noise')
         return True
@@ -475,9 +473,17 @@ class Lris(instrument.Instrument):
         return True
 
     def set_wcs(self):
+
+        #only do this for IMAGING
+        obsmode = self.get_keyword('OBSMODE')
+        if obsmode != 'IMAGING': 
+            return True        
+
         pixelscale = 0.135 #arcsec
         rotposn = self.get_keyword('ROTPOSN')
-        poname = self.get_keyword('PONAME')
+        poname  = self.get_keyword('PONAME')
+        ra      = self.get_keyword('RA')
+        dec     = self.get_keyword('DEC')
         pixcorrect = lambda x: (x/pixelscale) + 1024
 
         #dictionary of xim and yim only
@@ -496,13 +502,16 @@ class Lris(instrument.Instrument):
         if poname not in podict.keys():
             poname = 'UNDEFINED'
         xim,yim = podict.get(poname)
-        xcen = pixcorrect(yim+308.1)
-        ycen = pixcorrect(3.4-xim)
+        if poname == 'REF':
+            xcen = 485
+            ycen = 520
+        elif poname == 'REFO':
+            xcen = 512
+            ycen = 512
+        else:
+            xcen = pixcorrect(yim+308.1)
+            ycen = pixcorrect(3.4-xim)
 
-        crpix1_arr = []
-        crpix2_arr = []
-        cdelt1_arr = []
-        cdelt2_arr = []
         #for each FITS header extension, calculate CRPIX1/2 and CDELT1/2
         for i in range(1,self.nexten+1):
             crpix1 = self.get_keyword('CRPIX1',ext=i)
@@ -518,13 +527,17 @@ class Lris(instrument.Instrument):
             cdelt1_new = cd11 * pixelscale
             cdelt2_new = cd22 * pixelscale
 
-            self.set_keyword('CRPIX1',crpix1_new,'KOA: CRPIX1',ext=i)#?
-            self.set_keyword('CRPIX2',crpix2_new,'KOA: CRPIX2',ext=i)#?
-            self.set_keyword('CDELT1',cdelt1_new,'KOA: CDELT1',ext=i)#?
-            self.set_keyword('CDELT2',cdelt2_new,'KOA: CDELT2',ext=i)#?
-            self.set_keyword('CTYPE1','RA---TAN','KOA: CTYPE1',ext=i)#?
-            self.set_keyword('CTYPE2','DEC--TAN','KOA: CTYPE2',ext=i)#?
+            self.set_keyword('CRPIX1',crpix1_new,'KOA: CRPIX1',ext=i)
+            self.set_keyword('CRPIX2',crpix2_new,'KOA: CRPIX2',ext=i)
+            self.set_keyword('CDELT1',cdelt1_new,'KOA: CDELT1',ext=i)
+            self.set_keyword('CDELT2',cdelt2_new,'KOA: CDELT2',ext=i)
+            self.set_keyword('CTYPE1','RA---TAN','KOA: CTYPE1',ext=i)
+            self.set_keyword('CTYPE2','DEC--TAN','KOA: CTYPE2',ext=i)
             self.set_keyword('CROTA2',rotposn,'KOA: Rotator position',ext=i)
+
+            #set crval1/2 after we have used their original values
+            self.set_keyword('CRVAL1',ra,'KOA: CRVAL1',ext=i)
+            self.set_keyword('CRVAL2',dec,'KOA: CRVAL2',ext=i)
 
         return True
 
