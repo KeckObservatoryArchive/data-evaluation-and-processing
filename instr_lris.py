@@ -55,7 +55,6 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_image_stats_keywords()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_oa()
-        if ok: ok = self.get_numamps()
         if ok: ok = self.set_npixsat(satVal=65535)
         if ok: ok = self.set_obsmode()
         if ok: ok = self.set_wavelengths()
@@ -419,7 +418,7 @@ class Lris(instrument.Instrument):
         '''
         Calculates S/N for middle CCD image
         '''
-        numamps = self.numamps
+        numamps = self.get_numamps()
 
         #find middle extension
         ext = int(np.floor(self.nexten/2.0))
@@ -456,14 +455,25 @@ class Lris(instrument.Instrument):
         '''
         Determine number of amplifiers
         '''
-        #todo: IDL code has separate logic for LRISBLUE
+        #separate logic for LRISBLUE
+        if self.get_keyword('INSTRUME') == 'LRISBLUE':
+            amplist = self.get_keyword('AMPLIST', default='').strip()
+            if   amplist == '1,0,0,0':  numamps = 1
+            elif amplist == '2,0,0,0':  numamps = 1
+            elif amplist == '2,1,0,0':  numamps = 2
+            elif amplist == '1,3,0,0':  numamps = 1
+            elif amplist == '2,4,0,0':  numamps = 1
+            elif amplist == '1,4,0,0':  numamps = 2
+            else                     :  numamps = 0
+            return numamps
+
+        #lris red
         ampmode = self.get_keyword('AMPMODE', default='')
         if   'SINGLE:L' in ampmode: numamps = 1
         elif 'SINGLE:R' in ampmode: numamps = 1
         elif 'DUAL:L+R' in ampmode: numamps = 2
         else                      : numamps = 0
-        self.numamps = numamps
-        return True
+        return numamps
 
     def get_nexten(self):
         '''
