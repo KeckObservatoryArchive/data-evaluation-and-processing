@@ -375,8 +375,8 @@ def val_smart_diff(val0, val1, col=None):
 
     #try to decimal format (if not then no problem)
     try:
-        newval0 = "{:.2f}".format(float(val0))
-        newval1 = "{:.2f}".format(float(val1))
+        newval0 = "{:.1f}".format(float(val0))
+        newval1 = "{:.1f}".format(float(val1))
     except:
         newval0 = val0
         newval1 = val1
@@ -450,3 +450,46 @@ def header_keyword_report(keywordsDefFile, fitsFile):
 
     diff2 = list(set(formatKeys) - set(headerKeys))
     print ("=========KEYWORDS DIFF (format - header)===========\n", diff2)
+
+
+def compare_extended_headers(filepath1, filepath2):
+
+    #wrap in try since some ext headers have been found to be corrupted
+    try:
+
+        hdus1 = fits.open(filepath1)
+        hdus2 = fits.open(filepath2)
+
+        if len(hdus1) != len(hdus2):
+            print ("ERROR: Number if HDUs does not match.  Cannot compare.")
+            return False
+
+        for ext in range(0, len(hdus1)):
+            if ext == 0: continue
+
+            hdu1 = hdus1[ext]
+            hdu2 = hdus2[ext]
+
+            for key, val1 in hdu1.header.items():
+                if not key: continue
+                if key not in hdu2.header.keys():
+                    print(f"WARN: EXT{ext} HDR1 key '{key}' not in HDR2")
+                    continue
+                val2 = hdu2.header[key]
+                if val1 != val2:
+                    print(f"WARN: EXT{ext} HDR1 key '{key}' value '{val1}' != '{val2}'")
+
+            for key, val2 in hdu2.header.items():
+                if not key: continue
+                if key not in hdu1.header.keys():
+                    print(f"WARN: EXT{ext} HDR2 key '{key}' not in HDR1")
+                    continue
+                val1 = hdu1.header[key]
+                if val1 != val2:
+                    print(f"WARN: EXT{ext} HDR2 key '{key}' value '{val2}' != '{val1}'")
+
+    except Exception as e:
+        print ("ERROR: ", e)
+
+
+
