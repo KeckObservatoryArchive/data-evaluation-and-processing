@@ -139,6 +139,7 @@ class Hires(instrument.Instrument):
 
         lampname = self.get_keyword('LAMPNAME', False)
         ttime = self.get_keyword('TTIME', False)
+        lmirrin = self.get_keyword('LMIRRIN', False)
         
         if self.get_keyword('AUTOSHUT', False) == 0:
             lampOn = ''
@@ -156,7 +157,6 @@ class Hires(instrument.Instrument):
         if deckname == None or catcur1 == None or catcur2 == None or hatclos == None:
             return koaimtyp
 
-        lmirrin = self.get_keyword('LMIRRIN', False)
         xcovclos = self.get_keyword('XCOVCLOS', False)
         ecovclos = self.get_keyword('ECOVCLOS', False)
 
@@ -544,13 +544,16 @@ class Hires(instrument.Instrument):
             prslwid = slitwidt / dispscal
             res = lambdaRes / (prslwid * dispRes * int(ybin))
             specres = res - (res % 100)
+            slitlen = round(slitlen, 3)
+            slitwidt = round(slitwidt, 3)
+            specres = int(specres)
         else:
             self.log.info('set_slit_values: Unable to set slit scale keywords')
 
-        self.set_keyword('SLITLEN', round(slitlen, 3), 'KOA: Slit length projected on sky (arcsec)')
-        self.set_keyword('SLITWIDT', round(slitwidt, 3), 'KOA: Slit width projected on sky (arcsec)')
+        self.set_keyword('SLITLEN', slitlen, 'KOA: Slit length projected on sky (arcsec)')
+        self.set_keyword('SLITWIDT', slitwidt, 'KOA: Slit width projected on sky (arcsec)')
         self.set_keyword('SPATSCAL', round(spatscal, 3), 'KOA: CCD pixel scale (arcsec/pixel)')
-        self.set_keyword('SPECRES', int(specres), 'KOA: Nominal spectral resolution')
+        self.set_keyword('SPECRES', specres, 'KOA: Nominal spectral resolution')
         self.set_keyword('DISPSCAL', round(dispscal, 3), 'KOA: CCD pixel scale, dispersion (arcsec/pixel)')
 
         return True
