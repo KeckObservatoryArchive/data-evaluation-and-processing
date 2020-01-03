@@ -271,6 +271,8 @@ class Lris(instrument.Instrument):
         '''
         Get blue, center, and red wavelengths [WAVEBLUE,WAVECNTR,WAVERED]
         '''
+        is_null = False
+
         instr = self.get_keyword('INSTRUME')
         slitname = self.get_keyword('SLITNAME')
         obsmode = self.get_keyword('OBSMODE')
@@ -315,6 +317,7 @@ class Lris(instrument.Instrument):
         else:
             if instr == 'LRIS':
                 wlen = self.get_keyword('WAVELEN')
+                if not wlen: return True
                 wavearr = dict({'150/7500':[wlen-12288/2,wlen+12288/2],
                                 '300/5000':[wlen-6525/2,wlen+6525/2],
                                 '400/8500':[wlen-4762/2,wlen+4762/2],
@@ -353,30 +356,27 @@ class Lris(instrument.Instrument):
                                     '600/4000':[3300,5880],
                                     '1200/3400':[3010,4000]})
             else:
-                return False
+                return True
 
         #dichroic cutoff
         #NOTE: Elysia fixed bug in IDL code was incorrectly not truncating the wavelength range 
         #bc the dichroic wavelength is in nanometers and the wavelength range is in angstroms.
         dichname = self.get_keyword('DICHNAME')
-        if dichname == '460':
-            minmax = 4874
-        elif dichname == '500':
-            minmax = 5091
-        elif dichname == '560':
-            minmax = 5696
-        elif dichname == '680':
-            minmax = 6800
-        else:
-            minmax = 0
+        if   dichname == '460': minmax = 4874
+        elif dichname == '500': minmax = 5091
+        elif dichname == '560': minmax = 5696
+        elif dichname == '680': minmax = 6800
+        else                  : minmax = 0
+
         #determine wavelength range
         if obsmode == 'IMAGING':
             if flt in wavearr: waveblue, wavered = wavearr.get(flt)
-            else             : return False
+            else             : return True
         elif obsmode == 'SPEC':
             if   grating in wavearr: waveblue, wavered = wavearr.get(grating)
             elif grism in wavearr  : waveblue, wavered = wavearr.get(grism)
-            else                   : return False
+            else                   : return True
+
         #if wavelength range encompasses dichroic cutoff
         #LRIS: minmax to wavered
         #LRISBLUE: waveblue to minmax
@@ -386,6 +386,7 @@ class Lris(instrument.Instrument):
         elif instr == 'LRISBLUE':
             if wavered > minmax:
                 wavered = minmax
+
         #round to the nearest 10 angstroms
         wavered = np.round(wavered,-1)
         waveblue = np.round(waveblue,-1)
@@ -432,7 +433,7 @@ class Lris(instrument.Instrument):
         '''
         Calculates S/N for middle CCD image
         '''
-        numamps = self.get_numamps()
+        if self.nexten == 0: return True
 
         #find middle extension
         ext = int(np.floor(self.nexten/2.0))
@@ -443,6 +444,7 @@ class Lris(instrument.Instrument):
         postpix = self.get_keyword('POSTPIX', default=0)
         precol = self.get_keyword('PRECOL', default=0)
 
+        numamps = self.get_numamps()
         nx = (naxis2 - numamps*(precol + postpix))
         c = [naxis1/2, 1.17*nx/2]
         wsize = 10
