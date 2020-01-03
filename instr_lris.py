@@ -11,6 +11,17 @@ import datetime as dt
 import numpy as np
 import math
 from astropy.convolution import convolve,Box1DKernel
+from astropy.io import fits
+import os
+import re
+
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+from PIL import Image
+from astropy.visualization import ZScaleInterval, AsinhStretch, SinhStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 
 class Lris(instrument.Instrument):
@@ -228,6 +239,9 @@ class Lris(instrument.Instrument):
                 elif all(element == 'off' for element in [neon,argon,cadmium,zinc,halogen,krypton,xenon,feargon,deuterium]):
                     return 'dark'
 
+        #undefined
+        return 'undefined'
+
 
     def set_obsmode(self):
         '''
@@ -260,6 +274,9 @@ class Lris(instrument.Instrument):
         instr = self.get_keyword('INSTRUME')
         slitname = self.get_keyword('SLITNAME')
         obsmode = self.get_keyword('OBSMODE')
+        grating = self.get_keyword('GRANAME')
+        grism = self.get_keyword('GRISNAME')
+        slitmask = str(self.get_keyword('SLITMASK', default=''))
 
         #Imaging mode
         if obsmode == 'IMAGING':
@@ -298,7 +315,6 @@ class Lris(instrument.Instrument):
         else:
             if instr == 'LRIS':
                 wlen = self.get_keyword('WAVELEN')
-                grating = self.get_keyword('GRANAME')
                 wavearr = dict({'150/7500':[wlen-12288/2,wlen+12288/2],
                                 '300/5000':[wlen-6525/2,wlen+6525/2],
                                 '400/8500':[wlen-4762/2,wlen+4762/2],
@@ -325,8 +341,6 @@ class Lris(instrument.Instrument):
                                     '900/5500':[wlen-1740/2,wlen+1740/2],
                                     '1200/7500':[wlen-1310/2,wlen+1310/2]})
             elif instr == 'LRISBLUE':
-                grism = self.get_keyword('GRISNAME')
-                slitmask = str(self.get_keyword('SLITMASK'))
                 #longslit
                 if 'long_' in slitmask or 'pol_' in slitmask:
                     wavearr = dict({'300/5000':[1570,7420],
@@ -357,12 +371,12 @@ class Lris(instrument.Instrument):
             minmax = 0
         #determine wavelength range
         if obsmode == 'IMAGING':
-            waveblue,wavered = wavearr.get(flt)
+            if flt in wavearr: waveblue, wavered = wavearr.get(flt)
+            else             : return False
         elif obsmode == 'SPEC':
-            try:
-                waveblue,wavered = wavearr.get(grating)
-            except:
-                waveblue,wavered = wavearr.get(grism)
+            if   grating in wavearr: waveblue, wavered = wavearr.get(grating)
+            elif grism in wavearr  : waveblue, wavered = wavearr.get(grism)
+            else                   : return False
         #if wavelength range encompasses dichroic cutoff
         #LRIS: minmax to wavered
         #LRISBLUE: waveblue to minmax
@@ -767,3 +781,132 @@ class Lris(instrument.Instrument):
             self.set_keyword(mdkey,   str(round(pst1md, 2)),   f'KOA: Postscan median CCD {ccdloc}, amp location {amploc}')
 
         return True
+
+
+    def create_jpg_from_fits(self, fits_filepath, outdir):
+        '''
+        Overriding instrument default function
+        Tile images horizontally in order from left to right. 
+        Use DETSEC keyword to figure out data order/position
+        '''
+
+        #open
+        hdus = fits.open(fits_filepath, ignore_missing_end=True)
+
+        #needed hdr vals
+        hdr0 = hdus[0].header
+        binning  = hdr0['BINNING'].split(',')
+        precol   = int(hdr0['PRECOL'])   // int(binning[0])
+        postpix  = int(hdr0['POSTPIX'])  // int(binning[0])
+        preline  = int(hdr0['PRELINE'])  // int(binning[1])
+        postline = int(hdr0['POSTLINE']) // int(binning[1])
+
+        #get extension order (uses DETSEC keyword)
+        ext_order = Lris.get_ext_data_order(hdus)
+        assert ext_order, "ERROR: Could not determine extended data order"
+
+        #loop thru extended headers in order, create png and add to list in order
+        interval = ZScaleInterval()
+        vmin = None
+        vmax = None
+        alldata = None
+        for i, ext in enumerate(ext_order):
+
+            data = hdus[ext].data
+            hdr  = hdus[ext].header
+
+            #calc bias array from postpix area
+            sh = data.shape
+            x1 = 0
+            x2 = sh[0]
+            y1 = sh[1] - postpix + 1
+            y2 = sh[1] - 1
+            bias = np.median(data[x1:x2, y1:y2], axis=1)
+            bias = np.array(bias, dtype=np.int64)
+
+            #subtract bias
+            data = data - bias[:,None]
+
+            #get min max of each ext (not including pre/post pixels)
+            #NOTE: using sample box that is 90% of full area
+            #todo: should we take an average min/max of each ext for balancing?
+            sh = data.shape
+            x1 = int(preline          + (sh[0] * 0.10))
+            x2 = int(sh[0] - postline - (sh[0] * 0.10))
+            y1 = int(precol           + (sh[1] * 0.10))
+            y2 = int(sh[1] - postpix  - (sh[1] * 0.10))
+            tmp_vmin, tmp_vmax = interval.get_limits(data[x1:x2, y1:y2])
+            if vmin == None or tmp_vmin < vmin: vmin = tmp_vmin
+            if vmax == None or tmp_vmax > vmax: vmax = tmp_vmax
+            if vmin < 0: vmin = 0
+
+            #remove pre/post pix columns
+            data = data[:,precol:data.shape[1]-postpix]
+
+            #flip data left/right 
+            #NOTE: This should come after removing pre/post pixels
+            ds = Lris.get_detsec_data(hdr['DETSEC'])
+            if ds and ds[0] > ds[1]: 
+                data = np.fliplr(data)
+            if ds and ds[2] > ds[3]: 
+                data = np.flipud(data)
+
+            #concatenate horizontally
+            if i==0: alldata = data
+            else   : alldata = np.append(alldata, data, axis=1)
+
+        #filepath vars
+        basename = os.path.basename(fits_filepath).replace('.fits', '')
+        out_filepath = f'{outdir}/{basename}.jpg'
+
+        #bring in min/max by 2% to help ignore large areas of black or overexposed spots
+        #todo: this does not achieve what we want
+        # minmax_adjust = 0.02
+        # vmin += int((vmax - vmin) * minmax_adjust)
+        # vmax -= int((vmax - vmin) * minmax_adjust)
+
+        #normalize, stretch and create jpg
+        norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
+        dpi = 100
+        width_inches  = alldata.shape[1] / dpi
+        height_inches = alldata.shape[0] / dpi
+        fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding; bbox_inches='tight' doesn't really work
+        plt.axis('off')
+        plt.imshow(alldata, cmap='gray', origin='lower', norm=norm)
+        plt.savefig(out_filepath, quality=92)
+        plt.close()
+
+
+    @staticmethod
+    def get_ext_data_order(hdus):
+        '''
+        Use DETSEC keyword to figure out true order of extension data for horizontal tiling
+        '''
+        key_orders = {}
+        for i in range(1, len(hdus)):
+            ds = Lris.get_detsec_data(hdus[i].header['DETSEC'])
+            if not ds: return None
+            key_orders[ds[0]] = i
+
+        orders = []
+        for key in sorted(key_orders):
+            orders.append(key_orders[key])
+        return orders
+
+
+    @staticmethod
+    def get_detsec_data(detsec):
+        '''
+        Parse DETSEC string for x1, x2, y1, y2
+        '''
+        match = re.search( r'(\d+):(\d+),(\d+):(\d+)', detsec)
+        if not match:
+            return None
+        else:
+            x1 = int(match.groups(1)[0])
+            x2 = int(match.groups(1)[1])
+            y1 = int(match.groups(1)[2])
+            y2 = int(match.groups(1)[3])
+            return [x1, x2, y1, y2]
+
