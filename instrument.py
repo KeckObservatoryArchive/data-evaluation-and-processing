@@ -882,65 +882,68 @@ class Instrument:
             try:
                 self.fitsHdu.writeto(outfile, output_verify='ignore')
                 self.log.error('write_lev0_fits_file: Forced to write FITS using output_verify="ignore". May want to inspect:' + outfile)                
-            except:
+            except Exception as e:
                 self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
                 return False
 
         return True
 
+
     def make_jpg(self):
         '''
-        Converts a FITS file to JPG image
+        Make the jpg(s) for current fits file
         '''
 
-        # file to convert is lev0Dir/KOAID
-
-        path = self.dirs['lev0']
+        # Find fits file in lev0 dir to convert based on koaid
         koaid = self.fitsHeader.get('KOAID')
-        filePath = ''
-        for root, dirs, files in os.walk(path):
+        fits_filepath = ''
+        for root, dirs, files in os.walk(self.dirs['lev0']):
             if koaid in files:
-                filePath = ''.join((root, '/', koaid))
-        if not filePath:
-            self.log.error('make_jpg: Could not find KOAID: ' + koaid)
+                fits_filepath = f'{root}/{koaid}'
+        if not fits_filepath:
+            self.log.error(f'make_jpg: Could not find KOAID: {koaid}')
             return False
-        self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
+        outdir = os.path.dirname(fits_filepath)
 
-        #check if already exists? (JPG conversion is time consuming)
-        #todo: Only allow skip if not fullRun? (ie Will we ever want to regenerate the jpg?)
-
-        jpgFile = filePath.replace('.fits', '.jpg')
-        if os.path.isfile(jpgFile):
-            self.log.warning('make_jpg: file already exists. SKIPPING')
-            return True
-
-        # verify file exists
-
+        #call instrument specific create_jpg function
         try:
-            if os.path.isfile(filePath):
-                # image data to convert
-                image = self.fitsHdu[0].data
-                interval = ZScaleInterval()
-                vmin, vmax = interval.get_limits(image)
-                norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
-                plt.imshow(image, cmap='gray', origin='lower', norm=norm)
-                plt.axis('off')
-                # save as png, then convert to jpg
-                pngFile = filePath.replace('.fits', '.png')
-                jpgFile = pngFile.replace('.png', '.jpg')
-                plt.savefig(pngFile)
-                Image.open(pngFile).convert('RGB').save(jpgFile)
-                os.remove(pngFile)
-                plt.close()
-            else:
-                #TODO: if this errors, should we remove .fits file added previously?
-                self.log.error('make_jpg: file does not exist {}'.format(filePath))
-                return False
-        except:
-            self.log.error('make_jpg: Could not create JPG: ' + jpgFile)
+            self.create_jpg_from_fits(fits_filepath, outdir)
+        except Exception as e:
+            self.log.error(f'make_jpg: Could not create JPG from: {fits_filepath}')
+            self.log.error(e)
             return False
 
         return True
+
+
+    def create_jpg_from_fits(self, fits_filepath, outdir):
+        '''
+        Basic convert fits primary data to jpg.  Instrument subclasses can override this function.
+        '''
+
+        #get image data
+        hdu = fits.open(fits_filepath, ignore_missing_end=True)
+        data = hdu[0].data
+        hdr  = hdu[0].header
+
+        #form filepaths
+        basename = os.path.basename(fits_filepath).replace('.fits', '')
+        jpg_filepath = f'{outdir}/{basename}.jpg'
+
+        #create jpg
+        interval = ZScaleInterval()
+        vmin, vmax = interval.get_limits(data)
+        norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
+        dpi = 100
+        width_inches  = hdr['NAXIS1'] / dpi
+        height_inches = hdr['NAXIS2'] / dpi
+        fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding
+        plt.axis('off')
+        plt.imshow(data, cmap='gray', origin='lower', norm=norm)
+        plt.savefig(jpg_filepath, quality=92)
+        plt.close()
+
 
     def get_semid(self):
 
