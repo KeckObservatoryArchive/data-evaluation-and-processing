@@ -7,7 +7,7 @@ UT	char	24	N
 PROGID	char	32	N
 PROGINST	char	16	N
 PROGPI	char	70	N
-PROGTITL	char	70	Y
+PROGTITL	char	210	Y
 PROPINT	integer	16	N
 ABFREQ	integer	16	Y
 ADCBYP	char	1	Y
