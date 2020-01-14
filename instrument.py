@@ -176,6 +176,8 @@ class Instrument:
         try:
             self.fitsHdu = fits.open(filename, ignore_missing_end=True)
             self.fitsHeader = self.fitsHdu[0].header
+            # print('hdu0',type(self.fitsHeader
+            # print('hdu1',type(self.fitsHdu[1]))
             #self.fitsHeader = fits.getheader(filename)
             self.fitsFilepath = filename
         except:
@@ -191,7 +193,7 @@ class Instrument:
 
 
 
-    def get_keyword(self, keyword, useMap=True, default=None):
+    def get_keyword(self, keyword, useMap=True, default=None, ext=None):
         '''
         Gets keyword value from the FITS header as defined in keywordMap class variable.  
         NOTE: FITS file must be loaded first with self.set_fits_file
@@ -199,12 +201,15 @@ class Instrument:
         @param keyword: keyword value or ordered list of keyword values to search for
         @type instr: string or list
         '''
-
         # check for loaded fitsHeader
-        if not self.fitsHeader:
-             raise Exception('get_keyword: ERROR: no FITS header loaded')
-             return default
-
+        if ext == None:
+            if not self.fitsHeader:
+                 raise Exception('get_keyword: ERROR: no FITS header loaded')
+                 return default
+        else:
+             if not self.fitsHdu[ext].header:
+                 raise Exception('get_keyword: ERROR: no FITS header loaded')
+                 return default
         #use keyword mapping?
         if useMap:
     
@@ -218,16 +223,21 @@ class Instrument:
             mappedKeys = [mappedKeys]
 
         #loop
-        for mappedKey in mappedKeys:
-            val = self.fitsHeader.get(mappedKey)
-            if val != None and not isinstance(val, fits.Undefined): return val
+        if ext == None:
+            for mappedKey in mappedKeys:
+                val = self.fitsHeader.get(mappedKey)
+                if val != None and not isinstance(val, fits.Undefined): return val
+        else:
+            for mappedKey in mappedKeys:
+                val = self.fitsHdu[ext].header.get(mappedKey)
+                if val != None and not isinstance(val, fits.Undefined): return val
 
         #return None if we didn't find it
         return default
 
 
 
-    def set_keyword(self, keyword, value, comment='', useMap=False):
+    def set_keyword(self, keyword, value, comment='', useMap=False, ext=None):
         '''
         Sets keyword value in FITS header.
         NOTE: Mapped values are only used if "useMap" is set to True, otherwise keyword name is as provided.
@@ -250,7 +260,11 @@ class Instrument:
             keyword = keyword[0]
 
         #ok now we can update
-        self.fitsHeader.update({keyword : (value, comment)})
+        if ext == None:
+            self.fitsHeader.update({keyword : (value, comment)})
+        else:
+            (self.fitsHdu[ext].header).update({keyword : (value, comment)})
+
 
 
 
@@ -470,7 +484,6 @@ class Instrument:
         #try to get from header mapped
         if utc == None:
             utc = self.get_keyword('UTC')
-
         #validate
         valid = False
         if utc: 
@@ -487,11 +500,9 @@ class Instrument:
             utc = utc.strftime('%H:%M:%S.00')
             update = True
             self.log.warning('set_utc: set UTC value from FITS file time')
-
         #update/add if need be
         if update:
             self.set_keyword('UTC', utc, 'KOA: UTC keyword corrected')
-
         return True
 
 
@@ -724,7 +735,7 @@ class Instrument:
         return True
 
 
-    def set_npixsat(self, satVal=None):
+    def set_npixsat(self, satVal=None, ext=0):
         '''
         Determines number of saturated pixels and adds NPIXSAT to header
         '''
@@ -737,10 +748,10 @@ class Instrument:
         if satVal == None:
             self.log.warning("set_npixsat: Could not find SATURATE keyword")
         else:
-            image = self.fitsHdu[0].data     
+            image = self.fitsHdu[ext].data     
             pixSat = image[np.where(image >= satVal)]
             nPixSat = len(image[np.where(image >= satVal)])
-            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels')
+            self.set_keyword('NPIXSAT', nPixSat, 'KOA: Number of saturated pixels',ext=ext)
 
         return True
 
@@ -871,65 +882,69 @@ class Instrument:
             try:
                 self.fitsHdu.writeto(outfile, output_verify='ignore')
                 self.log.error('write_lev0_fits_file: Forced to write FITS using output_verify="ignore". May want to inspect:' + outfile)                
-            except:
+            except Exception as e:
                 self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
                 return False
 
         return True
 
+
     def make_jpg(self):
         '''
-        Converts a FITS file to JPG image
+        Make the jpg(s) for current fits file
         '''
 
-        # file to convert is lev0Dir/KOAID
-
-        path = self.dirs['lev0']
+        # Find fits file in lev0 dir to convert based on koaid
         koaid = self.fitsHeader.get('KOAID')
-        filePath = ''
-        for root, dirs, files in os.walk(path):
+        fits_filepath = ''
+        for root, dirs, files in os.walk(self.dirs['lev0']):
             if koaid in files:
-                filePath = ''.join((root, '/', koaid))
-        if not filePath:
-            self.log.error('make_jpg: Could not find KOAID: ' + koaid)
+                fits_filepath = f'{root}/{koaid}'
+        if not fits_filepath:
+            self.log.error(f'make_jpg: Could not find KOAID: {koaid}')
             return False
-        self.log.info('make_jpg: converting {} to jpeg format'.format(filePath))
+        outdir = os.path.dirname(fits_filepath)
 
-        #check if already exists? (JPG conversion is time consuming)
-        #todo: Only allow skip if not fullRun? (ie Will we ever want to regenerate the jpg?)
-
-        jpgFile = filePath.replace('.fits', '.jpg')
-        if os.path.isfile(jpgFile):
-            self.log.warning('make_jpg: file already exists. SKIPPING')
-            return True
-
-        # verify file exists
-
+        #call instrument specific create_jpg function
         try:
-            if os.path.isfile(filePath):
-                # image data to convert
-                image = self.fitsHdu[0].data
-                interval = ZScaleInterval()
-                vmin, vmax = interval.get_limits(image)
-                norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
-                plt.imshow(image, cmap='gray', origin='lower', norm=norm)
-                plt.axis('off')
-                # save as png, then convert to jpg
-                pngFile = filePath.replace('.fits', '.png')
-                jpgFile = pngFile.replace('.png', '.jpg')
-                plt.savefig(pngFile)
-                Image.open(pngFile).convert('RGB').save(jpgFile)
-                os.remove(pngFile)
-                plt.close()
-            else:
-                #TODO: if this errors, should we remove .fits file added previously?
-                self.log.error('make_jpg: file does not exist {}'.format(filePath))
-                return False
-        except:
-            self.log.error('make_jpg: Could not create JPG: ' + jpgFile)
+            self.log.info(f'make_jpg: Creating jpg from: {fits_filepath}')
+            self.create_jpg_from_fits(fits_filepath, outdir)
+        except Exception as e:
+            self.log.error(f'make_jpg: Could not create JPG from: {fits_filepath}')
+            self.log.error(e)
             return False
 
         return True
+
+
+    def create_jpg_from_fits(self, fits_filepath, outdir):
+        '''
+        Basic convert fits primary data to jpg.  Instrument subclasses can override this function.
+        '''
+
+        #get image data
+        hdu = fits.open(fits_filepath, ignore_missing_end=True)
+        data = hdu[0].data
+        hdr  = hdu[0].header
+
+        #form filepaths
+        basename = os.path.basename(fits_filepath).replace('.fits', '')
+        jpg_filepath = f'{outdir}/{basename}.jpg'
+
+        #create jpg
+        interval = ZScaleInterval()
+        vmin, vmax = interval.get_limits(data)
+        norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
+        dpi = 100
+        width_inches  = hdr['NAXIS1'] / dpi
+        height_inches = hdr['NAXIS2'] / dpi
+        fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding
+        plt.axis('off')
+        plt.imshow(data, cmap='gray', origin='lower', norm=norm)
+        plt.savefig(jpg_filepath, quality=92)
+        plt.close()
+
 
     def get_semid(self):
 
@@ -1023,3 +1038,49 @@ class Instrument:
 
         self.log.info('run_drp: no DRP defined for {}'.format(self.instr))
         return True
+
+    def set_numccds(self):
+        try:
+            panelist = self.get_keyword('PANELIST')
+        except:
+            self.set_keyword('NUMCCDS',0,'KOA: Number of CCDs')
+            return True
+        if panelist == '0':
+            numccds = 0
+        #mosaic data
+        elif panelist == 'PANE':
+            pane = self.get_keyword('PANE')
+            plist = pane.split(',')
+            dx = float(plist[2])
+            if dx < 8192:
+                numccds = 4
+            elif dx < 6144:
+                numccds = 3
+            elif dx < 4096:
+                numccds = 2
+            elif dx < 2048:
+                numccds = 1
+            if 'LRISBLUE' in self.get_keyword('INSTRUME'):
+                numccds = 1
+                amplist = (self.get_keyword('AMPLIST')).split(',')
+                if float(amplist[1]) > 2:
+                    numccds = 2
+        else:
+            plist = panelist.split(',')
+            numccds = 0
+            for i,val in enumerate(plist):
+                kywrd = f'PANE{str(val)}'
+                pane = self.get_keyword(kywrd)
+                plist2 = pane.split(',')
+                dx = float(plist2[2])
+                if dx < 2048:
+                    numccds += 1
+                else:
+                    if dx < 4096:
+                        numccds += 2
+                    else:
+                        numccds += 3
+
+        self.set_keyword('NUMCCDS',numccds,'KOA: Number of CCDs')
+        return True
+
