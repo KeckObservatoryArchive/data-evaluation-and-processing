@@ -907,6 +907,7 @@ class Instrument:
 
         #call instrument specific create_jpg function
         try:
+            self.log.info(f'make_jpg: Creating jpg from: {fits_filepath}')
             self.create_jpg_from_fits(fits_filepath, outdir)
         except Exception as e:
             self.log.error(f'make_jpg: Could not create JPG from: {fits_filepath}')

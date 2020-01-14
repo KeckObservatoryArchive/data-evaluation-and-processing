@@ -3,6 +3,10 @@
 
 
 ##LRIS
+- todo: test lrisP nights!
+- todo: did we change metadata spreadsheet? does ipac need to make any table adjustments? yes, for instance PROGTITL
+- issue: Discuss use of self.fitsHdu[0].data direct.
+- todo: set_slit_dims implemented commented out IDL code.  Is this right?  This affects differences in specres.  Also, DISPSCAL looks to have never been set in IDL for lris, and i see we are here now in the same area of code for set_slit_dims so I assume this was vetted.
 - todo: Improve JPG creation for edge cases.  See 2019-08-31.
 - todo: Update instr_hires to use new jpg creation methods.
 - todo: Do we need to update podict in set_wcs?

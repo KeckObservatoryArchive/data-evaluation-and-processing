@@ -23,6 +23,8 @@ from astropy.visualization import ZScaleInterval, AsinhStretch, SinhStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from mpl_toolkits.axes_grid1 import ImageGrid
 
+import hist_equal2d
+
 
 class Lris(instrument.Instrument):
 
@@ -876,6 +878,73 @@ class Lris(instrument.Instrument):
         ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding; bbox_inches='tight' doesn't really work
         plt.axis('off')
         plt.imshow(alldata, cmap='gray', origin='lower', norm=norm)
+        plt.savefig(out_filepath, quality=92)
+        plt.close()
+
+
+    def create_jpg_from_fits_HIST(self, fits_filepath, outdir):
+        '''
+        Overriding instrument default function
+        Tile images horizontally in order from left to right. 
+        Use DETSEC keyword to figure out data order/position
+        '''
+        #NOTE: Not using this right now until we decide if it is better than default create_jpg_from_fits
+        
+        #open
+        hdus = fits.open(fits_filepath, ignore_missing_end=True)
+
+        #needed hdr vals
+        hdr0 = hdus[0].header
+        binning  = hdr0['BINNING'].split(',')
+        precol   = int(hdr0['PRECOL'])   // int(binning[0])
+        postpix  = int(hdr0['POSTPIX'])  // int(binning[0])
+        preline  = int(hdr0['PRELINE'])  // int(binning[1])
+        postline = int(hdr0['POSTLINE']) // int(binning[1])
+
+        #get extension order (uses DETSEC keyword)
+        ext_order = Lris.get_ext_data_order(hdus)
+        assert ext_order, "ERROR: Could not determine extended data order"
+
+        #loop thru extended headers in order, create png and add to list in order
+        vmin = None
+        vmax = None
+        alldata = None
+        for i, ext in enumerate(ext_order):
+
+            data = hdus[ext].data
+            hdr  = hdus[ext].header
+
+            #remove pre/post pix columns
+            data = data[:,precol:data.shape[1]-postpix]
+
+            #flip data left/right 
+            #NOTE: This should come after removing pre/post pixels
+            ds = Lris.get_detsec_data(hdr['DETSEC'])
+            if ds and ds[0] > ds[1]: 
+                data = np.fliplr(data)
+            if ds and ds[2] > ds[3]: 
+                data = np.flipud(data)
+
+            #concatenate horizontally
+            if i==0: alldata = data
+            else   : alldata = np.append(alldata, data, axis=1)
+
+        #hist
+        heq2d = hist_equal2d.HistEqual2d()
+        alldata = heq2d._perform(alldata)
+
+        #filepath vars
+        basename = os.path.basename(fits_filepath).replace('.fits', '')
+        out_filepath = f'{outdir}/{basename}.jpg'
+
+        #normalize, stretch and create jpg
+        dpi = 100
+        width_inches  = alldata.shape[1] / dpi
+        height_inches = alldata.shape[0] / dpi
+        fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding; bbox_inches='tight' doesn't really work
+        plt.axis('off')
+        plt.imshow(alldata, cmap='gray', origin='lower')
         plt.savefig(out_filepath, quality=92)
         plt.close()
 
