@@ -26,7 +26,7 @@ endDateStr      = sys.argv[3]
 tpx             = sys.argv[4]
 procStart       = sys.argv[5]
 procStop        = sys.argv[6]
-useHdrProg      = sys.argv[7]
+useHdrProg      = sys.argv[7]  #"assist" or "force"
 searchDirBase   = sys.argv[8]
 metaDirBase     = sys.argv[9]
 moveDataScript  = sys.argv[10] if len(sys.argv) > 10 else None
@@ -59,7 +59,8 @@ while curDate <= endDate:
                     '--reprocess', '1', 
                     '--useHdrProg', useHdrProg, 
                     '--searchDir', searchDir,
-                    '--metaCompareDir', metaDir]
+                    '--metaCompareDir', metaDir,
+                    '--emailReport', '1']
         print ('pyDEP COMMAND: ', ' '.join(params))
         subprocess.call(params)
 
