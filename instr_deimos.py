@@ -65,6 +65,7 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_nexten()
         if ok: ok = self.set_detsec()
         if ok: ok = self.set_npixsat(satVal=65535.0)
+        if ok: ok = self.set_wavelengths()
 
         return ok
 
@@ -335,3 +336,59 @@ class Deimos(instrument.Instrument):
         return True
 
 
+    def set_wavelengths(self):
+        '''
+        Adds wavelength keywords.
+        '''
+
+        waveblue = wavecntr = wavered = 'null'
+
+        # Filter list for imaging wavelengths
+        filterList = {}
+        filterList['B']      = {'blue':4200, 'cntr':4400, 'red':4600}
+        filterList['V']      = {'blue':5150, 'cntr':5450, 'red':5750}
+        filterList['R']      = {'blue':6100, 'cntr':6500, 'red':6900}
+        filterList['I']      = {'blue':7600, 'cntr':8400, 'red':9200}
+        filterList['Z']      = {'blue':8600, 'cntr':9100, 'red':9600}
+        filterList['GG400']  = {'blue':4000, 'cntr':7250, 'red':10500}
+        filterList['GG455']  = {'blue':4550, 'cntr':7525, 'red':10500}
+        filterList['GG495']  = {'blue':4950, 'cntr':7725, 'red':10500}
+        filterList['OG550']  = {'blue':5500, 'cntr':8000, 'red':10500}
+        filterList['NG8560'] = {'blue':8400, 'cntr':8550, 'red':8700}
+        filterList['NG8580'] = {'blue':8550, 'cntr':8600, 'red':8650}
+
+        # Gratings for spectroscopy wavelengths
+        gratingList = {}
+        gratingList['600ZD'] = 5300
+        gratingList['830G']  = 3840
+        gratingList['900ZD'] = 3530
+        gratingList['1200G'] = 2630
+        gratingList['1200B'] = 2630
+        
+        # Is this an image or spectrum?
+        obsmode = self.get_keyword('OBSMODE')
+        if obsmode == 'image':
+            filter = self.get_keyword('FILTER', defult='').strip()
+            if filter in filter.keys():
+                waveblue = filterList[filter]['blue']
+                wavecntr = filterList[filter]['cntr']
+                wavered  = filterList[filter]['red']
+
+        elif obsmode in ['longslit', 'mos']:
+            gratepos = self.get_keyword('GRATEPOS')
+            waveKey = f'G{gratepos}TLTWAV'
+            grating = self.get_keyword('GRATENAM')
+            if grating in gratingList.keys():
+                wavecntr = int(round(self.get_keyword(waveKey), -1))
+                delta = gratingList[grating]/2
+                waveblue = wavecntr - delta
+                wavered = wavecntr + delta
+
+        else:
+            pass
+
+        self.set_keyword('WAVEBLUE', waveblue, 'KOA: Blue end wavelength')
+        self.set_keyword('WAVECNTR', wavecntr, 'KOA: Center wavelength')
+        self.set_keyword('WAVERED' , wavered, 'KOA: Red end wavelength')
+
+        return True
