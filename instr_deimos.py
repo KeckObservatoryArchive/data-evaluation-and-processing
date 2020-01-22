@@ -66,6 +66,8 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_detsec()
         if ok: ok = self.set_npixsat(satVal=65535.0)
         if ok: ok = self.set_wavelengths()
+        if ok: ok = self.set_spatscal()
+        if ok: ok = self.set_specres()
 
         return ok
 
@@ -390,5 +392,40 @@ class Deimos(instrument.Instrument):
         self.set_keyword('WAVEBLUE', waveblue, 'KOA: Blue end wavelength')
         self.set_keyword('WAVECNTR', wavecntr, 'KOA: Center wavelength')
         self.set_keyword('WAVERED' , wavered, 'KOA: Red end wavelength')
+
+        return True
+
+
+    def set_spatscal(self):
+        '''
+        Populates SPATSCAL
+        '''
+        
+        self.set_keyword('SPATSCAL', 0.1185, 'KOA: CCD spatial pixel scale')
+        return True
+
+
+    def set_specres(self):
+        '''
+        Calculates the spectral resolution and add SPECRES to header
+        '''
+
+        specres = 'null'
+
+        gratingList = {}
+        gratingList['600ZD'] = {'wave':7500, 'dispersion':0.65}
+        gratingList['830G']  = {'wave':8640, 'dispersion':0.47}
+        gratingList['900ZD'] = {'wave':5500, 'dispersion':0.44}
+        gratingList['1200G'] = {'wave':7760, 'dispersion':0.33}
+        gratingList['1200B'] = {'wave':4500, 'dispersion':0.33}
+
+        spatscal = self.get_keyword('SPATSCAL')
+        grating = self.get_keyword('GRATENAM')
+
+        if grating in gratingList.keys():
+            specres = (gratingList[grating]['wave']*spatscal)/gratingList[grating]['dispersion']
+            specres = round(specres, -1)
+
+        self.set_keyword('SPECRES', specres, 'KOA: nominal spectral resolution')
 
         return True
