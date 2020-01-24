@@ -27,7 +27,7 @@ class Deimos(instrument.Instrument):
         self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
 
 
-        # Generate the paths to the NIRES datadisk accounts
+        # Generate the paths to the DEIMOS datadisk accounts
         self.sdataList = self.get_dir_list()
 
 
@@ -36,6 +36,25 @@ class Deimos(instrument.Instrument):
         # """
         # # add the FCSIMGFI config file for deimos
         # self.fcsimgfi = 'FCSIMGFI'
+        self.gratingList = {}
+        self.gratingList['600ZD'] = {'wave':7500, 'dispersion':0.65, 'length':5300}
+        self.gratingList['830G']  = {'wave':8640, 'dispersion':0.47, 'length':3840}
+        self.gratingList['900ZD'] = {'wave':5500, 'dispersion':0.44, 'length':3530}
+        self.gratingList['1200G'] = {'wave':7760, 'dispersion':0.33, 'length':2630}
+        self.gratingList['1200B'] = {'wave':4500, 'dispersion':0.33, 'length':2630}
+        # Filter list for imaging wavelengths
+        self.filterList = {}
+        self.filterList['B']      = {'blue':4200, 'cntr':4400, 'red':4600}
+        self.filterList['V']      = {'blue':5150, 'cntr':5450, 'red':5750}
+        self.filterList['R']      = {'blue':6100, 'cntr':6500, 'red':6900}
+        self.filterList['I']      = {'blue':7600, 'cntr':8400, 'red':9200}
+        self.filterList['Z']      = {'blue':8600, 'cntr':9100, 'red':9600}
+        self.filterList['GG400']  = {'blue':4000, 'cntr':7250, 'red':10500}
+        self.filterList['GG455']  = {'blue':4550, 'cntr':7525, 'red':10500}
+        self.filterList['GG495']  = {'blue':4950, 'cntr':7725, 'red':10500}
+        self.filterList['OG550']  = {'blue':5500, 'cntr':8000, 'red':10500}
+        self.filterList['NG8560'] = {'blue':8400, 'cntr':8550, 'red':8700}
+        self.filterList['NG8580'] = {'blue':8550, 'cntr':8600, 'red':8650}
 
 
     def run_dqa_checks(self, progData):
@@ -345,44 +364,22 @@ class Deimos(instrument.Instrument):
 
         waveblue = wavecntr = wavered = 'null'
 
-        # Filter list for imaging wavelengths
-        filterList = {}
-        filterList['B']      = {'blue':4200, 'cntr':4400, 'red':4600}
-        filterList['V']      = {'blue':5150, 'cntr':5450, 'red':5750}
-        filterList['R']      = {'blue':6100, 'cntr':6500, 'red':6900}
-        filterList['I']      = {'blue':7600, 'cntr':8400, 'red':9200}
-        filterList['Z']      = {'blue':8600, 'cntr':9100, 'red':9600}
-        filterList['GG400']  = {'blue':4000, 'cntr':7250, 'red':10500}
-        filterList['GG455']  = {'blue':4550, 'cntr':7525, 'red':10500}
-        filterList['GG495']  = {'blue':4950, 'cntr':7725, 'red':10500}
-        filterList['OG550']  = {'blue':5500, 'cntr':8000, 'red':10500}
-        filterList['NG8560'] = {'blue':8400, 'cntr':8550, 'red':8700}
-        filterList['NG8580'] = {'blue':8550, 'cntr':8600, 'red':8650}
-
-        # Gratings for spectroscopy wavelengths
-        gratingList = {}
-        gratingList['600ZD'] = 5300
-        gratingList['830G']  = 3840
-        gratingList['900ZD'] = 3530
-        gratingList['1200G'] = 2630
-        gratingList['1200B'] = 2630
-        
         # Is this an image or spectrum?
         obsmode = self.get_keyword('OBSMODE')
         if obsmode == 'image':
             filter = self.get_keyword('FILTER', defult='').strip()
             if filter in filter.keys():
-                waveblue = filterList[filter]['blue']
-                wavecntr = filterList[filter]['cntr']
-                wavered  = filterList[filter]['red']
+                waveblue = self.filterList[filter]['blue']
+                wavecntr = self.filterList[filter]['cntr']
+                wavered  = self.filterList[filter]['red']
 
         elif obsmode in ['longslit', 'mos']:
             gratepos = self.get_keyword('GRATEPOS')
             waveKey = f'G{gratepos}TLTWAV'
             grating = self.get_keyword('GRATENAM')
-            if grating in gratingList.keys():
+            if grating in self.gratingList.keys():
                 wavecntr = int(round(self.get_keyword(waveKey), -1))
-                delta = gratingList[grating]/2
+                delta = self.gratingList[grating]['length']/2
                 waveblue = wavecntr - delta
                 wavered = wavecntr + delta
 
@@ -405,6 +402,26 @@ class Deimos(instrument.Instrument):
         return True
 
 
+    def set_dispscal(self):
+        '''
+        Populates DISPSCAL
+        '''
+
+        dispscal = 'null'
+
+        obsmode = self.get_keyword('OBSMODE')
+        spatscal = self.get_keyword('SPATSCAL')
+        if obsmode == 'image':
+            dispscal = spatscal
+        elif obsmode in ['longslit', 'mos']
+            grating = self.get_keyword('GRATENAM')
+            if grating in self.gratingList.keys():
+                dispscal = self.gratingList[grating]['dispersion']
+
+        self.set_keyword('DISPSCAL', dispscal, 'KOA: CCD dispersion pixel scale')
+        return True
+
+
     def set_specres(self):
         '''
         Calculates the spectral resolution and add SPECRES to header
@@ -412,18 +429,11 @@ class Deimos(instrument.Instrument):
 
         specres = 'null'
 
-        gratingList = {}
-        gratingList['600ZD'] = {'wave':7500, 'dispersion':0.65}
-        gratingList['830G']  = {'wave':8640, 'dispersion':0.47}
-        gratingList['900ZD'] = {'wave':5500, 'dispersion':0.44}
-        gratingList['1200G'] = {'wave':7760, 'dispersion':0.33}
-        gratingList['1200B'] = {'wave':4500, 'dispersion':0.33}
-
         spatscal = self.get_keyword('SPATSCAL')
         grating = self.get_keyword('GRATENAM')
 
-        if grating in gratingList.keys():
-            specres = (gratingList[grating]['wave']*spatscal)/gratingList[grating]['dispersion']
+        if grating in self.gratingList.keys():
+            specres = (self.gratingList[grating]['wave']*spatscal)/self.gratingList[grating]['dispersion']
             specres = round(specres, -1)
 
         self.set_keyword('SPECRES', specres, 'KOA: nominal spectral resolution')
