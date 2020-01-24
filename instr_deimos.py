@@ -171,7 +171,7 @@ class Deimos(instrument.Instrument):
         flimagin = self.get_keyword('FLIMAGIN', default='').lower()
         flspectr = self.get_keyword('FLSPECTR', default='').lower()
         lamps    = self.get_keyword('LAMPS', default='').lower()
-        gratepos = self.get_keyword('GRATEPOS', default='').lower()
+        gratepos = self.get_keyword('GRATEPOS')
 
         # if obstype is 'bias' we have a bias
         if obstype == 'bias':
@@ -195,7 +195,7 @@ class Deimos(instrument.Instrument):
 
         # if lamps are not off/qz and grating position is 3 or 4, then arc
         if hatchpos == 'closed' and ('off' not in lamps and 'qz' not in lamps)\
-           and (gratepos == '3' or gratepos == '4'):
+           and (gratepos == 3 or gratepos == 4):
             return 'arclamp'
 
         # if tracking then we must have an object science image
