@@ -219,7 +219,7 @@ class Deimos(instrument.Instrument):
         camera = self.get_keyword('CAMERA', False)
         if camera == None:
             self.log.info('set_camera: Adding CAMERA keyword')
-            self.set_keyword('CAMERA', 'DEIMOS, 'KOA: Camera name')
+            self.set_keyword('CAMERA', 'DEIMOS', 'KOA: Camera name')
 
         return True
 
