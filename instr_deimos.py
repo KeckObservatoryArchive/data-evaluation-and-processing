@@ -357,6 +357,7 @@ class Deimos(instrument.Instrument):
             nPixSat = 0
             for ext in range(1, len(self.fitsHdu)):
                 image = self.fitsHdu[ext].data
+                if 'ndarray' not in str(type(image)): continue
                 pixSat = image[np.where(image >= satVal)]
                 nPixSat += len(image[np.where(image >= satVal)])
 
