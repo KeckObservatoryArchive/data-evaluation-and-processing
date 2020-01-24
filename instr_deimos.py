@@ -413,7 +413,7 @@ class Deimos(instrument.Instrument):
         spatscal = self.get_keyword('SPATSCAL')
         if obsmode == 'image':
             dispscal = spatscal
-        elif obsmode in ['longslit', 'mos']
+        elif obsmode in ['longslit', 'mos']:
             grating = self.get_keyword('GRATENAM')
             if grating in self.gratingList.keys():
                 dispscal = self.gratingList[grating]['dispersion']
