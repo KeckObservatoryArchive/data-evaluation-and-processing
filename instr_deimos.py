@@ -182,7 +182,7 @@ class Deimos(instrument.Instrument):
             return 'dark'
 
         # if slmsknam contains 'goh' we have a focus image
-        if slmsknam.startsWith('goh'):
+        if slmsknam.startswith('goh'):
             return 'focus'
 
         # if hatch is closed and lamps are quartz, then flat
