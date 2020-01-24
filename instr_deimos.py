@@ -282,6 +282,8 @@ class Deimos(instrument.Instrument):
 
         self.log.info('set_obsmode: Adding OBSMODE keyword')
         
+        obsmode = 'null'
+        
         gratname = self.get_keyword('GRATENAM', default='').lower()
         if gratname in ['', 'unknown', 'none']:
             obsmode = 'UNKNOWN'
