@@ -330,7 +330,10 @@ class Deimos(instrument.Instrument):
             key = f'DETSEC{str(i).zfill(2)}'
             detsec = 'null'
             if i < len(self.fitsHdu):
-                detsec = self.fitsHdu[i].header['DETSEC']
+                try:
+                    detsec = self.fitsHdu[i].header['DETSEC']
+                except:
+                    pass
             comment = f'KOA: Mosaic detector section for HDU{str(i).zfill(2)}'
             self.set_keyword(key, detsec, comment)
 
