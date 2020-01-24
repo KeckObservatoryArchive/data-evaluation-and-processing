@@ -128,15 +128,20 @@ class Deimos(instrument.Instrument):
 
     def set_ofName(self):
         '''
-        Sets OFNAME keyword from DATAFILE
+        Sets OFNAME keyword from OUTFILE and FRAMENO
         '''
 
-        datafile = self.get_keyword('DATAFILE', False)
-        if datafile == None:
-            self.log.info('set_ofName: Could not determine OFNAME')
+        outfile = self.get_keyword('OUTFILE', False)
+        frameno = self.get_keyword('FRAMENO', False)
+        if outfile == None or frameno == None:
+            self.log.info('set_ofName: Could not detrermine OFNAME')
+            ofname = ''
             return False
-
-        self.set_keyword('OFNAME', datafile, 'KOA: Original file name')
+        
+        frameno = str(frameno).zfill(4)
+        ofName = ''.join((outfile, frameno, '.fits'))
+        self.log.info('set_ofName: OFNAME = {}'.format(ofName))
+        self.set_keyword('OFNAME', ofName, 'KOA: Original file name')
 
         return True
 
