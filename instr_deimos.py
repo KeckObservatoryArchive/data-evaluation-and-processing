@@ -64,6 +64,7 @@ class Deimos(instrument.Instrument):
 
         ok = True
         if ok: ok = self.set_instr()
+        if ok: ok = self.set_fcs_date_time()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_ut()
         if ok: ok = self.set_koaimtyp()
@@ -125,6 +126,26 @@ class Deimos(instrument.Instrument):
         else:
             prefix = ''
         return prefix
+
+
+    def set_fcs_date_time(self):
+        '''
+        For FCS images, set DATE-OBS and UTC from DATE
+        '''
+
+        if '/fcs/' not in self.get_keyword('OUTDIR', default=''):
+            return True
+
+        dateVal = self.get_keyword('DATE', default='')
+        if 'T' not in dateVal:
+            return True
+            
+        dateobs, utc = dateVal.split('T')
+
+        self.set_keyword('DATE-OBS', dateobs, 'KOA: Created from DATE keyword value')
+        self.set_keyword('UTC', dateobs, 'KOA: Created from DATE keyword value')
+        
+        return True
 
 
     def set_ofName(self):
