@@ -424,7 +424,7 @@ class Deimos(instrument.Instrument):
 
         obsmode = self.get_keyword('OBSMODE')
         spatscal = self.get_keyword('SPATSCAL')
-        if obsmode == 'IMAGE':
+        if obsmode == 'IMAGING':
             dispscal = spatscal
         elif obsmode in ['LONGSLIT', 'MOS']:
             grating = self.get_keyword('GRATENAM')
