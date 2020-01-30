@@ -287,13 +287,15 @@ class Deimos(instrument.Instrument):
         gratname = self.get_keyword('GRATENAM', default='').lower()
         if gratname in ['', 'unknown', 'none']:
             obsmode = 'UNKNOWN'
-        elif gratname.lower() == 'mirror':
+        elif gratname == 'mirror':
             gratepos = self.get_keyword('GRATEPOS', default=0)
             if int(gratepos) == 3 or int(gratepos) == 4:
                 key = f'G{int(gratepos)}TLTNAM'
                 tilt = self.get_keyword(key, default='').lower()
                 if tilt == 'zeroth_order':
                     obsmode = 'IMAGING'
+            else:
+                obsmode = 'IMAGING'
         else:
             slmsknam = self.get_keyword('SLMSKNAM', default='')
             if slmsknam.startswith('LVM') or slmsknam.startswith('Long'):
