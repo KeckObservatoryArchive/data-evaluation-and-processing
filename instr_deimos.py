@@ -394,8 +394,8 @@ class Deimos(instrument.Instrument):
             if grating in self.gratingList.keys():
                 wavecntr = int(round(self.get_keyword(waveKey), -1))
                 delta = self.gratingList[grating]['length']/2
-                waveblue = wavecntr - delta
-                wavered = wavecntr + delta
+                waveblue = int(round(wavecntr - delta))
+                wavered = int(round(wavecntr + delta))
 
         else:
             pass
