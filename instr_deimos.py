@@ -133,7 +133,7 @@ class Deimos(instrument.Instrument):
         For FCS images, set DATE-OBS and UTC from DATE
         '''
 
-        if '/fcs/' not in self.get_keyword('OUTDIR', default=''):
+        if '/fcs' not in self.get_keyword('OUTDIR', default=''):
             return True
 
         dateVal = self.get_keyword('DATE', default='')
@@ -175,7 +175,7 @@ class Deimos(instrument.Instrument):
         Creates KOAIMTYP keyword.
         '''
 
-        if '/fcs/' in self.get_keyword('OUTDIR', default=''):
+        if '/fcs' in self.get_keyword('OUTDIR', default=''):
             koaimtyp = 'fcscal'
         else:
             koaimtyp = self.get_koaimtyp()
