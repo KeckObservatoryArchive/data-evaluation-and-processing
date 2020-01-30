@@ -380,14 +380,14 @@ class Deimos(instrument.Instrument):
 
         # Is this an image or spectrum?
         obsmode = self.get_keyword('OBSMODE')
-        if obsmode == 'image':
+        if obsmode == 'IMAGING':
             filter = self.get_keyword('FILTER', defult='').strip()
             if filter in filter.keys():
                 waveblue = self.filterList[filter]['blue']
                 wavecntr = self.filterList[filter]['cntr']
                 wavered  = self.filterList[filter]['red']
 
-        elif obsmode in ['longslit', 'mos']:
+        elif obsmode in ['LONGSLIT', 'MOS']:
             gratepos = self.get_keyword('GRATEPOS')
             waveKey = f'G{gratepos}TLTWAV'
             grating = self.get_keyword('GRATENAM')
