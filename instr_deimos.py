@@ -287,7 +287,7 @@ class Deimos(instrument.Instrument):
         gratname = self.get_keyword('GRATENAM', default='').lower()
         if gratname in ['', 'unknown', 'none']:
             obsmode = 'UNKNOWN'
-        elif gratname == 'mirror':
+        elif gratname.lower() == 'mirror':
             gratepos = self.get_keyword('GRATEPOS', default=0)
             if int(gratepos) == 3 or int(gratepos) == 4:
                 key = f'G{int(gratepos)}TLTNAM'
