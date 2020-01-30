@@ -287,22 +287,22 @@ class Deimos(instrument.Instrument):
         
         gratname = self.get_keyword('GRATENAM', default='').lower()
         if gratname in ['', 'unknown', 'none']:
-            obsmode = 'UNKNOWN'
+            obsmode = 'unknown'
         elif gratname == 'mirror':
             gratepos = self.get_keyword('GRATEPOS', default=0)
             if int(gratepos) == 3 or int(gratepos) == 4:
                 key = f'G{int(gratepos)}TLTNAM'
                 tilt = self.get_keyword(key, default='').lower()
                 if tilt == 'zeroth_order':
-                    obsmode = 'IMAGING'
+                    obsmode = 'imaging'
             else:
-                obsmode = 'IMAGING'
+                obsmode = 'imaging'
         else:
             slmsknam = self.get_keyword('SLMSKNAM', default='')
             if slmsknam.startswith('LVM') or slmsknam.startswith('Long'):
-                obsmode = 'LONGSLIT'
+                obsmode = 'longslit'
             else:
-                obsmode = 'MOS'
+                obsmode = 'mos'
 
         self.set_keyword('OBSMODE', obsmode, 'KOA: Observing mode')
 
@@ -380,14 +380,14 @@ class Deimos(instrument.Instrument):
 
         # Is this an image or spectrum?
         obsmode = self.get_keyword('OBSMODE')
-        if obsmode == 'IMAGING':
+        if obsmode == 'imaging':
             filter = self.get_keyword('FILTER', default='').strip()
             if filter in self.filterList.keys():
                 waveblue = self.filterList[filter]['blue']
                 wavecntr = self.filterList[filter]['cntr']
                 wavered  = self.filterList[filter]['red']
 
-        elif obsmode in ['LONGSLIT', 'MOS']:
+        elif obsmode in ['longslit', 'mos']:
             gratepos = self.get_keyword('GRATEPOS')
             waveKey = f'G{gratepos}TLTWAV'
             grating = self.get_keyword('GRATENAM')
@@ -426,10 +426,10 @@ class Deimos(instrument.Instrument):
 
         obsmode = self.get_keyword('OBSMODE')
         spatscal = self.get_keyword('SPATSCAL')
-        if obsmode == 'IMAGING':
+        if obsmode == 'imaging':
             dispscal = spatscal
             com = ' (arcsec/pix)'
-        elif obsmode in ['LONGSLIT', 'MOS']:
+        elif obsmode in ['longslit', 'mos']:
             grating = self.get_keyword('GRATENAM')
             if grating in self.gratingList.keys():
                 dispscal = self.gratingList[grating]['dispersion']
