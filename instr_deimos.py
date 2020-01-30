@@ -141,7 +141,8 @@ class Deimos(instrument.Instrument):
             return True
 
         dateobs, utc = dateVal.split('T')
-
+        utc = f'{utc}.00'
+        
         self.log.info('set_fcs_date_time: Setting DATE-OBS and UTC from DATE')
         self.set_keyword('DATE-OBS', dateobs, 'KOA: Created from DATE keyword value')
         self.set_keyword('UTC', utc, 'KOA: Created from DATE keyword value')
