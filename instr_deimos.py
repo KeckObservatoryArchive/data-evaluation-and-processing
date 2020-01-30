@@ -422,17 +422,20 @@ class Deimos(instrument.Instrument):
         '''
 
         dispscal = 'null'
+        com = ''
 
         obsmode = self.get_keyword('OBSMODE')
         spatscal = self.get_keyword('SPATSCAL')
         if obsmode == 'IMAGING':
             dispscal = spatscal
+            com = ' (arcsec/pix)'
         elif obsmode in ['LONGSLIT', 'MOS']:
             grating = self.get_keyword('GRATENAM')
             if grating in self.gratingList.keys():
                 dispscal = self.gratingList[grating]['dispersion']
+                com = ' (A/pix)'
 
-        self.set_keyword('DISPSCAL', dispscal, 'KOA: CCD dispersion pixel scale')
+        self.set_keyword('DISPSCAL', dispscal, f'KOA: CCD dispersion pixel scale{com}')
         return True
 
 
