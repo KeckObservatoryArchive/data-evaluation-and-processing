@@ -382,7 +382,7 @@ class Deimos(instrument.Instrument):
         obsmode = self.get_keyword('OBSMODE')
         if obsmode == 'IMAGING':
             filter = self.get_keyword('FILTER', default='').strip()
-            if filter in filter.keys():
+            if filter in self.filterList.keys():
                 waveblue = self.filterList[filter]['blue']
                 wavecntr = self.filterList[filter]['cntr']
                 wavered  = self.filterList[filter]['red']
