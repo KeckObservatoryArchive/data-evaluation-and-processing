@@ -86,6 +86,7 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_npixsat(satVal=65535.0)
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_spatscal()
+        if ok: ok = self.set_dispscal()
         if ok: ok = self.set_specres()
 
         return ok
