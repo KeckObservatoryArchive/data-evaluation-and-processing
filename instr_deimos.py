@@ -301,7 +301,7 @@ class Deimos(instrument.Instrument):
             else:
                 obsmode = 'MOS'
 
-        self.set_keyword('OBSMOD', obsmode, 'KOA: Observing mode')
+        self.set_keyword('OBSMODE', obsmode, 'KOA: Observing mode')
 
         return True
 
@@ -422,9 +422,9 @@ class Deimos(instrument.Instrument):
 
         obsmode = self.get_keyword('OBSMODE')
         spatscal = self.get_keyword('SPATSCAL')
-        if obsmode == 'image':
+        if obsmode == 'IMAGE':
             dispscal = spatscal
-        elif obsmode in ['longslit', 'mos']:
+        elif obsmode in ['LONGSLIT', 'MOS']:
             grating = self.get_keyword('GRATENAM')
             if grating in self.gratingList.keys():
                 dispscal = self.gratingList[grating]['dispersion']
