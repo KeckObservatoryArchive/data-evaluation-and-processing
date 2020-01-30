@@ -153,7 +153,10 @@ class Deimos(instrument.Instrument):
         Creates KOAIMTYP keyword.
         '''
 
-        koaimtyp = self.get_koaimtyp()
+        if '/fcs/' in self.get_keyword('OUTDIR', default=''):
+            koaimtyp = 'fcscal'
+        else:
+            koaimtyp = self.get_koaimtyp()
 
         # Warn if undefined
         if koaimtyp == 'undefined':
