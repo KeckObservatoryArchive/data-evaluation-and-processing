@@ -505,6 +505,11 @@ class Deimos(instrument.Instrument):
 
         #needed hdr vals
         hdr0 = hdus[0].header
+
+        if hdr0['KOAID'].startswith('DF'):
+            super().create_jpg_from_fits(fits_filepath, outdir)
+            return
+            
         binning  = hdr0['BINNING'].split(',')
         precol   = int(hdr0['PRECOL'])   // int(binning[0])
         postpix  = int(hdr0['POSTPIX'])  // int(binning[0])
