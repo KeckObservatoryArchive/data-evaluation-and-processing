@@ -482,3 +482,138 @@ class Deimos(instrument.Instrument):
         self.set_keyword('SPECRES', specres, 'KOA: nominal spectral resolution')
 
         return True
+
+
+    def create_jpg_from_fits(self, fits_filepath, outdir):
+        '''
+        Overriding instrument default function
+        Tile images horizontally in order from left to right.
+        Use DETSEC keyword to figure out data order/position
+        '''
+
+        #open
+        hdus = fits.open(fits_filepath, ignore_missing_end=True)
+
+        #needed hdr vals
+        hdr0 = hdus[0].header
+        binning  = hdr0['BINNING'].split(',')
+        precol   = int(hdr0['PRECOL'])   // int(binning[0])
+        postpix  = int(hdr0['POSTPIX'])  // int(binning[0])
+        preline  = int(hdr0['PRELINE'])  // int(binning[1])
+        postline = int(hdr0['POSTLINE']) // int(binning[1])
+
+        #get extension order (uses DETSEC keyword)
+        ext_order = Deimos.get_ext_data_order(hdus)
+        assert ext_order, "ERROR: Could not determine extended data order"
+
+        #loop thru extended headers in order, create png and add to list in order
+        interval = ZScaleInterval()
+        vmin = None
+        vmax = None
+        alldata = None
+        for i, ext in enumerate(ext_order):
+
+            data = hdus[ext].data
+            hdr  = hdus[ext].header
+            if 'ndarray' not in str(type(data)): continue
+
+            #calc bias array from postpix area
+            sh = data.shape
+            x1 = 0
+            x2 = sh[0]
+            y1 = sh[1] - postpix + 1
+            y2 = sh[1] - 1
+            bias = np.median(data[x1:x2, y1:y2], axis=1)
+            bias = np.array(bias, dtype=np.int64)
+
+            #subtract bias
+            data = data - bias[:,None]
+
+            #get min max of each ext (not including pre/post pixels)
+            #NOTE: using sample box that is 90% of full area
+            #todo: should we take an average min/max of each ext for balancing?
+            sh = data.shape
+            x1 = int(preline          + (sh[0] * 0.10))
+            x2 = int(sh[0] - postline - (sh[0] * 0.10))
+            y1 = int(precol           + (sh[1] * 0.10))
+            y2 = int(sh[1] - postpix  - (sh[1] * 0.10))
+            tmp_vmin, tmp_vmax = interval.get_limits(data[x1:x2, y1:y2])
+            if vmin == None or tmp_vmin < vmin: vmin = tmp_vmin
+            if vmax == None or tmp_vmax > vmax: vmax = tmp_vmax
+            if vmin < 0: vmin = 0
+
+            #remove pre/post pix columns
+            data = data[:,precol:data.shape[1]-postpix]
+
+            #flip data left/right
+            #NOTE: This should come after removing pre/post pixels
+            ds = Deimos.get_detsec_data(hdr['DETSEC'])
+            if ds and ds[0] > ds[1]:
+                data = np.fliplr(data)
+            if ds and ds[2] > ds[3]:
+                data = np.flipud(data)
+
+            #concatenate horizontally
+            if i==0: alldata = data
+            else   : alldata = np.append(alldata, data, axis=1)
+
+        # Need to flip final stitched image
+        alldata = np.fliplr(alldata)
+        #filepath vars
+        basename = os.path.basename(fits_filepath).replace('.fits', '')
+        out_filepath = f'{outdir}/{basename}.jpg'
+
+        #bring in min/max by 2% to help ignore large areas of black or overexposed spots
+        #todo: this does not achieve what we want
+        # minmax_adjust = 0.02
+        # vmin += int((vmax - vmin) * minmax_adjust)
+        # vmax -= int((vmax - vmin) * minmax_adjust)
+
+        #normalize, stretch and create jpg
+        norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch())
+        dpi = 100
+        width_inches  = alldata.shape[1] / dpi
+        height_inches = alldata.shape[0] / dpi
+        fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding; bbox_inches='tight' doesn't really work
+        plt.axis('off')
+        plt.imshow(alldata, cmap='gray', origin='lower', norm=norm)
+        plt.savefig(out_filepath, quality=92)
+        plt.close()
+
+
+    @staticmethod
+    def get_ext_data_order(hdus):
+        '''
+        Use DETSEC keyword to figure out true order of extension data for horizontal tiling
+        '''
+        key_orders = {}
+        for i in range(1, len(hdus)):
+            try:
+                ds = Deimos.get_detsec_data(hdus[i].header['DETSEC'])
+                if not ds: return None
+                key_orders[ds[0]] = i
+            except:
+                pass
+
+        orders = []
+        for key in sorted(key_orders):
+            orders.append(key_orders[key])
+        return orders
+
+
+    @staticmethod
+    def get_detsec_data(detsec):
+        '''
+        Parse DETSEC string for x1, x2, y1, y2
+        '''
+        match = re.search( r'(\d+):(\d+),(\d+):(\d+)', detsec)
+        if not match:
+            return None
+        else:
+            x1 = int(match.groups(1)[0])
+            x2 = int(match.groups(1)[1])
+            y1 = int(match.groups(1)[2])
+            y2 = int(match.groups(1)[3])
+            return [x1, x2, y1, y2]
+
