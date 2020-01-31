@@ -9,6 +9,15 @@ import instrument
 import datetime as dt
 from common import *
 import numpy as np
+from astropy.io import fits
+
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+from PIL import Image
+from astropy.visualization import ZScaleInterval, AsinhStretch, SinhStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 class Deimos(instrument.Instrument):
 
