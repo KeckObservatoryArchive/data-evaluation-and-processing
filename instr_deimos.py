@@ -10,6 +10,7 @@ import datetime as dt
 from common import *
 import numpy as np
 from astropy.io import fits
+from scipy import ndimage
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -524,55 +525,73 @@ class Deimos(instrument.Instrument):
         interval = ZScaleInterval()
         vmin = None
         vmax = None
-        alldata = None
-        for i, ext in enumerate(ext_order):
+#        alldata = None
+        # DEIMOS has 2 rows of 4 CCDs each
+        alldata = [[], []]
+        for row, extData in enumerate(ext_order):
+            if len(extData) == 0: continue
+            for i, ext in enumerate(extData):
+                data = hdus[ext].data
+                hdr  = hdus[ext].header
+                if 'ndarray' not in str(type(data)): continue
 
-            data = hdus[ext].data
-            hdr  = hdus[ext].header
-            if 'ndarray' not in str(type(data)): continue
+                #calc bias array from postpix area
+                sh = data.shape
+                x1 = 0
+                x2 = sh[0]
+                y1 = sh[1] - postpix + 1
+                y2 = sh[1] - 1
+                bias = np.median(data[x1:x2, y1:y2], axis=1)
+                bias = np.array(bias, dtype=np.int64)
 
-            #calc bias array from postpix area
-            sh = data.shape
-            x1 = 0
-            x2 = sh[0]
-            y1 = sh[1] - postpix + 1
-            y2 = sh[1] - 1
-            bias = np.median(data[x1:x2, y1:y2], axis=1)
-            bias = np.array(bias, dtype=np.int64)
+                #subtract bias
+                data = data - bias[:,None]
 
-            #subtract bias
-            data = data - bias[:,None]
+                #get min max of each ext (not including pre/post pixels)
+                #NOTE: using sample box that is 90% of full area
+                #todo: should we take an average min/max of each ext for balancing?
+                sh = data.shape
+                x1 = int(preline          + (sh[0] * 0.10))
+                x2 = int(sh[0] - postline - (sh[0] * 0.10))
+                y1 = int(precol           + (sh[1] * 0.10))
+                y2 = int(sh[1] - postpix  - (sh[1] * 0.10))
+                tmp_vmin, tmp_vmax = interval.get_limits(data[x1:x2, y1:y2])
+                if vmin == None or tmp_vmin < vmin: vmin = tmp_vmin
+                if vmax == None or tmp_vmax > vmax: vmax = tmp_vmax
+                if vmin < 0: vmin = 0
 
-            #get min max of each ext (not including pre/post pixels)
-            #NOTE: using sample box that is 90% of full area
-            #todo: should we take an average min/max of each ext for balancing?
-            sh = data.shape
-            x1 = int(preline          + (sh[0] * 0.10))
-            x2 = int(sh[0] - postline - (sh[0] * 0.10))
-            y1 = int(precol           + (sh[1] * 0.10))
-            y2 = int(sh[1] - postpix  - (sh[1] * 0.10))
-            tmp_vmin, tmp_vmax = interval.get_limits(data[x1:x2, y1:y2])
-            if vmin == None or tmp_vmin < vmin: vmin = tmp_vmin
-            if vmax == None or tmp_vmax > vmax: vmax = tmp_vmax
-            if vmin < 0: vmin = 0
+                #remove pre/post pix columns
+                data = data[:,precol:data.shape[1]-postpix]
 
-            #remove pre/post pix columns
-            data = data[:,precol:data.shape[1]-postpix]
+                #flip data left/right
+                #NOTE: This should come after removing pre/post pixels
+                ds = Deimos.get_detsec_data(hdr['DETSEC'])
+                if ds and ds[0] > ds[1]:
+                    data = np.fliplr(data)
+                if ds and ds[2] > ds[3]:
+                    data = np.flipud(data)
 
-            #flip data left/right
-            #NOTE: This should come after removing pre/post pixels
-            ds = Deimos.get_detsec_data(hdr['DETSEC'])
-            if ds and ds[0] > ds[1]:
-                data = np.fliplr(data)
-            if ds and ds[2] > ds[3]:
-                data = np.flipud(data)
+                #concatenate horizontally
+                if i==0:
+                    alldata[row] = data
+                else   :
+                    alldata[row] = np.append(alldata[row], data, axis=1)
 
-            #concatenate horizontally
-            if i==0: alldata = data
-            else   : alldata = np.append(alldata, data, axis=1)
+        # If alldata has 2 rows, then vertically stack them
+        # else take the one row
 
-        # Need to flip final stitched image
-        alldata = np.fliplr(alldata)
+        s0 = len(alldata[0])
+        s1 = len(alldata[1])
+
+        if s0 > 0 and s1 > 0:
+            alldata = np.concatenate((alldata[0], alldata[1]), axis=0)
+            # Need to rotate final stitched image
+            alldata = ndimage.rotate(alldata, -90, axes=(0, 1))
+        elif s0 > 0:
+            alldata = alldata[0]
+        elif s1 > 0:
+            alldata = alldata[1]
+
         #filepath vars
         basename = os.path.basename(fits_filepath).replace('.fits', '')
         out_filepath = f'{outdir}/{basename}.jpg'
@@ -601,18 +620,23 @@ class Deimos(instrument.Instrument):
         '''
         Use DETSEC keyword to figure out true order of extension data for horizontal tiling
         '''
-        key_orders = {}
+        key_orders = [{}, {}]
         for i in range(1, len(hdus)):
+            arrRow = 0
             try:
                 ds = Deimos.get_detsec_data(hdus[i].header['DETSEC'])
                 if not ds: return None
-                key_orders[ds[0]] = i
+                if ds[2] > 4096 or ds[3] > 4096: arrRow = 1
+                key_orders[arrRow][ds[0]] = i
             except:
                 pass
 
-        orders = []
-        for key in sorted(key_orders):
-            orders.append(key_orders[key])
+        # DEIMOS can have 2 rows of 4 CCDs each
+        orders = [[], []]
+        for num, entry in enumerate(key_orders):
+            for key in sorted(entry):
+                orders[num].append(entry[key])
+
         return orders
 
 
