@@ -236,7 +236,11 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
                     dataStr = ''
                     colWidths = []
                     for idx, colName in enumerate(hdu.data.columns.names):
-                        fmtWidth = int(hdu.data.formats[idx][1:])
+                        try:
+                            fmtWidth = int(hdu.data.formats[idx][1:])
+                        except:
+                            fmtWidth = int(hdu.data.formats[idx][:-1])
+                            if fmtWidth < 16: fmtWidth = 16
                         colWidth = max(fmtWidth, len(colName))
                         colWidths.append(colWidth)
 
