@@ -392,7 +392,7 @@ DATE-OBS	char	16	N
 DCSSTAT	char	16	Y
 DCSVERS	char	16	Y
 DDEC	double	16	Y
-DEC	char	16	N
+DEC	char	16	Y
 DOMEPOSN	double	16	Y
 DOMESTAT	char	16	Y
 DRA	double	16	Y
@@ -448,7 +448,7 @@ POYPOS6	double	16	Y
 POYPOS7	double	16	Y
 POYPOS8	double	16	Y
 POYPOS9	double	16	Y
-RA	char	16	N
+RA	char	16	Y
 ROTBASE	double	16	Y
 ROTDEST	double	16	Y
 ROTERCNT	double	16	Y
