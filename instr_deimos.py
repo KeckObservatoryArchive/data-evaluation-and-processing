@@ -611,7 +611,8 @@ class Deimos(instrument.Instrument):
         ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding; bbox_inches='tight' doesn't really work
         plt.axis('off')
         plt.imshow(alldata, cmap='gray', origin='lower', norm=norm)
-        plt.savefig(out_filepath, quality=92)
+        # DEIMOS jpegs are large, let's reduce the size using dpi (default is 100)
+        plt.savefig(out_filepath, quality=92, dpi=(50))
         plt.close()
 
 
