@@ -322,15 +322,17 @@ class Deimos(instrument.Instrument):
         obsmode = 'null'
         
         gratname = self.get_keyword('GRATENAM', default='').lower()
+        gratepos = self.get_keyword('GRATEPOS', default=0)
+
         if gratname in ['', 'unknown', 'none']:
             obsmode = 'unknown'
         elif gratname == 'mirror':
-            gratepos = self.get_keyword('GRATEPOS', default=0)
-            if int(gratepos) == 3 or int(gratepos) == 4:
-                key = f'G{int(gratepos)}TLTNAM'
-                tilt = self.get_keyword(key, default='').lower()
-                if tilt == 'zeroth_order':
-                    obsmode = 'imaging'
+            obsmode = 'imaging'
+        elif int(gratepos) == 3 or int(gratepos) == 4:
+            key = f'G{int(gratepos)}TLTNAM'
+            tilt = self.get_keyword(key, default='').lower()
+            if tilt == 'zeroth_order':
+                obsmode = 'imaging'
             else:
                 obsmode = 'imaging'
         else:
