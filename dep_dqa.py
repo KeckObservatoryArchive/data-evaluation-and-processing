@@ -63,6 +63,8 @@ def dep_dqa(instrObj, tpx=0):
         raise Exception('dep_dqa.py: locate input file does not exist.  EXITING.')
         return
         
+    if instr == 'DEIMOS':
+        instrObj.create_fcs_list(locateFile)
 
     # Read the list of FITS files
     files = []
