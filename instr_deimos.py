@@ -79,6 +79,7 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_ut()
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
+        if ok: ok = self.set_fcskoaid()
         if ok: ok = self.set_ofName()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
@@ -657,4 +658,37 @@ class Deimos(instrument.Instrument):
             y1 = int(match.groups(1)[2])
             y2 = int(match.groups(1)[3])
             return [x1, x2, y1, y2]
+
+
+    def create_fcs_list(self, locateFile):
+        '''
+        Creates self.fcsFiles for use in set_fcskoaid()
+        '''
+
+        self.fcsFiles = {}
+        with open(locateFile, 'r') as lf:
+            for line in lf:
+                file = line.strip()
+                self.set_fits_file(file)
+                self.set_utc()
+                self.set_dateObs()
+                koaid, result = self.make_koaid()
+                if koaid.startswith('DF'):
+                    self.fcsFiles[file.split('/')[-1]] = koaid
+
+
+    def set_fcskoaid(self):
+        '''
+        Populates FCSKOAID with the associated FCS file
+        '''
+
+        fcs = self.get_keyword('FCSIMGFI', default='')
+        fcs = fcs.split('/')[-1]
+        fcskoaid = ''
+        if fcs in self.fcsFiles.keys():
+            fcskoaid = self.fcsFiles[fcs]
+        self.set_keyword('FCSKOAID', fcskoaid, 'KOA: associated fcs file')
+
+
+        return True
 
