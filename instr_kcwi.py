@@ -16,17 +16,6 @@ class Kcwi(instrument.Instrument):
         super().__init__(instr, utDate, rootDir, log)
         # Other vars that subclass can overwrite
         self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
-
-        # KCWI has the original file name
-        # self.ofName = 'OFNAME'
-        # self.camera = 'CAMERA'
-        # self.endHour = 'DATE-END'
-        # Set the KCWI specific paths to anc and stage
-        # seq = (self.rootDir, '/KCWI/', self.utDate, '/anc')
-        # self.ancDir = ''.join(seq)
-        # seq = (self.rootDir, '/stage')
-        # self.stageDir = ''.join(seq)
-        # Generate the paths to the KCWI datadisk accounts
         self.sdataList = self.get_dir_list()
 
     def get_dir_list(self):
