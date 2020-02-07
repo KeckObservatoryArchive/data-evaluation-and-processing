@@ -57,10 +57,7 @@ class Kcwi(instrument.Instrument):
         '''
         Run all DQA checks unique to this instrument.
         '''
-
-        #todo: check that all of these do not need a subclass version if base class func was used.
         ok = True
-        self.log.info(self.get_keyword('OFNAME'))
         if ok: ok = self.set_instr()
         if ok: ok = self.set_telescope()
         if ok: ok = self.set_filename()
