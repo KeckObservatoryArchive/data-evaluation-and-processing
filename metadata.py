@@ -99,9 +99,9 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
 
     #warn only if counts
     if (warns['type'] > 0):
-        if log: log.warning('metadata.py: Found {} data type warnings (search "metadata check" in log).'.format(warns['type']))
+        if log: log.info('metadata.py: Found {} data type mismatches (search "metadata check" in log).'.format(warns['type']))
     if (warns['truncate'] > 0):
-        if log: log.warning('metadata.py: Found {} truncation warnings (search "metadata check" in log).'.format(warns['truncate']))
+        if log: log.warning('metadata.py: Found {} data truncations (search "metadata check" in log).'.format(warns['truncate']))
 
 
 
@@ -130,8 +130,13 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
             if   (keyword in header) : val = header[keyword]
             elif (keyword in extra)  : val = extra[keyword]
             else: 
-                val = 'null';
+                val = 'null'
                 if dev: log_msg(log, dev, 'metadata check: Keyword not found in header: ' + keyword)
+
+            #special check for val = fits.Undefined
+            if isinstance(val, fits.Undefined):
+                val = 'null'
+                if dev: log_msg(log, dev, 'metadata check: Keyword value is fits.Undefined: ' + keyword)
 
             #check keyword val and format
             val = check_keyword_val(keyword, val, row, warns, log)
@@ -305,14 +310,14 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             if col not in baseColList:
                 if col not in skips:
                     if not skipColCompareWarn: 
-                        result['warnings'].append('MD{} col "{}" not in MD0 col list.'.format(i, col))
+                        result['warnings'].append('Meta compare: MD{} col "{}" not in MD0 col list.'.format(i, col))
             else:
                 if col not in compareCols: compareCols.append(col)
         for col in baseColList:
             if col not in colList:
                 if col not in skips:
                     if not skipColCompareWarn: 
-                        result['warnings'].append('MD0 col "{}" not in MD{} col list.'.format(col, i))
+                        result['warnings'].append('Meta compare: MD0 col "{}" not in MD{} col list.'.format(col, i))
             else:
                 if col not in compareCols: compareCols.append(col)
 
@@ -322,7 +327,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             koaid = row['KOAID']
             baseRow = baseDf[baseDf['KOAID'] == koaid]
             if baseRow.empty: 
-                result['warnings'].append('CANNOT FIND KOAID "{}" in MD0'.format(koaid))
+                result['warnings'].append('Meta compare: CANNOT FIND KOAID "{}" in MD0'.format(koaid))
                 continue
             else:
                 if koaid not in compareKoaids: compareKoaids.append(koaid)
@@ -331,7 +336,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
             koaid = baseRow['KOAID']
             row = df[df['KOAID'] == koaid]
             if row.empty: 
-                result['warnings'].append('CANNOT FIND KOAID "{}" in MD{}'.format(koaid, i))
+                result['warnings'].append('Meta compare: CANNOT FIND KOAID "{}" in MD{}'.format(koaid, i))
                 continue
             else:
                 if koaid not in compareKoaids: compareKoaids.append(koaid)
@@ -347,7 +352,7 @@ def compare_meta_files(filepaths, skipColCompareWarn=False):
                 val1 = row1[col]
 
                 if val_smart_diff(val0, val1, col):
-                    result['warnings'].append('Value mismatch: koaid "{}": col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
+                    result['warnings'].append('Meta compare: {}: col "{}": (0)"{}" != ({})"{}"'.format(koaid, col, val0, i, val1))
 
         results.append(result)
 

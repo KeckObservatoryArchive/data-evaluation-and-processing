@@ -92,6 +92,7 @@ class ProgSplit:
         #var init
         self.fileList = []
         self.numFiles = 0
+        self.sciTotal = 0
         self.outdirs = {}
         self.programs = []
         self.suntimes = None
@@ -180,7 +181,7 @@ class ProgSplit:
 
                     # Check to see if it is an engineering night (Key = instrument, value = outdir/obs)
                     for key, value in self.engineering.items():
-                        if key in row[value].lower() or row['progid'] == 'ENG':
+                        if key in row[value].lower() or row['progid'] == 'ENG' or row['progid'].startswith('E'):
                             row['proginst'] = 'KECK'
                             row['progid']   = 'ENG'
                             row['progpi']   = self.instrument.lower() + 'eng'
@@ -267,17 +268,20 @@ class ProgSplit:
         ok = False
 
         file = self.fileList[filenum]
-        fileTime = datetime.strptime(file['utc'],'%H:%M:%S.%f')
+        fileTime = datetime.strptime(file['utdate'] + ' ' + file['utc'], '%Y-%m-%d %H:%M:%S.%f')
 
         #look for program that file time falls within
+        #NOTE: We actually are now just looking that the time is less than the end time of the program.
+        #This means that if we actually get to the last resort of assigning by time, a time before 
+        #the start of the night will just go to the first program.
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
             if not prog['StartTime'] or not prog['EndTime']:
                 continue
-            progStartTime = datetime.strptime(prog['StartTime'],'%H:%M')
-            progEndTime   = datetime.strptime(prog['EndTime'],'%H:%M')
-            if (progStartTime <= fileTime <= progEndTime):
-                self.log.warning('getProgInfo: Assigning ' + os.path.basename(file['file']) + ' by time.')
+            progStartTime = datetime.strptime(self.utDate +  ' ' + prog['StartTime'],'%Y-%m-%d %H:%M')
+            progEndTime   = datetime.strptime(self.utDate +  ' ' + prog['EndTime'],'%Y-%m-%d %H:%M')
+            if fileTime <= progEndTime or idx == len(self.programs)-1:
+                self.log.warning('getProgInfo: Assigning ' + os.path.basename(file['file']) + ' by time ' + file['utdate'] + ' ' + file['utc'] + ' to ' + prog['ProjCode'])
                 self.assign_single_to_pi(filenum, idx)
                 ok = True
                 break
@@ -333,6 +337,7 @@ class ProgSplit:
         #get array of names (first filter out garbage chars)
         file = self.fileList[filenum]
         observers = self.get_observer_array(file['observer'])
+        # print ('assign_single_by_observer: file observer array: ', observers)
         if len(observers) == 0: return False
 
         #look for program with any matching names both directions
@@ -340,6 +345,7 @@ class ProgSplit:
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
             progObservers = self.get_observer_array(prog['Observer'])
+            #print ('-- progObservers: ', progObservers)
             if len(progObservers) == 0: continue
 
             diff1 = len(set(observers) - set(progObservers))
@@ -349,6 +355,7 @@ class ProgSplit:
             diff2 = len(set(progObservers) - set(observers))
             perc2 = diff2 / len(progObservers) 
             ok2 = True if perc2 < 1.0 else False
+            #print ('-- result: ', diff1, perc1, ok1, diff2, perc2, ok2, matchIdx)
 
             #If observers match good enough then assign, but check multi program matching not ok
             if ok1 and ok2:
@@ -374,9 +381,11 @@ class ProgSplit:
             "Ellis, Konidaris, Belli, Newman, & Schenkar"
         '''
 
-        #replace whitespace and periods with comma
+        #replace whitespace, periods, slash and dash with comma
         obsvStr = re.sub("\s+", ",", obsvStr.strip())
         obsvStr = re.sub("\.+", ",", obsvStr.strip())
+        obsvStr = re.sub("\/+", ",", obsvStr.strip())
+        obsvStr = re.sub("\-+", ",", obsvStr.strip())
 
         #get rid of other unwanted things
         obsvStr = re.sub("\(.+?\)", "", obsvStr.strip())
@@ -489,6 +498,7 @@ class ProgSplit:
                     if splitTimes[i][0] <= thistime and splitTimes[i][1] > thistime:
                         self.outdirs[fdir]['sciCounts'][i] += 1
                         self.outdirs[fdir]['sciTotal']     += 1
+                        self.sciTotal                      += 1
                         break
 
 
@@ -520,7 +530,7 @@ class ProgSplit:
             for i, count in data['sciCounts'].items():
                 perc = count / data['sciTotal'] if data['sciTotal'] > 0 else 0
                 self.log.info('--- prog' + str(i) + ': ' + str(count) + ' ('+str(round(perc*100,0))+'%)')
-                if perc > 0.85 and count > 10: 
+                if (perc > 0.85 and count > 10) or (perc > 0.95 and count > 3): 
                     self.outdirs[outdir]['assign'] = i
                     progid = self.programs[i]['ProjCode']
                     self.log.info('Mapping (by sci) outdir ' + outdir + " to progIndex: " + str(i) + ' ('+progid+').')
@@ -589,6 +599,14 @@ class ProgSplit:
 
 #----------------------------------END SORT BY TIME----------------------------------
 
+    def get_header_val(self, header, key, default=None):
+        val = header.get(key)
+        if val != None and not isinstance(val, fits.Undefined): 
+            return val
+        else:
+            return default
+
+
     def use_header_prog_vals(self, use):
 
         for idx, file in enumerate(self.fileList):
@@ -603,12 +621,14 @@ class ProgSplit:
             for kw in keywords:
                 val = ''
                 if kw == 'progtitl':
-                    if 'PROGTL1' in header                      : val +=       header['PROGTL1']
-                    if 'PROGTL2' in header and header['PROGTL2']: val += ' ' + header['PROGTL2']
-                    if 'PROGTL3' in header and header['PROGTL3']: val += ' ' + header['PROGTL3']
+                    val1 = self.get_header_val(header, 'PROGTL1', '')
+                    val2 = self.get_header_val(header, 'PROGTL2', '')
+                    val3 = self.get_header_val(header, 'PROGTL3', '')
+                    if val1: val +=       val1.strip()
+                    if val2: val += ' ' + val2.strip()
+                    if val3: val += ' ' + val3.strip()
                 else:
-                    if kw.upper() in header: 
-                        val = header[kw.upper()]
+                    val = self.get_header_val(header, kw.upper(), '')
 
                 #determine whether to use new or old val (only throw warn/error for PROGID)
                 if use == 'assist':
@@ -619,7 +639,7 @@ class ProgSplit:
                         else:
                             self.fileList[idx][kw] = val
                             if kw == 'progid':
-                                self.log.warning("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
+                                self.log.info("getProgInfo: Could not determine " + kw.upper() + " value. Assigning from old header for: " + os.path.basename(file['file']))
                 elif use == 'force':
                     if val and val != file[kw]:
                         self.fileList[idx][kw] = val
@@ -627,6 +647,27 @@ class ProgSplit:
                             self.log.warning("getProgInfo: Force assigning " + kw.upper() + " from old header for: " + os.path.basename(file['file']))
 
 #--------------------------------------------------------------------
+
+    def logStats(self):
+
+        counts = {} 
+        for prog in self.programs:
+            pc = prog['ProjCode']
+            counts[pc] = 0
+
+        for progfile in self.fileList:
+            progid = progfile['progid']
+            if progid not in counts:
+                counts[progid] = 0
+            counts[progid] += 1
+
+        for key, count in counts.items():
+            if key == 'PROGID': key = 'NONE'
+            self.log.info(f"getProgInfo: PROGID COUNT: {key}: {count}")
+
+
+#--------------------------------------------------------------------
+
 
 
 def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, log=None, test=False):
@@ -667,7 +708,8 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, 
     #no proj codes
     # TODO: only throw error if there was some science files (ie this could be engineering)
     else:
-        progSplit.log.warning('No ' + instrument + ' programs scheduled this night.')
+        if progSplit.sciTotal > 0:
+            progSplit.log.warning(f"No {instrument} programs scheduled this night but {self.sciTotal} science files taken.")
 
 
     #special reprocessing check to look in header for PROG* info if all else fails
@@ -688,6 +730,10 @@ def getProgInfo(utdate, instrument, stageDir, useHdrProg=False, splitTime=None, 
             line += "\t" + progfile['progtitl']
             line += "\n"
             ofile.writelines(line)
+
+    #log stats
+    progSplit.logStats()
+
 
     #return data written for convenience
     progSplit.log.info('getProgInfo: finished, {} created'.format(fname))

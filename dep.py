@@ -134,7 +134,8 @@ class Dep:
 
 
         #email completion report
-        if fullRun: self.do_process_report_email()
+        if fullRun or int(self.config['MISC']['EMAIL_REPORT']) == 1: 
+            self.do_process_report_email()
 
 
         #complete
@@ -270,6 +271,7 @@ class Dep:
 
         #read log file for errors and warnings
         logStr = ''
+        progStr = ''
         count = 0
         errCount = 0
         warnCount = 0
@@ -278,35 +280,43 @@ class Dep:
             for line in log:
                 count += 1
                 if re.search('WARNING', line, re.IGNORECASE):
-                    logStr += str(count) + ': ' + line + "\n"
+                    pos = line.upper().find('WARNING')
+                    logStr += str(count) + ': ' + line[pos:].strip() + "\n"
                     warnCount += 1
                 elif re.search('ERROR', line, re.IGNORECASE):
-                    logStr += str(count) + ': ' + line + "\n"
+                    pos = line.upper().find('ERROR')
+                    logStr += str(count) + ': ' + line[pos:].strip() + "\n"
                     errCount += 1
+                elif re.search('PROGID COUNT', line, re.IGNORECASE):
+                    pos = line.find('PROGID COUNT') + 14
+                    progStr += line[pos:].strip() + "\n"
 
 
         #form subject
         subject = ''
         if (errCount  > 0): subject += '(ERR:'  + str(errCount) + ')'
         if (warnCount > 0): subject += '(WARN:' + str(warnCount) + ')'
-        subject += ' DEP: ' + self.instrObj.instr + ' ' + self.instrObj.utDate
+        subject += ' DEP : ' + self.instrObj.instr + ' ' + self.instrObj.utDate
 
 
         #form msg
         msg = ""
 
+        msg += "===== PROGRAM ASSIGNMENT COUNTS ====\n"
+        msg += progStr + "\n"
+
         msg += "===== ERRORS AND WARNINGS ====\n"
         if (logStr == ''): msg += "  (none)\n"
         else:              msg += logStr + "\n"
 
-        msg += "\n\n===== FILE LIST =====\n"
+        msg += "\n===== KOAID + RAW FILE LIST =====\n"
         dirs = self.instrObj.dirs
         utDateDir = self.instrObj.utDateDir
         filelistOutFile = dirs['lev0'] + '/' + utDateDir + '.filelist.table'
         if os.path.isfile(filelistOutFile): 
             with open(filelistOutFile, 'r') as file:
                 for line in file: 
-                    msg += line + "\n"
+                    msg += line.strip() + "\n"
         else: msg += "  0 Total FITS files\n"
 
 
