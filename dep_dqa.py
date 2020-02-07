@@ -154,9 +154,9 @@ def dep_dqa(instrObj, tpx=0):
                             dev=isDev,
                             instrKeywordSkips=instrObj.keywordSkips)    
 
-
-    #Create the extension files
-    make_fits_extension_metadata_files(dirs['lev0']+ '/', md5Prepend=utDateDir+'.', log=log)
+    if instr.upper() != 'KCWI':
+        #Create the extension files
+        make_fits_extension_metadata_files(dirs['lev0']+ '/', md5Prepend=utDateDir+'.', log=log)
 
 
     #Create yyyymmdd.FITS.md5sum.table
