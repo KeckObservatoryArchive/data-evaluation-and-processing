@@ -12,6 +12,8 @@ import numpy as np
 import math
 from astropy.convolution import convolve,Box1DKernel
 from astropy.io import fits
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 import os
 import re
 
@@ -564,8 +566,11 @@ class Lris(instrument.Instrument):
             self.set_keyword('CROTA2',rotposn,'KOA: Rotator position',ext=i)
 
             #set crval1/2 after we have used their original values
-            self.set_keyword('CRVAL1',ra,'KOA: CRVAL1',ext=i)
-            self.set_keyword('CRVAL2',dec,'KOA: CRVAL2',ext=i)
+            coord = SkyCoord(f'{ra} {dec}', unit=(u.hourangle, u.deg))
+            ra_deg  = coord.ra.degree
+            dec_deg = coord.dec.degree
+            self.set_keyword('CRVAL1',ra_deg,'KOA: CRVAL1',ext=i)
+            self.set_keyword('CRVAL2',dec_deg,'KOA: CRVAL2',ext=i)
 
         return True
 
@@ -649,6 +654,7 @@ class Lris(instrument.Instrument):
             specres = round(wavelen/deltalam,-1)
         if fwhm != 0:
             specres = round((wavelen/fwhm)/slit,-2)
+
         self.set_keyword('SLITLEN',slitlen,'KOA: Slit length')
         self.set_keyword('SLITWIDT',slitwidt,'KOA: Slit width')
         self.set_keyword('SPECRES',specres,'KOA: Spectral resolution')
