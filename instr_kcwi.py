@@ -14,9 +14,13 @@ class Kcwi(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
         # Call the parent init to get all the shared variables
         super().__init__(instr, utDate, rootDir, log)
+
+        self.keywordMap['UTC'] = 'UT'
+
         # Other vars that subclass can overwrite
         self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
         self.sdataList = self.get_dir_list()
+        self.keywordMap['UTC'] = 'UT'
 
     def get_dir_list(self):
         '''
@@ -63,7 +67,7 @@ class Kcwi(instrument.Instrument):
         if ok: ok = self.set_filename()
         if ok: ok = self.set_elaptime()
         if ok: ok = self.set_dateObs()
-        if ok: ok = self.set_utc()
+#        if ok: ok = self.set_utc()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_frameno()
