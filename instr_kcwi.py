@@ -9,13 +9,17 @@ KCWI specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 import numpy as np
+from astropy.io import fits
+import os
+import re
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from skimage import exposure
 
 class Kcwi(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
         # Call the parent init to get all the shared variables
         super().__init__(instr, utDate, rootDir, log)
-
-        self.keywordMap['UTC'] = 'UT'
 
         # Other vars that subclass can overwrite
         self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
@@ -99,15 +103,32 @@ class Kcwi(instrument.Instrument):
         self.set_keyword('TELESCOP','Keck II','KOA: Telescope name')
         return True
 
-    def set_utc(self):
+
+    def create_jpg_from_fits(self, fits_filepath, outdir):
         '''
-        Set UTC from UT keyword
+        Basic convert fits primary data to jpg.  Instrument subclasses can override this function.
         '''
-        try:
-            self.set_keyword('UTC',self.get_keyword('UT'),'KOA: Coordinated Universal Time')
-        except:
-            self.log.info('set_utc (KCWI): Could not set UTC from UT')
-        return True
+
+        #get image data
+        hdu = fits.open(fits_filepath, ignore_missing_end=True)
+        data = hdu[0].data
+        hdr  = hdu[0].header
+        #use histogram equalization to increase contrast
+        image_eq = exposure.equalize_hist(data)
+        
+        #form filepaths
+        basename = os.path.basename(fits_filepath).replace('.fits', '')
+        jpg_filepath = f'{outdir}/{basename}.jpg'
+        #create jpg
+        dpi = 100
+        width_inches  = hdr['NAXIS1'] / dpi
+        height_inches = hdr['NAXIS2'] / dpi
+        fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding
+        plt.axis('off')
+        plt.imshow(image_eq, cmap='gray', origin='lower')#, norm=norm)
+        plt.savefig(jpg_filepath, quality=92)
+        plt.close()
 
     def set_koaimtyp(self):
         '''
@@ -122,7 +143,6 @@ class Kcwi(instrument.Instrument):
             self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
 
         #update keyword
-        self.set_keyword('IMAGETYP', koaimtyp, 'KOA: Image type')
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
         
         return True
@@ -229,6 +249,11 @@ class Kcwi(instrument.Instrument):
                 waveblue = 3700
                 wavecntr = 6850
                 wavered = 10000
+        
+        try:
+            slitwidt = float(slitwidt)
+        except:
+            pass
         #set slit dimensions and wavelengths
         self.set_keyword('WAVEBLUE',waveblue,'KOA: Blue end wavelength')
         self.set_keyword('WAVECNTR',wavecntr,'KOA: Central wavelength')
@@ -272,7 +297,7 @@ class Kcwi(instrument.Instrument):
         parang = self.get_keyword('PARANG')
         el = self.get_keyword('EL')
         binning = self.get_keyword('BINNING')
-        
+        self.set_keyword('BINNING',str(binning),'Binning: serial/axis1, parallel/axis2')
         #special PA calculation determined by rotmode
         #pa = rotposn + parantel - el
         mode = rotmode[0:4]
@@ -319,12 +344,12 @@ class Kcwi(instrument.Instrument):
             radecsys = 'FK4'
         
         #set keywords
-        self.set_keyword('CD1_1',cd1_1,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CD1_2',cd1_2,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CD2_1',cd2_1,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CD2_2',cd2_2,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CRPIX1',crpix1,'KOA: Reference pixel')
-        self.set_keyword('CRPIX2',crpix2,'KOA: Reference pixel')
+        self.set_keyword('CD1_1',float(cd1_1),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CD1_2',float(cd1_2),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CD2_1',float(cd2_1),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CD2_2',float(cd2_2),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CRPIX1',float(crpix1),'KOA: Reference pixel')
+        self.set_keyword('CRPIX2',float(crpix2),'KOA: Reference pixel')
         self.set_keyword('CRVAL1',crval1,'KOA: Reference pixel value')
         self.set_keyword('CRVAL2',crval2,'KOA: Reference pixel value')
         self.set_keyword('RADECSYS',radecsys,'KOA: WCS coordinate system')
