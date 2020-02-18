@@ -71,7 +71,6 @@ class Kcwi(instrument.Instrument):
         if ok: ok = self.set_filename()
         if ok: ok = self.set_elaptime()
         if ok: ok = self.set_dateObs()
-#        if ok: ok = self.set_utc()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_frameno()
