@@ -22,7 +22,7 @@ class Kcwi(instrument.Instrument):
         super().__init__(instr, utDate, rootDir, log)
 
         # Other vars that subclass can overwrite
-        self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
+        self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
         self.sdataList = self.get_dir_list()
         self.keywordMap['UTC'] = 'UT'
 
