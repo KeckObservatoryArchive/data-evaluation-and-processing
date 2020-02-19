@@ -38,10 +38,10 @@ class Deimos(instrument.Instrument):
         
         # Skip warnings for these FCS-only keywords
         self.keywordSkips   = ['EXPOSURE', 'MPPMODE', 'NAXIS1', 'NAXIS2']
-        self.keywordSkips.append(['NUMAMPS', 'OBSNUM', 'PREPIX', 'SFRAMENO'])
-        self.keywordSkips.append(['SHUTSTAT', 'SOBJECT', 'SOBSTYPE', 'SOUTDIR'])
-        self.keywordSkips.append(['SOUTFILE', 'STTIME', 'SYNOPFMT', 'SYNOPSIS'])
-        self.keywordSkips.append(['TODISK', 'VOFFSET0', 'VOFFSET1', 'WINDOW', 'YFLIP'])
+        self.keywordSkips.extend(['NUMAMPS', 'OBSNUM', 'PREPIX', 'SFRAMENO'])
+        self.keywordSkips.extend(['SHUTSTAT', 'SOBJECT', 'SOBSTYPE', 'SOUTDIR'])
+        self.keywordSkips.extend(['SOUTFILE', 'STTIME', 'SYNOPFMT', 'SYNOPSIS'])
+        self.keywordSkips.extend(['TODISK', 'VOFFSET0', 'VOFFSET1', 'WINDOW', 'YFLIP'])
 
         # Generate the paths to the DEIMOS datadisk accounts
         self.sdataList = self.get_dir_list()
