@@ -406,7 +406,7 @@ class Instrument:
 
             outdir = self.get_keyword('OUTDIR')
             if (outdir and self.instr in outdir.upper()): ok = True
-
+            if (outdir and 'sdata100' in outdir and outdir.endswith('fcs')): ok = True
             currinst = self.get_keyword('CURRINST')
             if (currinst and self.instr == currinst): ok = True
 
