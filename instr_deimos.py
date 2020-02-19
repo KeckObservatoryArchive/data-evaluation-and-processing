@@ -35,7 +35,13 @@ class Deimos(instrument.Instrument):
 
         # Other vars that subclass can overwrite
         self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
-
+        
+        # Skip warnings for these FCS-only keywords
+        self.keywordSkips   = ['EXPOSURE', 'MPPMODE', 'NAXIS1', 'NAXIS2']
+        self.keywordSkips.append(['NUMAMPS', 'OBSNUM', 'PREPIX', 'SFRAMENO'])
+        self.keywordSkips.append(['SHUTSTAT', 'SOBJECT', 'SOBSTYPE', 'SOUTDIR'])
+        self.keywordSkips.append(['SOUTFILE', 'STTIME', 'SYNOPFMT', 'SYNOPSIS'])
+        self.keywordSkips.append(['TODISK', 'VOFFSET0', 'VOFFSET1', 'WINDOW', 'YFLIP'])
 
         # Generate the paths to the DEIMOS datadisk accounts
         self.sdataList = self.get_dir_list()
