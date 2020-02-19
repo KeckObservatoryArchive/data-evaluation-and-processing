@@ -34,7 +34,7 @@ class Deimos(instrument.Instrument):
 
 
         # Other vars that subclass can overwrite
-        self.endTime = '19:00:00'   # 24 hour period start/end time (UT)
+        self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
 
 
         # Generate the paths to the DEIMOS datadisk accounts
