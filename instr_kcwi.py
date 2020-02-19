@@ -14,6 +14,7 @@ import os
 import re
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import math
 from skimage import exposure
 
 class Kcwi(instrument.Instrument):
