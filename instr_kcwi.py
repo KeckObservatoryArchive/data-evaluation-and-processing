@@ -9,25 +9,22 @@ KCWI specific DR techniques can be added to it in the future
 import instrument
 import datetime as dt
 import numpy as np
+from astropy.io import fits
+import os
+import re
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from skimage import exposure
 
 class Kcwi(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
         # Call the parent init to get all the shared variables
         super().__init__(instr, utDate, rootDir, log)
+
         # Other vars that subclass can overwrite
         self.endTime = '20:00:00'   # 24 hour period start/end time (UT)
-
-        # KCWI has the original file name
-        # self.ofName = 'OFNAME'
-        # self.camera = 'CAMERA'
-        # self.endHour = 'DATE-END'
-        # Set the KCWI specific paths to anc and stage
-        # seq = (self.rootDir, '/KCWI/', self.utDate, '/anc')
-        # self.ancDir = ''.join(seq)
-        # seq = (self.rootDir, '/stage')
-        # self.stageDir = ''.join(seq)
-        # Generate the paths to the KCWI datadisk accounts
         self.sdataList = self.get_dir_list()
+        self.keywordMap['UTC'] = 'UT'
 
     def get_dir_list(self):
         '''
@@ -68,20 +65,14 @@ class Kcwi(instrument.Instrument):
         '''
         Run all DQA checks unique to this instrument.
         '''
-
-        #todo: check that all of these do not need a subclass version if base class func was used.
         ok = True
-        self.log.info(self.get_keyword('OFNAME'))
         if ok: ok = self.set_instr()
         if ok: ok = self.set_telescope()
         if ok: ok = self.set_filename()
         if ok: ok = self.set_elaptime()
         if ok: ok = self.set_dateObs()
-        if ok: ok = self.set_utc()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_koaimtyp()
-        
-        # if ok: ok = self.set_ut()
         if ok: ok = self.set_frameno()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_prog_info(progData)
@@ -91,26 +82,52 @@ class Kcwi(instrument.Instrument):
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_npixsat(satVal=65535)
-        if ok: ok = self.set_slit_dims()
+        if ok: ok = self.set_slitdims_wavelengths()
         if ok: ok = self.set_wcs()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
         return ok
     
     def set_filename(self):
+        '''
+        Map OFNAME
+        '''
         self.keywordMap['OFNAME'] = 'OFNAME'
         return True
 
     def set_telescope(self):
+        '''
+        Set telescope to Keck 2
+        '''
         self.set_keyword('TELESCOP','Keck II','KOA: Telescope name')
         return True
 
-    def set_utc(self):
-        try:
-            self.set_keyword('UTC',self.get_keyword('UT'),'KOA: Coordinated Universal Time')
-        except:
-            self.log.info('set_utc (KCWI): Could not set UTC from UT')
-        return True
+
+    def create_jpg_from_fits(self, fits_filepath, outdir):
+        '''
+        Basic convert fits primary data to jpg.  Instrument subclasses can override this function.
+        '''
+
+        #get image data
+        hdu = fits.open(fits_filepath, ignore_missing_end=True)
+        data = hdu[0].data
+        hdr  = hdu[0].header
+        #use histogram equalization to increase contrast
+        image_eq = exposure.equalize_hist(data)
+        
+        #form filepaths
+        basename = os.path.basename(fits_filepath).replace('.fits', '')
+        jpg_filepath = f'{outdir}/{basename}.jpg'
+        #create jpg
+        dpi = 100
+        width_inches  = hdr['NAXIS1'] / dpi
+        height_inches = hdr['NAXIS2'] / dpi
+        fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding
+        plt.axis('off')
+        plt.imshow(image_eq, cmap='gray', origin='lower')#, norm=norm)
+        plt.savefig(jpg_filepath, quality=92)
+        plt.close()
 
     def set_koaimtyp(self):
         '''
@@ -125,7 +142,6 @@ class Kcwi(instrument.Instrument):
             self.log.info('set_koaimtyp: Could not determine KOAIMTYP value')
 
         #update keyword
-        self.set_keyword('IMAGETYP', koaimtyp, 'KOA: Image type')
         self.set_keyword('KOAIMTYP', koaimtyp, 'KOA: Image type')
         
         return True
@@ -146,17 +162,12 @@ class Kcwi(instrument.Instrument):
             koaimtyp = 'bias'
         elif self.get_keyword('IMTYPE'):
             koaimtyp = self.get_keyword('IMTYPE').lower()
-        
-        # self.log.info(self.get_keyword('FILENAME'))
-        # self.log.info(self.get_keyword('KOAID'))
-        # self.log.info(f"XPOS {self.get_keyword('XPOSURE')} CAM {self.get_keyword('CAMERA')} IMTYPE {self.get_keyword('IMTYPE')} >>>>>> KOAIMTYP {koaimtyp}")
         return koaimtyp
 
     def set_elaptime(self):
         '''
         Fixes missing ELAPTIME keyword.
         '''
-
         itime  = self.get_keyword('ITIME')
         coadds = self.get_keyword('COADDS')
         #use elaptime if set, otherwise check other keywords
@@ -177,7 +188,10 @@ class Kcwi(instrument.Instrument):
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
         return True
 
-    def set_slit_dims(self):
+    def set_slitdims_wavelengths(self):
+        '''
+        Set slit dimensions and wavelengths
+        '''
         waveblue = 'null'
         wavecntr = 'null'
         wavered  = 'null'
@@ -189,6 +203,7 @@ class Kcwi(instrument.Instrument):
 
         slicer = self.get_keyword('IFUNAM').lower()
         camera = self.get_keyword('CAMERA')
+        #lowercase camera if not None
         try:
             camera = camera.lower()
         except:
@@ -196,23 +211,20 @@ class Kcwi(instrument.Instrument):
         binning = self.get_keyword('BINNING')
         gratname = self.get_keyword('BGRATNAM').lower()
         nodmask = self.get_keyword('BNASNAM').lower()
-        # print(gratname,slicer,camera)
+        
         # Configuration for KB
-        #
         configurations = {'bl' : {'waves':(3500, 4550, 5600), 'large':900, 'medium':1800, 'small':3600},
                   'bm' : {'waves':(3500, 4500, 5500), 'large':2000, 'medium':4000, 'small':8000},
                   'bh3' : {'waves':(4700, 5150, 5600), 'large':4500, 'medium':9000, 'small':18000},
                   'bh2' : {'waves':(4000, 4400, 4800), 'large':4500, 'medium':9000, 'small':18000},
-                  'bh1' : {'waves':(3500, 3800, 4100), 'large':4500, 'medium':9000, 'small':18000}
-                 }
-        #
+                  'bh1' : {'waves':(3500, 3800, 4100), 'large':4500, 'medium':9000, 'small':18000}}
+        
         # Slit width by slicer, slit length is always 20.4"
-        #
         slits = {'large':'1.35', 'medium':'0.69', 'small':'0.35'}
         if slicer in slits.keys():
             slitwidt = slits[slicer]
             slitlen = 20.4
-
+        #get wavelengths from configuration dictionary
         if gratname in configurations.keys() and slicer in slits.keys():
             waveblue = configurations.get(gratname)['waves'][0]
             wavecntr = configurations.get(gratname)['waves'][1]
@@ -223,12 +235,10 @@ class Kcwi(instrument.Instrument):
                 diff = int(math.ceil(diff/100.0)*100)
                 waveblue = wavecntr - diff
                 wavered = wavecntr + diff
-        #
+        
         # Camera plate scale, arcsec/pixel unbinned
-        #
         pscale = {'fpc':0.0075, 'blue':0.147}
         if camera in pscale.keys():
-            # print(pscale.get(camera),binning)
             try:
                 dispscal = pscale.get(camera) * binning
             except:
@@ -238,7 +248,12 @@ class Kcwi(instrument.Instrument):
                 waveblue = 3700
                 wavecntr = 6850
                 wavered = 10000
-
+        
+        try:
+            slitwidt = float(slitwidt)
+        except:
+            pass
+        #set slit dimensions and wavelengths
         self.set_keyword('WAVEBLUE',waveblue,'KOA: Blue end wavelength')
         self.set_keyword('WAVECNTR',wavecntr,'KOA: Central wavelength')
         self.set_keyword('WAVERED',wavered,'KOA: Red end wavelength')
@@ -250,170 +265,28 @@ class Kcwi(instrument.Instrument):
 
         return True
 
-    def set_wavelengths(self):
-        '''
-        Determine and set wavelength range of spectum
-        '''
-
-        #set pixel and CCD size
-        psize = 0.015
-        npix = 3072.0
-
-        #make sure stages are homed
-        if not self.get_keyword('XDISPERS'):
-            xdispers = 'RED'
-        else:
-            xdispers = self.get_keyword('XDISPERS').strip()
-
-        keyflag=1
-        keyvars = ['','','','','']
-        for key_i,key_val in enumerate(['XDCAL','ECHCAL','XDSIGMAI','XDANGL','ECHANGL']):
-            if ((key_val != 'ECHANGL' and key_val != 'XDANGL') and 
-                (not self.get_keyword(key_val) or self.get_keyword(key_val) == 0)):
-                keyflag = 0
-            else:
-                keyvars[key_i] = self.get_keyword(key_val)
-            
-        xdcal = keyvars[0]
-        echcal = keyvars[1]
-        xdsigmai = keyvars[2]
-        xdangl = keyvars[3]
-        echangl = keyvars[4]
-            
-        if keyflag == 1:
-            #specifications, camera-collimator, blaze, cal offset angles
-            camcol = 40.*np.pi/180.
-            blaze = -4.38*np.pi/180.
-            offset = 25.0-0.63 #0-order + 5deg for home
-
-            #grating equation
-            alpha = (xdangl+offset)*np.pi/180.
-            d = 10.**7/xdsigmai #microns
-            waveeq = lambda x,y,z: x*((1.+np.cos(y))*np.sin(z)-np.sin(y)*np.cos(z))
-            wavecntr = waveeq(d,camcol,alpha)
-            ccdangle = np.arctan2(npix*psize,(1.92*762.0)) #f = 762mm, psize u pix, 1.92 amag
-
-            #blue end
-            alphab = alpha - ccdangle
-            waveblue = waveeq(d,camcol,alphab) 
-
-            #red end
-            alphar = alpha + ccdangle
-            wavered = waveeq(d,camcol,alphar)
-
-            #center, get non-decimal part of number
-            wavecntr = np.fix(wavecntr)
-            waveblue = np.fix(waveblue)
-            wavered = np.fix(wavered)
-
-            #get the correct equation constants
-            if xdispers == 'RED':
-                #order 62, 5748 A, order*wave = const
-                const = 62.0 * 5748.0
-                a = float(1.4088)
-                b = float(-306.6910)
-                c = float(16744.1946)
-                
-            if xdispers == 'UV':
-                #order 97, 3677 A, order*wave = const
-                const = 97.0 * 3677.0
-                a = float(0.9496)
-                b = float(-266.2792)
-                c = float(19943.7496)
-                
-            if xdispers == '':
-                self.log.error('set_wavelengths: could not determine xdispers')
-                return False
-
-
-            #correct wavelength values
-            for i in [wavecntr,waveblue,wavered]:
-                #find order for wavecntr
-                wave = i
-                order = np.floor(const/wave)
-                trycount = 1
-                okflag = 0
-                while okflag == 0:
-                    #find shift in Y: order 62 =npix with XD=ECH=0(red)
-                    #                 order 97 =npix with XD=ECH=0(blue)
-                    if i == wavecntr:
-                        shift = a*order**2 + b*order + c
-                        newy = npix - shift
-                        newy = -newy
-                        okflag = 1
-                        
-                    else:
-                        shift2 = a*order**2 + b*order + c
-                        
-                        newy2 = shift2 - newy
-                        if newy2 < 120:
-                            order = order -1
-                            trycount += 1
-                            okflag=0
-                            if trycount < 100:
-                                continue
-                        npix2 = 2*npix
-
-                        if newy2 > npix2:
-                            order = order + 1
-                            trycount += 1
-                            okflag=0
-                            if trycount < 100:
-                                continue
-                        if trycount > 100 or newy2 > 120 or newy2 > npix2:
-                            okflag=1
-                            break
-
-                #find delta wave for order
-                dlamb = -0.1407*order + 18.005
-                #new wavecenter = central wavelength for this order
-                wave = const/order
-                #correct for echangl
-                wave = wave + (4*dlamb*echangl)
-                #round to nearest 10 A
-                wave2 = wave % 10 # round(wave,-1)
-                if wave2 < 5:
-                    wave = wave - wave2
-                else:
-                    wave = wave + (10-wave2)
-                if wave < 2000 or wave > 20000:
-                    wave = 'null'
-                if i == wavecntr:
-                    wavecntr = wave
-                elif i == waveblue:
-                    waveblue = wave
-                elif i == wavered:
-                    wavered = wave
-
-            wavecntr = int(round(wavecntr,-1))
-            waveblue = int(round(waveblue,-1))
-            wavered = int(round(wavered,-1))
-        else:
-            wavecntr = 'null'
-            waveblue = 'null'
-            wavered = 'null'
-            
-        self.set_keyword('WAVECNTR',wavecntr,'Wave Center')
-        self.set_keyword('WAVEBLUE',waveblue,'Wave Blue')
-        self.set_keyword('WAVERED',wavered,'Wave Red')        
-
-        return True
 
     def set_wcs(self):
-        #---------------------------
-        # extract values from header
-        #---------------------------
+        '''
+        Set world coordinate system values
+        '''
+        #extract values from header
         camera = self.get_keyword('CAMERA')
+        #wcs values should only be set for fpc
         if camera != 'fpc':
             self.log.info(f'set_wcs: WCS keywords not set for camera type: {camera}')
             return True
+        #get ra and dec values
         rakey = (self.get_keyword('RA')).split(':')
         rakey = 15.0*(float(rakey[0])+(float(rakey[1])/60.0)+(float(rakey[2])/3600.0))
         deckey = (self.get_keyword('DEC')).split(':')
+        #compensation for negative dec if applicable
         if float(deckey[0]) < 0:
             deckey = float(deckey[0])-(float(deckey[1])/60.0)-(float(deckey[2])/3600.0)
         else:
             deckey = float(deckey[0])+(float(deckey[1])/60.0)+(float(deckey[2])/3600.0)
+        
+        #get more keywords
         equinox = self.get_keyword('EQUINOX')
         naxis1 = self.get_keyword('NAXIS1')
         naxis2 = self.get_keyword('NAXIS2')
@@ -423,11 +296,9 @@ class Kcwi(instrument.Instrument):
         parang = self.get_keyword('PARANG')
         el = self.get_keyword('EL')
         binning = self.get_keyword('BINNING')
-        
-        #---------------------------------------------
-        # special PA calculation determined by rotmode
-        # pa = rotposn + parantel - el
-        #---------------------------------------------
+        self.set_keyword('BINNING',str(binning),'Binning: serial/axis1, parallel/axis2')
+        #special PA calculation determined by rotmode
+        #pa = rotposn + parantel - el
         mode = rotmode[0:4]
         if parantel == '' or parantel == None:
             parantel = parang
@@ -438,12 +309,10 @@ class Kcwi(instrument.Instrument):
         elif mode == 'stat':
             pa1 = float(pa)+float(parantel)-float(el)
         else:
-            self.log.warning(f'set_wcs: indeterminate mode {mode}')
+            self.log.error(f'set_wcs: indeterminate mode {mode}')
             return False
 
-        #---------------------------
-        # extract values from header
-        #---------------------------
+        #get correct units and formatting
         raindeg = 1
         pixscale = 0.0075 * float(binning)
         pa0 = 0.7
@@ -466,20 +335,20 @@ class Kcwi(instrument.Instrument):
         crpix2 = (float(naxis2)+1.0)/2.0
         crpix1 = '%8.2f' % crpix1
         crpix2 = '%8.2f' % crpix2
-        #--------------
+
         # check equinox
-        #--------------
         if float(equinox) == 2000.0:
             radecsys = 'FK5'
         else:
             radecsys = 'FK4'
         
-        self.set_keyword('CD1_1',cd1_1,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CD1_2',cd1_2,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CD2_1',cd2_1,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CD2_2',cd2_2,'KOA: WCS coordinate transformation matrix')
-        self.set_keyword('CRPIX1',crpix1,'KOA: Reference pixel')
-        self.set_keyword('CRPIX2',crpix2,'KOA: Reference pixel')
+        #set keywords
+        self.set_keyword('CD1_1',float(cd1_1),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CD1_2',float(cd1_2),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CD2_1',float(cd2_1),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CD2_2',float(cd2_2),'KOA: WCS coordinate transformation matrix')
+        self.set_keyword('CRPIX1',float(crpix1),'KOA: Reference pixel')
+        self.set_keyword('CRPIX2',float(crpix2),'KOA: Reference pixel')
         self.set_keyword('CRVAL1',crval1,'KOA: Reference pixel value')
         self.set_keyword('CRVAL2',crval2,'KOA: Reference pixel value')
         self.set_keyword('RADECSYS',radecsys,'KOA: WCS coordinate system')

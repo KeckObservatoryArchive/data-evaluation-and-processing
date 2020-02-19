@@ -344,7 +344,8 @@ class ProgSplit:
         matchIdx = -1
         for idx in range(len(self.programs)):
             prog = self.programs[idx]
-            progObservers = self.get_observer_array(prog['Observer'])
+            progObsvStr = prog['Observer'] + ',' + prog['Principal'] 
+            progObservers = self.get_observer_array(progObsvStr)
             #print ('-- progObservers: ', progObservers)
             if len(progObservers) == 0: continue
 
@@ -396,12 +397,14 @@ class ProgSplit:
         #replace multi commas with comma
         obsvStr = re.sub(",+" , ",", obsvStr.strip())
 
-        #just keep names of length > 2
+        #just keep names of length > 1
+        #NOTE: We used to have cutoff at len 2, but i think this is unneccessary now.
         observers = obsvStr.split(',' )
         final = []
         for name in observers:
             name = name.strip().lower()
-            if len(name) <= 2: continue
+            if len(name) <= 1: continue
+            if name in final: continue
             final.append(name)
         return final
 

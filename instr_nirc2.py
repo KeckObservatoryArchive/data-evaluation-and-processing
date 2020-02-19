@@ -10,6 +10,8 @@ import instrument
 import datetime as dt
 import numpy as np
 import scipy.stats
+import os
+import subprocess
 
 class Nirc2(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -28,19 +30,16 @@ class Nirc2(instrument.Instrument):
         Run all DQA checks unique to this instrument
         '''
         ok=True
+        if ok: ok = self.dqa_loc()
+        if ok: ok = self.start_psfr()
         if ok: ok = self.set_dqa_date()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_datlevel(0)
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
         if ok: ok = self.set_ut() # may need to delete duplicate UTC?
-#        if ok: ok = self.set_utend()
-#        if ok: ok = self.set_numamps()
-#        if ok: ok = self.set_numccds() # needed?
         if ok: ok = self.set_koaimtyp() # imagetyp
         if ok: ok = self.set_koaid()
-#        if ok: ok = self.set_blank()
-#        if ok: ok = self.fix_binning()
         if ok: ok = self.set_semester()
         if ok: ok = self.set_wavelengths()
         if ok: ok = self.set_detdisp()
@@ -52,18 +51,35 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_image_stats_keywords() # IM* and PST*, imagestat
         if ok: ok = self.set_npixsat(satVal = self.get_keyword('COADDS')*18000.0) # npixsat
         if ok: ok = self.set_nlinear(satVal = self.get_keyword('COADDS')*5000.0)
+        if ok: ok = self.set_sig2nois()
         if ok: ok = self.set_isao()
-#        if ok: ok = self.set_sig2nois()
-#        if ok: ok = self.set_slit_values()
-#        if ok: ok = self.set_gain_and_readnoise() # ccdtype
-#        if ok: ok = self.set_skypa() # skypa
-#        if ok: ok = self.set_subexp()
-#        if ok: ok = self.set_roqual()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
-#        if ok: ok = self.fix_propint()
+        if ok: ok = self.dqa_loc(delete=1)
         return ok
+
+    def dqa_loc(self, delete=0):
+        '''
+        Creates or deletes the dqa.LOC file.
+        This file is needed for the PSF/TRS process.
+        '''
+
+        dqaLoc = f"{self.dirs['lev0']}/dqa.LOC"
+
+        if delete == 0:
+            if not os.path.isfile(dqaLoc):
+                self.log.info(f'dqa_loc: creating {dqaLoc}')
+                open(dqaLoc, 'w').close()
+        elif delete == 1:
+            if os.path.isfile(dqaLoc):
+                self.log.info(f'dqa_loc: removing {dqaLoc}')
+                os.remove(dqaLoc)
+        else:
+            self.log.info('dqa_loc: invalid input parameter')
+
+        return True
+
 
     def get_dir_list(self):
         '''
@@ -134,7 +150,6 @@ class Nirc2(instrument.Instrument):
         obsfname = self.get_keyword('OBSFNAME')
         domestat = self.get_keyword('DOMESTAT')
         axestat = self.get_keyword('AXESTAT')
-        print(shrname, obsfname)
         imagetyp = 'undefined'
         #shutter open
         if shrname == 'open':
@@ -320,12 +335,12 @@ class Nirc2(instrument.Instrument):
             cd1_2 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
             cd2_1 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
 
-            pixscale = round(pixscale[camname], 6)
+            pixscale = '%f' % round(pixscale[camname], 6)
 
-            cd1_1 = round(cd1_1, 7)
-            cd1_2 = round(cd1_2, 7)
-            cd2_1 = round(cd2_1, 7)
-            cd2_2 = round(cd2_2, 7)
+            cd1_1 = '%0.12lf' % round(cd1_1, 12)
+            cd1_2 = '%0.12lf' % round(cd1_2, 12)
+            cd2_1 = '%0.12lf' % round(cd2_1, 12)
+            cd2_2 = '%0.12lf' % round(cd2_2, 12)
 
             crpix1 = round(float((naxis1 + 1) / 2.0), 2)
             crpix2 = round(float((naxis2 + 1) / 2.0), 2)
@@ -486,3 +501,73 @@ class Nirc2(instrument.Instrument):
             print('telTBD => '+imagetyp)
 
         return imagetyp
+
+
+    def set_sig2nois(self):
+        '''
+        Calculates S/N for CCD image
+        '''
+
+        self.log.info('set_sig2nois: Adding SIG2NOIS')
+
+        image = self.fitsHdu[0].data
+
+        naxis1 = self.get_keyword('NAXIS1')
+        naxis2 = self.get_keyword('NAXIS2')
+
+        c = [naxis1/2, naxis2/2]
+
+        wsize = 10
+        spaflux = []
+        for i in range(wsize, int(naxis2)-wsize):
+            spaflux.append(np.median(image[i, int(c[1])-wsize:int(c[1])+wsize]))
+
+        maxflux = np.max(spaflux)
+        minflux = np.min(spaflux)
+
+        sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
+
+        self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
+
+        return True
+
+
+    def run_drp(self):
+        '''
+        Run the NIRC2 DRP
+        '''
+
+        drp = self.config[self.instr]['DRP']
+        if os.path.isfile(drp):
+            drp = f"{drp} {self.dirs['output']} -nodb"
+            print(drp)
+
+            cmd = []
+            for word in drp.split(' '):
+                cmd.append(word)
+
+            self.log.info(f'run_drp: Running DRP command: {" ".join(cmd)}')
+            p = subprocess.Popen(cmd)
+            p.wait()
+            self.log.info('run_drp: DRP finished')
+
+        return True
+
+
+    def start_psfr(self):
+        '''
+        Starts psfr process that runs parallel with DQA
+        '''
+
+        cmd = []
+        for word in self.config[self.instr]['TRS'].split(' '):
+            cmd.append(word)
+        cmd.append(self.instr)
+        cmd.append(self.utDate)
+        cmd.append(self.dirs['lev0'])
+
+        self.log.info(f'start_psfr: Starting TRS command: {" ".join(cmd)}')
+#        p = subprocess.Popen(cmd)
+
+        return True
+
