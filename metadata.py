@@ -132,7 +132,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
             elif (keyword in extra)  : val = extra[keyword]
             else: 
                 val = 'null'
-                if dev: log_msg(log, dev, 'metadata check: Keyword not found in header: ' + keyword)
+                if dev: log_msg(log, dev, 'metadata check: Keyword not found in header (' + fitsFile + '): ' + keyword)
 
             #special check for val = fits.Undefined
             if isinstance(val, fits.Undefined):
