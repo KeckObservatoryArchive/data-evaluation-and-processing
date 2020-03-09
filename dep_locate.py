@@ -80,10 +80,10 @@ def dep_locate(instrObj, tpx=0):
             fcsConfigs = []
             for line in pre:
                 if ('.fits' in line 
-                        and '/fcs' not in line 
+                        and ('/fcs' not in line  or 'storageserver' in line) 
                         and 'mira' not in line 
                         and 'savier-protected' not in line 
-                        and 'SPEC/ORP/' not in line 
+                        and 'SPEC/ORP/' not in line
                         and 'idf' not in line):
 
                     # Copy the files to stageDir and update files 

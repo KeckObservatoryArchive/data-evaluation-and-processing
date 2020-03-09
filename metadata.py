@@ -52,7 +52,8 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=None, log=Non
         #check col width is at least as big is the keyword name
         for index, row in keyDefs.iterrows():
             if (len(row['keyword']) > row['colSize']):
-                raise Exception("metadata.py: Alignment issue: Keyword column name {} is bigger than column size of {}".format(row['keyword'], row['colSize']))            
+                keyDefs.loc[index, 'colSize'] = len(row['keyword'])
+                #raise Exception("metadata.py: Alignment issue: Keyword column name {} is bigger than column size of {}".format(row['keyword'], row['colSize']))            
 
         for index, row in keyDefs.iterrows():
             out.write('|' + row['keyword'].ljust(row['colSize']))
@@ -131,7 +132,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
             elif (keyword in extra)  : val = extra[keyword]
             else: 
                 val = 'null'
-                if dev: log_msg(log, dev, 'metadata check: Keyword not found in header: ' + keyword)
+                if dev: log_msg(log, dev, 'metadata check: Keyword not found in header (' + fitsFile + '): ' + keyword)
 
             #special check for val = fits.Undefined
             if isinstance(val, fits.Undefined):
@@ -159,6 +160,7 @@ def check_keyword_existance(header, keyDefs, log, dev=False, instrKeywordSkips=[
     #find all keywords in header that are not in metadata file
     skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3'] + instrKeywordSkips
     for keywordHdr in header:
+        if not keywordHdr: continue  #blank keywords can exist
         if keywordHdr not in keyDefList and not is_keyword_skip(keywordHdr, skips):
             log_msg(log, dev, 'metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
 
@@ -373,8 +375,8 @@ def val_smart_diff(val0, val1, col=None):
 
     #try to decimal format (if not then no problem)
     try:
-        newval0 = "{:.2f}".format(float(val0))
-        newval1 = "{:.2f}".format(float(val1))
+        newval0 = "{:.1f}".format(float(val0))
+        newval1 = "{:.1f}".format(float(val1))
     except:
         newval0 = val0
         newval1 = val1
@@ -448,3 +450,46 @@ def header_keyword_report(keywordsDefFile, fitsFile):
 
     diff2 = list(set(formatKeys) - set(headerKeys))
     print ("=========KEYWORDS DIFF (format - header)===========\n", diff2)
+
+
+def compare_extended_headers(filepath1, filepath2):
+
+    #wrap in try since some ext headers have been found to be corrupted
+    try:
+
+        hdus1 = fits.open(filepath1)
+        hdus2 = fits.open(filepath2)
+
+        if len(hdus1) != len(hdus2):
+            print ("ERROR: Number if HDUs does not match.  Cannot compare.")
+            return False
+
+        for ext in range(0, len(hdus1)):
+            if ext == 0: continue
+
+            hdu1 = hdus1[ext]
+            hdu2 = hdus2[ext]
+
+            for key, val1 in hdu1.header.items():
+                if not key: continue
+                if key not in hdu2.header.keys():
+                    print(f"WARN: EXT{ext} HDR1 key '{key}' not in HDR2")
+                    continue
+                val2 = hdu2.header[key]
+                if val1 != val2:
+                    print(f"WARN: EXT{ext} HDR1 key '{key}' value '{val1}' != '{val2}'")
+
+            for key, val2 in hdu2.header.items():
+                if not key: continue
+                if key not in hdu1.header.keys():
+                    print(f"WARN: EXT{ext} HDR2 key '{key}' not in HDR1")
+                    continue
+                val1 = hdu1.header[key]
+                if val1 != val2:
+                    print(f"WARN: EXT{ext} HDR2 key '{key}' value '{val2}' != '{val1}'")
+
+    except Exception as e:
+        print ("ERROR: ", e)
+
+
+
