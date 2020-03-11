@@ -75,7 +75,7 @@ class ProgSplit:
                             'hireseng'      :'outdir',
                             'nspeceng'      :'outdir', 
                             'nirc2eng'      :'outdir', 
-                            'engineering'   :'observer',
+                            #'engineering'   :'observer',
                             'dmoseng'       :'outdir', 
                             'lriseng'       :'outdir', 
                             'esieng'        :'outdir',
