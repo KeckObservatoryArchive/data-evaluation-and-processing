@@ -630,30 +630,49 @@ class Instrument:
         B = Aug. 2 to Feb. 1 (UT)
         """
 
-        dateObs = self.get_keyword('DATE-OBS')
-        if dateObs == None:
-            self.log.error('set_semester: Could not parse DATE-OBS')
-            return False
+        #special override via command line option
+        if self.config['MISC']['ASSIGN_PROGNAME']:
+            progname = self.config['MISC']['ASSIGN_PROGNAME']
+            if '_' in progname and is_progid_valid(progname):
+                semester, progid = progname.split('_')
+                self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from PROGNAME')
+                self.log.info(f"set_semester: Set SEMESTER to '{semester}' from ASSIGN_PROGNAME '{progname}'")
+                return True
 
-        year, month, day = dateObs.split('-')
-        iyear  = int(year)
-        imonth = int(month)
-        iday   = int(day)
+        #special override assign using PROGNAME
+        progname = self.get_keyword('PROGNAME', default='')
+        if '_' in progname and is_progid_valid(progname):
+            semester, progid = progname.split('_')
+            self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from PROGNAME')
+            self.log.info(f"set_semester: Set SEMESTER to '{semester}' from PROGNAME '{progname}'")
+            return True
 
-        # Determine SEMESTER from DATE-OBS
-        semester = ''
-        sem = 'A'
-        if   imonth >  8 or imonth < 2 : sem = 'B'
-        elif imonth == 8 and iday > 1  : sem = 'B'
-        elif imonth == 2 and iday == 1 : sem = 'B'
-        if imonth == 1 or (imonth == 2 and iday == 1):
-            year = str(iyear-1)
+        #normal assign using DATE-OBS
+        else:
+            dateObs = self.get_keyword('DATE-OBS')
+            if dateObs == None:
+                self.log.error('set_semester: Could not parse DATE-OBS')
+                return False
 
-        semester = year + sem
-        semester = semester.strip();
-        self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from DATE-OBS')
+            year, month, day = dateObs.split('-')
+            iyear  = int(year)
+            imonth = int(month)
+            iday   = int(day)
 
-        return True
+            # Determine SEMESTER from DATE-OBS
+            semester = ''
+            sem = 'A'
+            if   imonth >  8 or imonth < 2 : sem = 'B'
+            elif imonth == 8 and iday > 1  : sem = 'B'
+            elif imonth == 2 and iday == 1 : sem = 'B'
+            if imonth == 1 or (imonth == 2 and iday == 1):
+                year = str(iyear-1)
+
+            semester = year + sem
+            semester = semester.strip();
+            self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from DATE-OBS')
+
+            return True
 
 
 

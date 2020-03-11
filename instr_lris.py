@@ -551,12 +551,12 @@ class Lris(instrument.Instrument):
             cd11   = self.get_keyword('CD1_1',ext=i)
             cd22   = self.get_keyword('CD2_2',ext=i)
             naxis1 = self.get_keyword('NAXIS1',ext=i)
-            naxis2 = self.get_keyword('NAXIS2',ext=i)
+            naxis2 = self.get_keyword('NAXIS2',ext=i)            
+
             crpix1_new = crpix1 + ((xcen - crval1)/cd11)
             crpix2_new = crpix2 + ((ycen - crval2)/cd22)
             cdelt1_new = cd11 * pixelscale
             cdelt2_new = cd22 * pixelscale
-
             self.set_keyword('CRPIX1',crpix1_new,'KOA: CRPIX1',ext=i)
             self.set_keyword('CRPIX2',crpix2_new,'KOA: CRPIX2',ext=i)
             self.set_keyword('CDELT1',cdelt1_new,'KOA: CDELT1',ext=i)
@@ -768,8 +768,8 @@ class Lris(instrument.Instrument):
                 ccdloc += 1
 
             #get amplifier location and adjust for type
-            #NOTE: In order to mimic IDL behavior, we are not subtracting 1 from AMPLOC.
-            #This means read images will have null values for IM01MN02 and IM02MN04 in metadata but header will have these values.
+            #NOTE: In order to mimic incorrect IDL behavior, we are not subtracting 1 from AMPLOC.
+            #This means red images will have null values for IM01MN02 and IM02MN04 in metadata but header will have these values.
             amploc = int(self.get_keyword('AMPLOC',ext=ext))
             #if self.get_keyword('INSTRUME') == 'LRIS': amploc -= 1
 
