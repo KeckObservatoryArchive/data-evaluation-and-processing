@@ -12,6 +12,7 @@ import numpy as np
 import scipy.stats
 import os
 import subprocess
+from socket import gethostname
 
 class Nirc2(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -540,7 +541,8 @@ class Nirc2(instrument.Instrument):
             cmd.append(word)
         cmd.append(self.instr)
         cmd.append(self.utDate)
-        cmd.append(self.dirs['lev0'])
+        host = gethostname()
+        cmd.append(f"/net/{host}{self.dirs['lev0']}")
 
         self.log.info(f'run_psfr: Starting PSFR command: {" ".join(cmd)}')
         p = subprocess.Popen(cmd)
