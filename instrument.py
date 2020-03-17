@@ -1103,3 +1103,25 @@ class Instrument:
         self.set_keyword('NUMCCDS',numccds,'KOA: Number of CCDs')
         return True
 
+
+    def dqa_loc(self, delete=0):
+        '''
+        Creates or deletes the dqa.LOC file.
+        This file is needed for the PSF/TRS process.
+        '''
+
+        dqaLoc = f"{self.dirs['lev0']}/dqa.LOC"
+
+        if delete == 0:
+            if not os.path.isfile(dqaLoc):
+                self.log.info(f'dqa_loc: creating {dqaLoc}')
+                open(dqaLoc, 'w').close()
+        elif delete == 1:
+            if os.path.isfile(dqaLoc):
+                self.log.info(f'dqa_loc: removing {dqaLoc}')
+                os.remove(dqaLoc)
+        else:
+            self.log.info('dqa_loc: invalid input parameter')
+
+        return True
+
