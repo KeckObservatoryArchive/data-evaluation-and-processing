@@ -537,13 +537,13 @@ class Nirc2(instrument.Instrument):
         '''
 
         cmd = []
-        for word in self.config[self.instr]['TRS'].split(' '):
+        for word in self.config[self.instr]['PSFR'].split(' '):
             cmd.append(word)
         cmd.append(self.instr)
         cmd.append(self.utDate)
         cmd.append(self.dirs['lev0'])
 
-        self.log.info(f'start_psfr: Starting TRS command: {" ".join(cmd)}')
+        self.log.info(f'start_psfr: Starting PSFR command: {" ".join(cmd)}')
 #        p = subprocess.Popen(cmd)
 
         return True
