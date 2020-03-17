@@ -12,6 +12,7 @@ import numpy as np
 import scipy.stats
 import os
 import subprocess
+from socket import gethostname
 
 class Nirc2(instrument.Instrument):
     def __init__(self, instr, utDate, rootDir, log=None):
@@ -30,8 +31,6 @@ class Nirc2(instrument.Instrument):
         Run all DQA checks unique to this instrument
         '''
         ok=True
-        if ok: ok = self.dqa_loc()
-        if ok: ok = self.start_psfr()
         if ok: ok = self.set_dqa_date()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_datlevel(0)
@@ -56,29 +55,7 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
-        if ok: ok = self.dqa_loc(delete=1)
         return ok
-
-    def dqa_loc(self, delete=0):
-        '''
-        Creates or deletes the dqa.LOC file.
-        This file is needed for the PSF/TRS process.
-        '''
-
-        dqaLoc = f"{self.dirs['lev0']}/dqa.LOC"
-
-        if delete == 0:
-            if not os.path.isfile(dqaLoc):
-                self.log.info(f'dqa_loc: creating {dqaLoc}')
-                open(dqaLoc, 'w').close()
-        elif delete == 1:
-            if os.path.isfile(dqaLoc):
-                self.log.info(f'dqa_loc: removing {dqaLoc}')
-                os.remove(dqaLoc)
-        else:
-            self.log.info('dqa_loc: invalid input parameter')
-
-        return True
 
 
     def get_dir_list(self):
@@ -554,20 +531,21 @@ class Nirc2(instrument.Instrument):
         return True
 
 
-    def start_psfr(self):
+    def run_psfr(self):
         '''
         Starts psfr process that runs parallel with DQA
         '''
 
         cmd = []
-        for word in self.config[self.instr]['TRS'].split(' '):
+        for word in self.config[self.instr]['PSFR'].split(' '):
             cmd.append(word)
         cmd.append(self.instr)
         cmd.append(self.utDate)
-        cmd.append(self.dirs['lev0'])
+        host = gethostname()
+        cmd.append(f"/net/{host}{self.dirs['lev0']}")
 
-        self.log.info(f'start_psfr: Starting TRS command: {" ".join(cmd)}')
-#        p = subprocess.Popen(cmd)
+        self.log.info(f'run_psfr: Starting PSFR command: {" ".join(cmd)}')
+        p = subprocess.Popen(cmd)
 
         return True
 

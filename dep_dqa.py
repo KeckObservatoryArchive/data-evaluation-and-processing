@@ -63,6 +63,9 @@ def dep_dqa(instrObj, tpx=0):
         raise Exception('dep_dqa.py: locate input file does not exist.  EXITING.')
         return
         
+    # Create the dqa.LOC files in lev0 directory
+    instrObj.dqa_loc()
+
     if instr == 'DEIMOS':
         instrObj.create_fcs_list(locateFile)
 
@@ -82,6 +85,10 @@ def dep_dqa(instrObj, tpx=0):
     #determine program info
     create_prog(instrObj)
     progData = gpi.getProgInfo(utDate, instr, dirs['stage'], useHdrProg, splitTime, log)
+
+
+    # Start the PSFR process
+    instrObj.run_psfr()
 
 
     # Loop through each entry in input_list
@@ -122,6 +129,9 @@ def dep_dqa(instrObj, tpx=0):
         koaid = instrObj.fitsHeader.get('KOAID')
         extraMeta[koaid] = instrObj.extraMeta
 
+
+    # Remove the dqa.LOC files in lev0 directory
+    instrObj.dqa_loc(delete=1)
 
     #if no files passed DQA, then exit out
     if len(outFiles) == 0 :
