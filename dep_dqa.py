@@ -87,6 +87,10 @@ def dep_dqa(instrObj, tpx=0):
     progData = gpi.getProgInfo(utDate, instr, dirs['stage'], useHdrProg, splitTime, log)
 
 
+    # Start the PSFR process
+    instrObj.run_psfr()
+
+
     # Loop through each entry in input_list
     log.info('dep_dqa.py: Processing {} files'.format(len(files)))
     for filename in files:
