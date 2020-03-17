@@ -26,7 +26,8 @@ parser.add_argument('--modtimeOverride' , type=str, nargs='?', const=None,  help
 parser.add_argument('--metaCompareDir'  , type=str, nargs='?', const=None,  help='(OPTIONAL) Directory to use for special metadata compare report for reprocessing old data.')
 parser.add_argument('--useHdrProg'  , type=str, nargs='?', const=None,      help='(OPTIONAL) Set to "force" to force header val if different.  Set to "assist" to use only if indeterminate (useful for processing old data).')
 parser.add_argument('--splitTime'   , type=str, nargs='?', const=None,      help='(OPTIONAL) HH:mm of suntimes midpoint for overriding split night timing.')
-parser.add_argument('--emailReport' , type=str, nargs='?', default='0',     help='(OPTIONAL) Set to "1" to send email report whether or not it is a full run')
+parser.add_argument('--emailReport' , type=str, nargs='?', default="0",       help='(OPTIONAL) Set to "1" to send email report whether or not it is a full run')
+parser.add_argument('--assignProgname' , type=str, nargs='?', default='',    help='(OPTIONAL) Force assign all data to provided progname (ie U190 or 2020A_U190)')
 
 # Get input params
 
@@ -37,6 +38,7 @@ tpx    = args.tpx
 pstart = args.procStart
 pstop  = args.procStop
 emailReport = args.emailReport
+assignProgname = args.assignProgname
 
 # Get Config args
 
@@ -47,7 +49,8 @@ if args.reprocess      : configArgs.append({'section':'MISC',   'key':'REPROCESS
 if args.metaCompareDir : configArgs.append({'section':'MISC',   'key':'META_COMPARE_DIR',   'val': args.metaCompareDir})
 if args.useHdrProg     : configArgs.append({'section':'MISC',   'key':'USE_HDR_PROG',       'val': args.useHdrProg})
 if args.splitTime      : configArgs.append({'section':'MISC',   'key':'SPLIT_TIME',         'val': args.splitTime})
-if args.emailReport    : configArgs.append({'section':'MISC',   'key':'EMAIL_REPORT',       'val': args.emailReport})
+configArgs.append({'section':'MISC',   'key':'EMAIL_REPORT',       'val': args.emailReport})
+configArgs.append({'section':'MISC',   'key':'ASSIGN_PROGNAME',    'val': args.assignProgname})
 
 # Use the current UT date if none provided
 if (utDate == None): utDate = datetime.utcnow().strftime('%Y-%m-%d')

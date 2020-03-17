@@ -121,14 +121,20 @@ def create_prog(instrObj):
             ofile.write(str(fileno)+'\n')
             ofile.write(imagetyp+'\n')
 
+            #if PROGNAME exists (either assigned from command line or in PROGNAME), use that to populate the PROG* values
+            #NOTE: PROGNAME can be in format with or without semester
+            if instrObj.config['MISC']['ASSIGN_PROGNAME']:
+                progname = instrObj.config['MISC']['ASSIGN_PROGNAME']
+            else:
+                progname = instrObj.get_keyword('PROGNAME')
+                if progname != None: progname = progname.replace('ToO_', '')            
 
-            #if PROGNAME exists, use that to populate the PROG* values
-            progname = instrObj.get_keyword('PROGNAME')
-            if progname != None: progname = progname.replace('ToO_', '')
+            #valid progname?
             isProgValid = is_progid_valid(progname)
             if progname and not isProgValid:
                 if log: log.error('create_prog: Invalid PROGNAME: ' + str(progname))
 
+            #try to assign PROG* keywords from progname
             progid   = 'PROGID'
             progpi   = 'PROGPI'
             proginst = 'PROGINST'
@@ -138,6 +144,7 @@ def create_prog(instrObj):
                 if progname == 'ENG':
                     progid = 'ENG'
                 else:
+                    if '_' in progname: sem, progname = progname.split('_')
                     semid = sem + '_' + progname
                     progid   = progname
                     progpi   = get_prog_pi   (semid, 'PROGPI'  , log)
@@ -148,7 +155,6 @@ def create_prog(instrObj):
             ofile.write(progpi   + '\n')
             ofile.write(proginst + '\n')
             ofile.write(progtitl + '\n')
-
 
             #write OA last
             ofile.write(oa + '\n')

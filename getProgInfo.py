@@ -75,7 +75,7 @@ class ProgSplit:
                             'hireseng'      :'outdir',
                             'nspeceng'      :'outdir', 
                             'nirc2eng'      :'outdir', 
-                            'engineering'   :'observer',
+                            #'engineering'   :'observer',
                             'dmoseng'       :'outdir', 
                             'lriseng'       :'outdir', 
                             'esieng'        :'outdir',
@@ -176,16 +176,18 @@ class ProgSplit:
                 row[colsToSave[num]] = line.strip()
 
                 #check if we have reached last column to save
+                #(if not already assigned valid progid then see if we can assign to ENG or ToO)
                 num += 1
                 if num == len(colsToSave):
 
                     # Check to see if it is an engineering night (Key = instrument, value = outdir/obs)
                     for key, value in self.engineering.items():
-                        if key in row[value].lower() or row['progid'] == 'ENG':
-                            row['proginst'] = 'KECK'
-                            row['progid']   = 'ENG'
-                            row['progpi']   = self.instrument.lower() + 'eng'
-                            row['progtitl'] = self.instrument.upper() + ' Engineering'
+                        if key in row[value].lower() or row['progid'] == 'ENG' or row['progid'].startswith('E'):
+                            if not is_progid_valid(row['progid']): 
+                                row['proginst'] = 'KECK'
+                                row['progpi']   = self.instrument.lower() + 'eng'
+                                row['progtitl'] = self.instrument.upper() + ' Engineering'
+                                row['progid'] = 'ENG'
 
                     # Check to see if it is a ToO observation (key=split, value=outdir)
                     for key, value in self.too.items():
@@ -195,9 +197,9 @@ class ProgSplit:
                                 progid, tmp = progid.split('/') # case of /scam and /spec
                             semid = self.semester+'_'+progid
                             row['proginst'] = get_prog_inst(semid, 'NONE', self.log, isToO=True)
-                            row['progid']   = progid
                             row['progpi']   = get_prog_pi(semid, 'NONE', self.log)
                             row['progtitl'] = get_prog_title(semid, 'NONE', self.log)
+                            row['progid']   = progid
                             #todo: should default title be "ToO Program"
 
                     #add row to list
@@ -320,8 +322,8 @@ class ProgSplit:
             self.log.info('getProgInfo: Could not map ' + outdir + " to a program by dir naming convention.")
             return False
         else:
-            progid = self.programs[assign]['ProjCode']
-            self.log.info('getProgInfo: Mapping (by name) outdir ' + outdir + " to progIndex: " + str(assign) + ' ('+progid+').')
+            projcode = self.programs[assign]['ProjCode']
+            self.log.info('getProgInfo: Mapping (by name) outdir ' + outdir + " to progIndex: " + str(assign) + ' ('+projcode+').')
             self.assign_single_to_pi(filenum, assign)
             return True
 
@@ -535,8 +537,8 @@ class ProgSplit:
                 self.log.info('--- prog' + str(i) + ': ' + str(count) + ' ('+str(round(perc*100,0))+'%)')
                 if (perc > 0.85 and count > 10) or (perc > 0.95 and count > 3): 
                     self.outdirs[outdir]['assign'] = i
-                    progid = self.programs[i]['ProjCode']
-                    self.log.info('Mapping (by sci) outdir ' + outdir + " to progIndex: " + str(i) + ' ('+progid+').')
+                    projcode = self.programs[i]['ProjCode']
+                    self.log.info('Mapping (by sci) outdir ' + outdir + " to progIndex: " + str(i) + ' ('+projcode+').')
 
             #no assignment?
             if self.outdirs[outdir]['assign'] < 0:

@@ -2,9 +2,13 @@
 (NOTE: High level todos also listed in github projects page.)  
 
 
+
+
+##LRIS
+- todo: Chris recommends we fix WCS
+
+
 ## HIGH PRIORITY
-- Update NIRES live DEP with new version?
-- Change DEP to look for optional full semid in progname/progid.  (ie 2019A_C123)
 - How do we keep track of new sdata dirs?  A: Added by Jchock and we aren't necessarily notified.  Need better system.
 - Overhaul scrubber checks system (which verifies data has been archived before deleting from sdata).
 - Q: Do we need 'ls -d' calls to ensure refresh of sdata mounts?  Possibly not.
@@ -16,6 +20,7 @@
 
 
 ## LOW PRIORITY
+- See instr_lris.py for examples of condensed or streamlined functions that we can either apply to other instr_* files or create shared functions.
 - Increase PROGPI colwidth to 48 and do First + Last Name?
 - READ env data file once instead of every image.  
 - Look at old Missing Data tables usage

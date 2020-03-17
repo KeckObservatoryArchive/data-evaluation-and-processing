@@ -252,12 +252,22 @@ def get_prog_title(semid, default=None, log=None):
 
 def is_progid_valid(progid):
 
-    #TODO: improve this
     if not progid: return False
-    if len(progid) <= 2: return False
-    if len(progid) >= 6: return False
-    if " " in progid: return False
+
+    #get valid parts
+    if   progid.count('_') > 1 : return False    
+    elif progid.count('_') == 1: sem, progid = progid.split('_')
+    else                       : sem = False
+
+    #checks
+    if len(progid) <= 2:      return False
+    if len(progid) >= 6:      return False
+    if " " in progid:         return False
+    if "PROGID" in progid:    return False
+    if sem and len(sem) != 5: return False
+
     return True
+
 
 
 
