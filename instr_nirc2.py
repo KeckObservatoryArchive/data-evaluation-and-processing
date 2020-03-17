@@ -543,7 +543,7 @@ class Nirc2(instrument.Instrument):
         cmd.append(self.dirs['lev0'])
 
         self.log.info(f'run_psfr: Starting PSFR command: {" ".join(cmd)}')
-#        p = subprocess.Popen(cmd)
+        p = subprocess.Popen(cmd)
 
         return True
 
