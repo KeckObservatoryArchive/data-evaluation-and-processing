@@ -1058,6 +1058,15 @@ class Instrument:
         self.log.info('run_drp: no DRP defined for {}'.format(self.instr))
         return True
 
+    def run_psfr(self):
+        '''
+        This will be overwritten by method in instrument specific module.
+        For those instruments without PSFR, just note that in the log.
+        '''
+
+        self.log.info('run_psfr: no PSFR defined for {}'.format(self.instr))
+        return True
+
     def set_numccds(self):
         try:
             panelist = self.get_keyword('PANELIST')
