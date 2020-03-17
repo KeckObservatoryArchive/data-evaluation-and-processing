@@ -30,7 +30,6 @@ class Nirc2(instrument.Instrument):
         Run all DQA checks unique to this instrument
         '''
         ok=True
-        if ok: ok = self.dqa_loc()
         if ok: ok = self.start_psfr()
         if ok: ok = self.set_dqa_date()
         if ok: ok = self.set_dqa_vers()
@@ -56,29 +55,7 @@ class Nirc2(instrument.Instrument):
         if ok: ok = self.set_oa()
         if ok: ok = self.set_prog_info(progData)
         if ok: ok = self.set_propint(progData)
-        if ok: ok = self.dqa_loc(delete=1)
         return ok
-
-    def dqa_loc(self, delete=0):
-        '''
-        Creates or deletes the dqa.LOC file.
-        This file is needed for the PSF/TRS process.
-        '''
-
-        dqaLoc = f"{self.dirs['lev0']}/dqa.LOC"
-
-        if delete == 0:
-            if not os.path.isfile(dqaLoc):
-                self.log.info(f'dqa_loc: creating {dqaLoc}')
-                open(dqaLoc, 'w').close()
-        elif delete == 1:
-            if os.path.isfile(dqaLoc):
-                self.log.info(f'dqa_loc: removing {dqaLoc}')
-                os.remove(dqaLoc)
-        else:
-            self.log.info('dqa_loc: invalid input parameter')
-
-        return True
 
 
     def get_dir_list(self):
