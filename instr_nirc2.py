@@ -30,7 +30,6 @@ class Nirc2(instrument.Instrument):
         Run all DQA checks unique to this instrument
         '''
         ok=True
-        if ok: ok = self.start_psfr()
         if ok: ok = self.set_dqa_date()
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_datlevel(0)
@@ -531,7 +530,7 @@ class Nirc2(instrument.Instrument):
         return True
 
 
-    def start_psfr(self):
+    def run_psfr(self):
         '''
         Starts psfr process that runs parallel with DQA
         '''
@@ -543,7 +542,7 @@ class Nirc2(instrument.Instrument):
         cmd.append(self.utDate)
         cmd.append(self.dirs['lev0'])
 
-        self.log.info(f'start_psfr: Starting PSFR command: {" ".join(cmd)}')
+        self.log.info(f'run_psfr: Starting PSFR command: {" ".join(cmd)}')
 #        p = subprocess.Popen(cmd)
 
         return True
