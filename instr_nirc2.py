@@ -536,8 +536,14 @@ class Nirc2(instrument.Instrument):
         Starts psfr process that runs parallel with DQA
         '''
 
+        try:
+            psfr = self.config[self.instr]['PSFR']
+        except:
+            self.log.error('run_psfr: PSFR config item is not defined')
+            return False
+
         cmd = []
-        for word in self.config[self.instr]['PSFR'].split(' '):
+        for word in psfr.split(' '):
             cmd.append(word)
         cmd.append(self.instr)
         cmd.append(self.utDate)
