@@ -437,39 +437,44 @@ class Lris(instrument.Instrument):
         '''
         Calculates S/N for middle CCD image
         '''
-        if self.nexten == 0: return True
 
-        #find middle extension
-        ext = int(np.floor(self.nexten/2.0))
-        image = self.fitsHdu[ext].data
-
-        naxis1 = self.get_keyword('NAXIS1',ext=ext)
-        naxis2 = self.get_keyword('NAXIS2',ext=ext)
-        postpix = self.get_keyword('POSTPIX', default=0)
-        precol = self.get_keyword('PRECOL', default=0)
-
-        numamps = self.get_numamps()
-        nx = (naxis2 - numamps*(precol + postpix))
-        c = [naxis1/2, 1.17*nx/2]
-        wsize = 10
-        spaflux = []
-
-        #necessary?
-        if c[1] > naxis1-wsize:
-            c[1] = c[0]
-
-        for i in range(wsize, int(naxis1)-wsize):
-            spaflux.append(np.median(image[int(c[1])-wsize:int(c[1])+wsize, i]))
-
-        spaflux = convolve(spaflux,Box1DKernel(3))
-        maxflux = np.max(spaflux[precol:naxis1-1])
-        minflux = np.min(spaflux[precol:naxis1-1])
-
-        sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
-
-        self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
-
+        #NOTE: Decided to remove this calc from KOA so setting to null.
+        self.set_keyword('SIG2NOIS', 'null', 'KOA: S/N estimate near image spectral center')
         return True
+
+        # if self.nexten == 0: return True
+
+        # #find middle extension
+        # ext = int(np.floor(self.nexten/2.0))
+        # image = self.fitsHdu[ext].data
+
+        # naxis1 = self.get_keyword('NAXIS1',ext=ext)
+        # naxis2 = self.get_keyword('NAXIS2',ext=ext)
+        # postpix = self.get_keyword('POSTPIX', default=0)
+        # precol = self.get_keyword('PRECOL', default=0)
+
+        # numamps = self.get_numamps()
+        # nx = (naxis2 - numamps*(precol + postpix))
+        # c = [naxis1/2, 1.17*nx/2]
+        # wsize = 10
+        # spaflux = []
+
+        # #necessary?
+        # if c[1] > naxis1-wsize:
+        #     c[1] = c[0]
+
+        # for i in range(wsize, int(naxis1)-wsize):
+        #     spaflux.append(np.median(image[int(c[1])-wsize:int(c[1])+wsize, i]))
+
+        # spaflux = convolve(spaflux,Box1DKernel(3))
+        # maxflux = np.max(spaflux[precol:naxis1-1])
+        # minflux = np.min(spaflux[precol:naxis1-1])
+
+        # sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
+
+        # self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
+
+        # return True
 
     def get_numamps(self):
         '''

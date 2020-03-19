@@ -213,7 +213,7 @@ SHCLOCNT	integer	16	Y
 SHLATCLO	double	16	Y
 SHLATOPN	double	16	Y
 SHOPNCNT	integer	16	Y
-SIG2NOIS	double	16	N
+SIG2NOIS	double	16	Y
 SIMPLE	char	1	Y
 SIMULATE	char	1	Y
 SKYPA	double	16	Y
