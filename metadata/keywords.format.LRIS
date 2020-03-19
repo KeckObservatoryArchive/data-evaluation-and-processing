@@ -2,7 +2,7 @@ keyword	dataType	colSize	allowNull
 KOAID	char	32	N
 PROPINT	integer	16	N
 INSTRUME	char	32	N
-DATE-OBS	char	24	N
+DATE-OBS	date	24	N
 DEC	char	24	Y
 RA	char	24	Y
 EQUINOX	double	16	Y
@@ -57,9 +57,9 @@ BLUFILT	char	24	Y
 BLUFNUM	integer	16	Y
 BLUFOCUS	double	16	Y
 BLUFTRAN	char	32	Y
-BSCALE	integer	16	Y
+BSCALE	double	16	Y
 BTRAN	integer	16	Y
-BZERO	integer	16	Y
+BZERO	double	16	Y
 CADMIUM	char	8	Y
 CCDGAIN	char	8	Y
 CCDGN01	double	16	Y

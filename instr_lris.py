@@ -392,9 +392,9 @@ class Lris(instrument.Instrument):
                 wavered = minmax
 
         #round to the nearest 10 angstroms
-        wavered = np.round(wavered,-1)
-        waveblue = np.round(waveblue,-1)
-        wavecntr = (waveblue + wavered)/2
+        wavered  = round(np.round(wavered,-1))
+        waveblue = round(np.round(waveblue,-1))
+        wavecntr = round((waveblue + wavered)/2)
 
         self.set_keyword('WAVERED',round(wavered,0),'KOA: Red wavelength')
         self.set_keyword('WAVEBLUE',round(waveblue,0),'KOA: Blue wavelength')
