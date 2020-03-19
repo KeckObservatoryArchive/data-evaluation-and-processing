@@ -396,9 +396,9 @@ class Lris(instrument.Instrument):
         waveblue = round(np.round(waveblue,-1))
         wavecntr = round((waveblue + wavered)/2)
 
-        self.set_keyword('WAVERED',round(wavered,0),'KOA: Red wavelength')
-        self.set_keyword('WAVEBLUE',round(waveblue,0),'KOA: Blue wavelength')
-        self.set_keyword('WAVECNTR',round(wavecntr,0),'KOA: Center wavelength')
+        self.set_keyword('WAVERED', wavered, 'KOA: Red wavelength')
+        self.set_keyword('WAVEBLUE',waveblue,'KOA: Blue wavelength')
+        self.set_keyword('WAVECNTR',wavecntr,'KOA: Center wavelength')
 
         return True
 
