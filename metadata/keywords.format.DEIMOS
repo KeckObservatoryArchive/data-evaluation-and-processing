@@ -281,7 +281,6 @@ PONAME7	char	24	Y
 PONAME8	char	24	Y
 PONAME9	char	24	Y
 POSTLINE	integer	16	Y
-POSTLINE	integer	16	Y
 POSTPIX	integer	16	Y
 POXOFF	double	16	Y
 POXPOS	double	16	Y
