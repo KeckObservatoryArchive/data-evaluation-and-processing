@@ -269,6 +269,25 @@ def is_progid_valid(progid):
     return True
 
 
+def get_progid_assign(assigns, utc):
+    '''
+    Get fits progid assignment by time based on config option string that 
+    must be formatted with comma-separated split times like the follwoing examples:
+     "U205"
+     "U205,10:21:00,C251"
+     "U205,10:21:00,C251,13:45:56,N123"
+    '''
+    parts = assigns.split(',')
+    assert len(parts) % 2 == 1, "ERROR: Incorrect use of ASSIGN_PROGNAME"
+    if len(parts) == 1: return parts[0]
 
+    fitsTime = datetime.strptime(utc, '%H:%M:%S.%f')
+    for i in range(1, len(parts), 2):
+        progid = parts[i-1]
+        t = parts[i]
+        splitTime = datetime.strptime(t, '%H:%M:%S')
+        if fitsTime <= splitTime:
+            return progid
+    return parts[-1]
 
 

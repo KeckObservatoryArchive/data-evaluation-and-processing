@@ -124,7 +124,8 @@ def create_prog(instrObj):
             #if PROGNAME exists (either assigned from command line or in PROGNAME), use that to populate the PROG* values
             #NOTE: PROGNAME can be in format with or without semester
             if instrObj.config['MISC']['ASSIGN_PROGNAME']:
-                progname = instrObj.config['MISC']['ASSIGN_PROGNAME']
+                progname = get_progid_assign(instrObj.config['MISC']['ASSIGN_PROGNAME'], utc)
+                if log: log.info(f"Force assigning {os.path.basename(newFile)} to PROGID '{progname}'")
             else:
                 progname = instrObj.get_keyword('PROGNAME')
                 if progname != None: progname = progname.replace('ToO_', '')            

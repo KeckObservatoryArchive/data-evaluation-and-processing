@@ -27,7 +27,7 @@ parser.add_argument('--metaCompareDir'  , type=str, nargs='?', const=None,  help
 parser.add_argument('--useHdrProg'  , type=str, nargs='?', const=None,      help='(OPTIONAL) Set to "force" to force header val if different.  Set to "assist" to use only if indeterminate (useful for processing old data).')
 parser.add_argument('--splitTime'   , type=str, nargs='?', const=None,      help='(OPTIONAL) HH:mm of suntimes midpoint for overriding split night timing.')
 parser.add_argument('--emailReport' , type=str, nargs='?', default="0",       help='(OPTIONAL) Set to "1" to send email report whether or not it is a full run')
-parser.add_argument('--assignProgname' , type=str, nargs='?', default='',    help='(OPTIONAL) Force assign all data to provided progname (ie U190 or 2020A_U190)')
+parser.add_argument('--assignProgname' , type=str, nargs='?', default='',    help='(OPTIONAL) Force assign all data to provided progname (ie U190 or 2020A_U190). Can use split time str like "U205,10:21:00,C251"')
 
 # Get input params
 
