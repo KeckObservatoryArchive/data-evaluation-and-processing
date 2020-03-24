@@ -231,21 +231,21 @@ class Nirspec(instrument.Instrument):
                     koaimtyp = 'undefined'
 
             #flats
-            elif flat != None:
-                if flat == 0 and calmpos == 'in':
-                    koaimtyp = 'flatlampoff'
-                elif flat == 1 and calmpos == 'in' and calppos == 'out':
-                    koaimtyp = 'flatlamp'
-                else:
-                    koaimtyp = 'undefined'
+            elif flat == 0 and calmpos == 'in':
+                koaimtyp = 'flatlampoff'
+            elif flat == 1 and calmpos == 'in' and calppos == 'out':
+                koaimtyp = 'flatlamp'
 
             #darks
             elif int(self.get_keyword('ITIME')) == 0:
                 koaimtyp = 'bias'
 
             #object
-            elif calmpos == 'out' and calppos == 'out' and calcpos == 'out':
+            elif calmpos == 'out' and calppos == 'out':
                 koaimtyp = 'object'
+
+            else:
+                koaimtyp = 'undefined'
 
         #warn if undefined
         if (koaimtyp == 'undefined'):
