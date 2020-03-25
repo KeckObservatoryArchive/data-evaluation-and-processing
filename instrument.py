@@ -20,6 +20,7 @@ import json
 import numpy as np
 import re
 from dep_obtain import get_obtain_data
+import match
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -258,6 +259,11 @@ class Instrument:
         #NOTE: If keyword is mapped to an array of key values, the first value will be used.
         if isinstance(keyword, list):
             keyword = keyword[0]
+
+        #handle infinite value
+        if value == math.inf:
+            self.log.error(f'set_keyword: ERROR: keyword {keyword} value is infinite.  Setting to null.')
+            return None
 
         #ok now we can update
         if ext == None:
