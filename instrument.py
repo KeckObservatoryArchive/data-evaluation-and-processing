@@ -638,7 +638,8 @@ class Instrument:
 
         #special override via command line option
         if self.config['MISC']['ASSIGN_PROGNAME']:
-            progname = self.config['MISC']['ASSIGN_PROGNAME']
+            utc = self.get_keyword('UTC')
+            progname = get_progid_assign(self.config['MISC']['ASSIGN_PROGNAME'], utc)
             if '_' in progname and is_progid_valid(progname):
                 semester, progid = progname.split('_')
                 self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from PROGNAME')

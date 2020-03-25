@@ -85,7 +85,6 @@ DATASUM	char	16	Y
 DATE	char	32	Y
 DATE_BEG	char	32	Y
 DATE_END	char	32	Y
-DATE-END	char	16	Y
 DATE-OBS	char	16	N
 DCSSTAT	char	16	Y
 DCSVERS	char	16	Y
@@ -281,7 +280,6 @@ PONAME6	char	24	Y
 PONAME7	char	24	Y
 PONAME8	char	24	Y
 PONAME9	char	24	Y
-POSTLINE	integer	16	Y
 POSTLINE	integer	16	Y
 POSTPIX	integer	16	Y
 POXOFF	double	16	Y
