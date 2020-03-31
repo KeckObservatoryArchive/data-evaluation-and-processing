@@ -100,6 +100,7 @@ def dep_dqa(instrObj, tpx=0):
         #Set current file to work on and run dqa checks, etc
         ok = True
         if ok: ok = instrObj.set_fits_file(filename)
+        if ok: ok = instrObj.is_fits_valid()
         if ok: ok = instrObj.run_dqa_checks(progData)
         if ok: ok = check_koaid(instrObj, outFiles, log)
         if ok: ok = instrObj.write_lev0_fits_file()
