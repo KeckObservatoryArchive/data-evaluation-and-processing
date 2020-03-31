@@ -272,6 +272,24 @@ class Instrument:
             (self.fitsHdu[ext].header).update({keyword : (value, comment)})
 
 
+    def is_fits_valid(self):
+        '''
+        Basic checks that the fits file is valid.
+        '''
+
+        #check no data
+        if len(self.fitsHdu) == 0:
+            self.log.error('is_fits_valid: No HDUs.')
+            return False
+
+        #any corrupted HDUs?
+        for hdu in self.fitsHdu:
+            hdu_type = str(type(hdu))
+            if 'CorruptedHDU' in hdu_type:
+                self.log.error('is_fits_valid: Corrupted HDU found.')
+                return False
+
+        return True
 
 
     def set_koaid(self):
