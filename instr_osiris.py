@@ -146,10 +146,10 @@ class Osiris(instrument.Instrument):
         koaimtyp = 'undefined'
         ifilter = self.get_keyword('IFILTER', default='')
         sfilter = self.get_keyword('SFILTER', default='')
-        axestat = self.get_keyword('AXESTAT')
-        domeposn = self.get_keyword('DOMEPOSN')
-        az = self.get_keyword('AZ')
-        el = self.get_keyword('EL')
+        axestat = self.get_keyword('AXESTAT', default='')
+        domeposn = self.get_keyword('DOMEPOSN', default=0)
+        az = self.get_keyword('AZ', default=0)
+        el = self.get_keyword('EL', default=0)
         obsfname = self.get_keyword('OBSFNAME', default='')
         obsfx = self.get_keyword('OBSFX')
         obsfy = self.get_keyword('OBSFY')
@@ -194,7 +194,7 @@ class Osiris(instrument.Instrument):
             if 'telsim' in obsfname or (obsfx > 30 and obsfy < 0.1 and obsfz < 0.1):
                 koaimtyp = 'undefined'
             elif obsfz > 10:
-                koaimtype = 'undefined'
+                koaimtyp = 'undefined'
         elif 'c' in datafile:
             koaimtyp = 'calib'
 
