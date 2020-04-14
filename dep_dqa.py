@@ -202,7 +202,7 @@ def dep_dqa(instrObj, tpx=0):
     #NOTE: ensure this doesn't trigger during testing
     #TODO: Should this go in koaxfr?
     if tpx and not isDev:
-        check_koapi_send(semids, instrObj.utDate, instrObj.config['API']['koaapi'], log)
+        check_koapi_send(semids, instrObj.utDate, instr, instrObj.config['API']['koaapi'], log)
 
 
     #log success
@@ -301,7 +301,7 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
 
 
 
-def check_koapi_send(semids, utDate, apiUrl, log):
+def check_koapi_send(semids, utDate, instr, apiUrl, log):
     '''
     Sends all unique semids processed in DQA to KOA api to flag semids
     for needing an email sent to PI that there data has been archived
@@ -328,6 +328,7 @@ def check_koapi_send(semids, utDate, apiUrl, log):
         url += 'cmd=updateKoapiSend'
         url += '&utdate=' + utDate
         url += '&semid='  + semid
+        url += '&instr='  + instr
         url += '&hash='   + myHash
 
         #call and check results
