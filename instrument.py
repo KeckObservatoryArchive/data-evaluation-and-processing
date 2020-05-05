@@ -925,7 +925,7 @@ class Instrument:
         except:
             try:
                 self.fitsHdu.writeto(outfile, output_verify='ignore')
-                self.log.error('write_lev0_fits_file: Forced to write FITS using output_verify="ignore". May want to inspect:' + outfile)                
+                self.log.info('write_lev0_fits_file: Forced to write FITS using output_verify="ignore". May want to inspect:' + outfile)                
             except Exception as e:
                 self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
                 return False
