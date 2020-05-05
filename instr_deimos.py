@@ -340,14 +340,14 @@ class Deimos(instrument.Instrument):
             tilt = self.get_keyword(key, default='').lower()
             if tilt == 'zeroth_order':
                 obsmode = 'imaging'
+#            else:
+#                obsmode = 'imaging'
             else:
-                obsmode = 'imaging'
-        else:
-            slmsknam = self.get_keyword('SLMSKNAM', default='')
-            if slmsknam.startswith('LVM') or slmsknam.startswith('Long'):
-                obsmode = 'longslit'
-            else:
-                obsmode = 'mos'
+                slmsknam = self.get_keyword('SLMSKNAM', default='')
+                if slmsknam.startswith('LVM') or slmsknam.startswith('Long'):
+                    obsmode = 'longslit'
+                else:
+                    obsmode = 'mos'
 
         self.set_keyword('OBSMODE', obsmode, 'KOA: Observing mode')
 

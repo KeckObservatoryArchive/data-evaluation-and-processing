@@ -188,6 +188,7 @@ OBWFSTST	char	20	Y
 OBWLNAME	char	20	Y
 OBWNNAME	char	20	Y
 OBWPNAME	char	20	Y
+OFNAME	char	32	Y
 OUTDIR	char	68	Y
 PARANG	double	20	Y
 PARANTEL	double	20	Y
@@ -301,4 +302,3 @@ WXTIME	char	16	Y
 WXWNDIR	double	16	Y
 WXWNDSP	double	16	Y
 XENONPWR	integer	20	Y
-OFNAME	char	32	Y

@@ -81,6 +81,8 @@ def dep_dqa(instrObj, tpx=0):
         notify_zero_files(instrObj, dqaFile, tpx, log)
         return
 
+    # Create the dqa.LOC files in lev0 directory
+    instrObj.dqa_loc()
 
     #determine program info
     create_prog(instrObj)
