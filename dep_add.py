@@ -52,6 +52,8 @@ def dep_add(instrObj):
 
     # Copy nightly data to ancDir/nightly (try /s/ and /h/)
     # NOTE: /s/ is only available for about 3 months
+'''
+#NOTE: removing this now that we are using EPICS archiver api
     nightlyDir = '/nightly' + str(telnr) + '/' + str(year) + '/' + month + '/' + day + '/'
     files = ['envMet.arT', 'envFocus.arT']
     for file in files:
@@ -92,5 +94,5 @@ def dep_add(instrObj):
                     newLines.append(line)
             with open(destination, 'w') as f:
                 f.write("".join(newLines))
-
+'''
     
