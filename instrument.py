@@ -853,35 +853,26 @@ class Instrument:
         utc     = self.get_keyword('UTC')
         telnr   = self.get_telnr()
 
-        #read envMet.arT and write to header
-        #todo: read this once in dqa to speed things up?
-        logFile = self.dirs['anc'] + '/nightly/envMet.arT'
-        data = envlog(logFile, 'envMet', telnr, dateobs, utc)
+        #get data but continue even if there were errors for certain keywords
+        data, errors = envlog(telnr, dateobs, utc)
         if type(data) is not dict: 
-            self.log.error("Could not read envMet.arT data")
+            self.log.error(f"Could not get weather data for {dateobs} {utc}")
             return True
+        if len(errors) > 0:
+            self.log.error(f"EPICS archiver error for {dateobs} {utc}: {str(errors)}")
 
+        #set keywords
         self.set_keyword('WXDOMHUM' , data['wx_domhum'],    'KOA: Weather dome humidity')
         self.set_keyword('WXDOMTMP' , data['wx_domtmp'],    'KOA: Weather dome temperature')
         self.set_keyword('WXDWPT'   , data['wx_dewpoint'],  'KOA: Weather dewpoint')
         self.set_keyword('WXOUTHUM' , data['wx_outhum'],    'KOA: Weather outside humidity')
         self.set_keyword('WXOUTTMP' , data['wx_outtmp'],    'KOA: Weather outside temperature')
         self.set_keyword('WXPRESS'  , data['wx_pressure'],  'KOA: Weather pressure')
-        self.set_keyword('WXTIME'   , data['time'],         'KOA: Weather measurement time')
         self.set_keyword('WXWNDIR'  , data['wx_winddir'],   'KOA: Weather wind direction')
         self.set_keyword('WXWNDSP'  , data['wx_windspeed'], 'KOA: Weather wind speed')
-
-
-        #read envFocus.arT and write to header
-        logFile = self.dirs['anc'] + '/nightly/envFocus.arT'
-        data = envlog(logFile, 'envFocus', telnr, dateobs, utc)
-        if type(data) is not dict: 
-            self.log.error("Could not read envFocus.arT data")
-            return True
-
+        self.set_keyword('WXTIME'   , data['wx_time'],      'KOA: Weather measurement time')
         self.set_keyword('GUIDFWHM' , data['guidfwhm'],     'KOA: Guide star FWHM value')
-        self.set_keyword('GUIDTIME' , data['time'],         'KOA: Guide star FWHM measure time')
-
+        self.set_keyword('GUIDTIME' , data['fwhm_time'],    'KOA: Guide star FWHM measure time')
         return True
 
 
