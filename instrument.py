@@ -854,12 +854,14 @@ class Instrument:
         telnr   = self.get_telnr()
 
         #get data but continue even if there were errors for certain keywords
-        data, errors = envlog(telnr, dateobs, utc)
+        data, errors, warns = envlog(telnr, dateobs, utc)
         if type(data) is not dict: 
             self.log.error(f"Could not get weather data for {dateobs} {utc}")
             return True
         if len(errors) > 0:
             self.log.error(f"EPICS archiver error for {dateobs} {utc}: {str(errors)}")
+        if len(warns) > 0:
+            self.log.info(f"EPICS archiver warn {dateobs} {utc}: {str(warns)}")
 
         #set keywords
         self.set_keyword('WXDOMHUM' , data['wx_domhum'],    'KOA: Weather dome humidity')

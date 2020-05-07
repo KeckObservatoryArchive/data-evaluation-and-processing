@@ -44,13 +44,19 @@ def envlog(telnr, dateObs, utc):
 
     #get channel data from archive for each pv
     errors = []
+    warns = []
     mn = None
     for kw, pv in keymap.items():
         data[kw] = 'null'
-        sendUrl = f'{url}pv={pv}&from={dt1}&to={dt2}'
+
         try:
+            #query archiver api and make sure we found some records
+            sendUrl = f'{url}pv={pv}&from={dt1}&to={dt2}'
             d = urlopen(sendUrl).read().decode('utf8')
             d = json.loads(d)
+            if len(d) == 0:
+                warns.append(f"No records for {pv}")
+                continue
 
             #find closest entry in time
             ts_utc = utDatetime.replace(tzinfo=timezone.utc).timestamp()
@@ -73,7 +79,7 @@ def envlog(telnr, dateObs, utc):
         except Exception as e:
             errors.append(f"{pv}:{str(e)}")
 
-    return data, errors
+    return data, errors, warns
 
 
 def find_closest_entry(entries, ts):
