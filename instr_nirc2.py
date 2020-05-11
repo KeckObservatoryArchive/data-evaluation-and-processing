@@ -191,7 +191,7 @@ class Nirc2(instrument.Instrument):
                 imagetyp = 'dark'
             print('Image Type: ',imagetyp)
 
-        self.log.info('get_koaimtyp: getting KOAIMTYP')
+#        self.log.info('get_koaimtyp: getting KOAIMTYP')
         return imagetyp
 
     def set_wavelengths(self):
