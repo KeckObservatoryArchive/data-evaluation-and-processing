@@ -308,6 +308,7 @@ PRECOL	integer	16	Y
 PREFLUSH	integer	16	Y
 PRELINE	integer	16	Y
 PREROW	integer	16	Y
+PROGNAME	char	16	Y
 RA	char	16	Y
 ROTA1GOF	integer	16	Y
 ROTA1IOF	integer	16	Y
@@ -320,6 +321,7 @@ ROTA2TOF	integer	16	Y
 ROTATALG	char	16	Y
 ROTATCAL	char	16	Y
 ROTATCMT	char	16	Y
+ROTATDCS	char	8	Y
 ROTATFOP	char	16	Y
 ROTATMOD	char	16	Y
 ROTATNAM	char	16	Y
