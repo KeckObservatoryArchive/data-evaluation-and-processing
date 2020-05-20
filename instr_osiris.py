@@ -158,45 +158,51 @@ class Osiris(instrument.Instrument):
         datafile = self.get_keyword('DATAFILE')
         coadds = self.get_keyword('COADDS')
 
-        # telescope at flat position
-        flatpos = 0
-        if (el < 45.11 and el > 44.89) and (domeposn - az > 80.0 and domeposn - az < 100.0):
-            flatpos = 1
+        #TODO: NOTE: Various values of above keywords can be of mixed type, 
+        #such as "###ERROR###" for 'el' instead of a float.  Just wrapping in try
+        #and logging as error for now until we can handle this more cleanly.
+        try: 
+            # telescope at flat position
+            flatpos = 0
+            if (el < 45.11 and el > 44.89) and (domeposn - az > 80.0 and domeposn - az < 100.0):
+                flatpos = 1
 
-        if 'telescope' in obsfname.lower():
-            koaimtyp = 'object'
+            if 'telescope' in obsfname.lower():
+                koaimtyp = 'object'
 
-        # recmat files
-        if 'c' in datafile:
-            koaimtyp = 'calib'
+            # recmat files
+            if 'c' in datafile:
+                koaimtyp = 'calib'
 
-        # dark if ifilter/sfilter is dark
-        if 'drk' in ifilter.lower() and instr.lower() == 'imag':
-            koaimtyp = 'dark'
-        elif 'drk' in sfilter.lower() and instr.lower() == 'spec':
-            koaimtyp = 'dark'
+            # dark if ifilter/sfilter is dark
+            if 'drk' in ifilter.lower() and instr.lower() == 'imag':
+                koaimtyp = 'dark'
+            elif 'drk' in sfilter.lower() and instr.lower() == 'spec':
+                koaimtyp = 'dark'
 
-        # uses dome lamps for instr=imag
-        elif instr.lower() == 'imag':
-            if 'telescope' in obsfname and 'not controlling' in axestat and flatpos:
-                # divide image by coadds
-                img = self.fitsHdu[0].data
+            # uses dome lamps for instr=imag
+            elif instr.lower() == 'imag':
+                if 'telescope' in obsfname and 'not controlling' in axestat and flatpos:
+                    # divide image by coadds
+                    img = self.fitsHdu[0].data
 
-                # median
-                imgmed = np.median(img)
+                    # median
+                    imgmed = np.median(img)
 
-                if imgmed > 30.0:
-                    koaimtyp = 'flatlamp'
-                else:
-                    koaimtyp = 'flatlampoff'
+                    if imgmed > 30.0:
+                        koaimtyp = 'flatlamp'
+                    else:
+                        koaimtyp = 'flatlampoff'
 
-        if instr.lower == 'spec':
-            if 'telsim' in obsfname or (obsfx > 30 and obsfy < 0.1 and obsfz < 0.1):
-                koaimtyp = 'undefined'
-            elif obsfz > 10:
-                koaimtyp = 'undefined'
-        elif 'c' in datafile:
-            koaimtyp = 'calib'
+            if instr.lower == 'spec':
+                if 'telsim' in obsfname or (obsfx > 30 and obsfy < 0.1 and obsfz < 0.1):
+                    koaimtyp = 'undefined'
+                elif obsfz > 10:
+                    koaimtyp = 'undefined'
+            elif 'c' in datafile:
+                koaimtyp = 'calib'
+        except Exception as e:
+            self.log.error('set_koaimtype: ' + str(e))
 
         #warn if undefined
         if (koaimtyp == 'undefined'):
