@@ -516,7 +516,7 @@ class Nirc2(instrument.Instrument):
 
         drp = self.config[self.instr]['DRP']
         if os.path.isfile(drp):
-            drp = f"{drp} {self.dirs['output']} -nodb"
+            drp = f"{drp} {self.dirs['output']}"
             print(drp)
 
             cmd = []
