@@ -503,6 +503,7 @@ class Nirc2(instrument.Instrument):
         minflux = np.min(spaflux)
 
         sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
+        if np.isnan(sig2nois): sig2nois = 'null'
 
         self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
 
@@ -516,7 +517,7 @@ class Nirc2(instrument.Instrument):
 
         drp = self.config[self.instr]['DRP']
         if os.path.isfile(drp):
-            drp = f"{drp} {self.dirs['output']} -nodb"
+            drp = f"{drp} {self.dirs['output']}"
             print(drp)
 
             cmd = []
