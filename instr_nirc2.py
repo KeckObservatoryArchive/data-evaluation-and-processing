@@ -503,6 +503,7 @@ class Nirc2(instrument.Instrument):
         minflux = np.min(spaflux)
 
         sig2nois = np.fix(np.sqrt(np.abs(maxflux - minflux)))
+        if np.isnan(sig2nois): sig2nois = 'null'
 
         self.set_keyword('SIG2NOIS', sig2nois, 'KOA: S/N estimate near image spectral center')
 
