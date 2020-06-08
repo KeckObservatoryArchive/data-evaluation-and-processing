@@ -133,7 +133,7 @@ def create_prog(instrObj):
             #valid progname?
             isProgValid = is_progid_valid(progname)
             if progname and not isProgValid:
-                if log: log.error('create_prog: Invalid PROGNAME: ' + str(progname))
+                if log: log.warn('create_prog: Invalid PROGNAME: ' + str(progname))
 
             #try to assign PROG* keywords from progname
             progid   = 'PROGID'
