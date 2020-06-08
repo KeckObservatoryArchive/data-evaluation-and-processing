@@ -407,7 +407,8 @@ def find_24hr_fits(useDirs, utDate, endTime, modtimeOverride=0):
     for fitsDir in useDirs:
         for root, dirs, files in os.walk(fitsDir):
             for item in sorted(files):
-                if not '.fits' in item: continue
+                if not item.endswith('.fits') and not item.endswith('fits.gz'): 
+                  continue
 
                 # Create the path to the current file we want to check
                 if root.endswith('/'): root = root[:-1]
