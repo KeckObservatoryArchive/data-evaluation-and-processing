@@ -63,7 +63,7 @@ DATE-OBS	char	24	N
 DATLEVEL	integer	16	Y
 DCSSTAT	char	24	Y
 DDEC	double	20	Y
-DEC	double	20	N
+DEC	double	20	Y
 DECOFF	double	20	Y
 DETBIAS	integer	8	Y
 DETGAIN	double	16	Y
@@ -228,7 +228,7 @@ Q1OFFSET	integer	8	Y
 Q2OFFSET	integer	8	Y
 Q3OFFSET	integer	8	Y
 Q4OFFSET	integer	8	Y
-RA	double	20	N
+RA	double	20	Y
 RADECSYS	char	20	Y
 RAOFF	double	20	Y
 ROOTNAME	char	30	Y
