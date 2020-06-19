@@ -275,7 +275,7 @@ class Nirc2(instrument.Instrument):
         parang   = self.get_keyword('PARANG')
         el       = self.get_keyword('EL')
 
-        if parantel == '': parantel = parang 
+        if isinstance(parantel, str) and (parantel == '' or 'error' in parantel.lower()): parantel = parang 
         mode =  rotmode[0:4]
        
         # Logic added 4/16/2012 
