@@ -63,15 +63,15 @@ class Dep:
         self.instrObj = instrClass(self.instr, self.utDate, self.config)
         
         # Open database connection if in config
-        if self.config['MYSQL']:
+        if self.config['KOADB']:
             try:
-                host = self.config['MYSQL']['HOST']
-                user = self.config['MYSQL']['USER']
-                pwd  = self.config['MYSQL']['PWD']
-                db   = self.config['MYSQL']['DB']
-                self.db = pymysql.connect(host, user, pwd, db, cursorclass=pymysql.cursors.DictCursor)
+                host = self.config['KOADB']['HOST']
+                user = self.config['KOADB']['USER']
+                pwd  = self.config['KOADB']['PWD']
+                db   = self.config['KOADB']['DB']
+                self.instrObj.db = pymysql.connect(host, user, pwd, db, cursorclass=pymysql.cursors.DictCursor)
             except:
-                self.db = 0
+                self.instrObj.db = 0
 
        
     def __del__(self):
@@ -79,8 +79,8 @@ class Dep:
         Close the database connection, if it is open
         """
 
-        if self.db:
-            self.db.close()
+        if self.instrObj.db:
+            self.instrObj.db.close()
 
  
     def go(self, processStart=None, processStop=None):
@@ -175,7 +175,7 @@ class Dep:
         # Verify that there is no entry in koa.koatpx
         query = f'select utdate as num from koatpx where instr="{self.instr}" and utdate="{self.utDate}"'
         try:
-            with self.db.cursor() as cursor:
+            with self.instrObj.db.cursor() as cursor:
                 num = cursor.execute(query)
             if num != '0':
                 raise Exception('dep: entry already exists in database. EXITING!')
