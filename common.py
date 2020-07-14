@@ -210,7 +210,6 @@ def get_prog_pi(semid, default=None, log=None):
 
     api = get_koa_api()
     url = api + 'semid='+semid+'&cmd=getPI'
-    api = get_proposal_api()
     val = get_api_data(url, getOne=True)
 
     if not val or 'pi_lastname' not in val:
