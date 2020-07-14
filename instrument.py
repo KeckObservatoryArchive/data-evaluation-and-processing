@@ -732,7 +732,7 @@ class Instrument:
                 self.log.info('set_propint: PROPINT not found for ' + semid + ' and ' + self.utDate + ', defaulting to 18 months')
                 propint = 18
             else:
-                propint = int(data['propint'])
+                propint = int(data['propmin'])
 
         #NOTE: PROPINT goes in metadata but not in header so we store in temp dict for later
         self.extraMeta['PROPINT'] = propint

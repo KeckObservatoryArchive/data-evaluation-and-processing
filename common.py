@@ -191,6 +191,7 @@ def get_prog_inst(semid, default=None, log=None, isToO=False):
     api = get_proposal_api()
 
     url = api + 'ktn='+semid+'&cmd=getAllocInst'
+    print(url)
     val = get_api_data(url, isJson=False)
 
     if not val or val.startswith('Usage') or val == 'error':
@@ -209,17 +210,14 @@ def get_prog_pi(semid, default=None, log=None):
 
     api = get_koa_api()
     url = api + 'semid='+semid+'&cmd=getPI'
-    api = get_proposal_api()
     val = get_api_data(url, getOne=True)
 
-    if not val or val.startswith('Usage') or val == 'error':
+    if not val or 'pi_lastname' not in val:
         if log: log.error('Unable to query API: ' + url)
         return default
     else:
         #remove whitespace and get last name only
-        val = val.replace(' ','')
-        if (',' in val): 
-            val = val.split(',')[0]
+        val = val['pi_lastname'].replace(' ','')
         return val
 
 
@@ -231,15 +229,16 @@ def get_prog_title(semid, default=None, log=None):
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
 
-    api = get_proposal_api()
+    api = get_koa_api()
     url = api + 'cmd=getTitle&semid=' + semid
-    val = get_api_data(url, isJson=False)
-    if not val or val.startswith('Usage') or val == 'error':
+    val = get_api_data(url, getOne=True)
+
+    if not val or 'progtitl' not in val:
         if log: log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
         return default
     else : 
         #deal with non-printable characters that can end up in progtitl
-        progtitl = val.encode('ascii', errors='ignore').decode('UTF-8')
+        progtitl = val['progtitl']
         return progtitl
 
 
