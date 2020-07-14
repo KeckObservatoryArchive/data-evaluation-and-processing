@@ -720,8 +720,14 @@ class Instrument:
             propint = 18
         else:
             #create url and get data
-            url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
-            data = get_api_data(url, getOne=True)
+            query = f'select propmin from koa_ppp where semid="{semid}" and utdate="{self.utDate}"'
+            with self.db.cursor() as cursor:
+                try:
+                    num = cursor.execute(query)
+                    if (num == 1):
+                        data = cursor.fetchone()
+                except:
+                    pass
             if not data:
                 self.log.info('set_propint: PROPINT not found for ' + semid + ' and ' + self.utDate + ', defaulting to 18 months')
                 propint = 18
