@@ -212,12 +212,11 @@ def get_prog_pi(semid, default=None, log=None):
     api = get_proposal_api()
     val = get_api_data(url, getOne=True)
 
-    if (val == None or 'pi_lastname' not in val): 
+    if not val or val.startswith('Usage') or val == 'error':
         if log: log.error('Unable to query API: ' + url)
         return default
     else:
         #remove whitespace and get last name only
-        val = val['pi_lastname']
         val = val.replace(' ','')
         if (',' in val): 
             val = val.split(',')[0]
@@ -232,15 +231,15 @@ def get_prog_title(semid, default=None, log=None):
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
 
-    api = get_koa_api()
+    api = get_proposal_api()
     url = api + 'cmd=getTitle&semid=' + semid
-    title = get_api_data(url, getOne=True)
-    if (title == None or 'progtitl' not in title): 
+    val = get_api_data(url, isJson=False)
+    if not val or val.startswith('Usage') or val == 'error':
         if log: log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
         return default
     else : 
         #deal with non-printable characters that can end up in progtitl
-        progtitl = title['progtitl'].encode('ascii', errors='ignore').decode('UTF-8')
+        progtitl = val.encode('ascii', errors='ignore').decode('UTF-8')
         return progtitl
 
 
