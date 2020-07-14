@@ -188,14 +188,9 @@ def get_prog_inst(semid, default=None, log=None, isToO=False):
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
 
-    #todo: get this url from config
-    #TODO: NOTE: This is the only way to get ToO institution info (> 2017).  Do we need to backfill koa_program?
-    if isToO: 
-        api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
-    else:
-        api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
+    api = get_proposal_api()
 
-    url = api + '?ktn='+semid+'&cmd=getAllocInst'
+    url = api + 'ktn='+semid+'&cmd=getAllocInst'
     val = get_api_data(url, isJson=False)
 
     if not val or val.startswith('Usage') or val == 'error':
@@ -212,9 +207,9 @@ def get_prog_pi(semid, default=None, log=None):
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
 
-    #todo: get this url from config
-    api = 'https://www.keck.hawaii.edu/software/db_api/koa.php'
-    url = api + '?semid='+semid+'&cmd=getPI'
+    api = get_koa_api()
+    url = api + 'semid='+semid+'&cmd=getPI'
+    api = get_proposal_api()
     val = get_api_data(url, getOne=True)
 
     if (val == None or 'pi_lastname' not in val): 
@@ -237,9 +232,8 @@ def get_prog_title(semid, default=None, log=None):
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
 
-    #todo: get this url from config
-    api = 'https://www.keck.hawaii.edu/software/db_api/koa.php'
-    url = api + '?cmd=getTitle&semid=' + semid
+    api = get_koa_api()
+    url = api + 'cmd=getTitle&semid=' + semid
     title = get_api_data(url, getOne=True)
     if (title == None or 'progtitl' not in title): 
         if log: log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
@@ -290,4 +284,31 @@ def get_progid_assign(assigns, utc):
             return progid
     return parts[-1]
 
+
+def get_koa_api():
+    '''
+    Returns the KOA API url from the config file
+    '''
+
+    #read config vars
+    config = configparser.ConfigParser()
+    config.read('config.live.ini')
+    try:
+        return config['API']['KOAAPI']
+    except:
+        return None
+
+
+def get_proposal_api():
+    '''
+    Returns the proposal API url from the config file
+    '''
+
+    #read config vars
+    config = configparser.ConfigParser()
+    config.read('config.live.ini')
+    try:
+        return config['API']['PROPAPI']
+    except:
+        return None
 
