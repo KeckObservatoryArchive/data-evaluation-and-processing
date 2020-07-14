@@ -24,6 +24,7 @@ from common import *
 import re
 import datetime as dt
 from dateutil import parser
+import pymysql.cursors
 
 class Dep:
     """
@@ -61,7 +62,27 @@ class Dep:
         instrClass = getattr(module, className)
         self.instrObj = instrClass(self.instr, self.utDate, self.config)
         
-        
+        # Open database connection if in config
+        if self.config['MYSQL']:
+            try:
+                host = self.config['MYSQL']['HOST']
+                user = self.config['MYSQL']['USER']
+                pwd  = self.config['MYSQL']['PWD']
+                db   = self.config['MYSQL']['DB']
+                self.db = pymysql.connect(host, user, pwd, db, cursorclass=pymysql.cursors.DictCursor)
+            except:
+                self.db = 0
+
+       
+    def __del__(self):
+        """
+        Close the database connection, if it is open
+        """
+
+        if self.db:
+            self.db.close()
+
+ 
     def go(self, processStart=None, processStop=None):
         """
         Processing steps for DEP
@@ -152,10 +173,11 @@ class Dep:
 
         self.instrObj.log.info('dep: verifying if can proceed')
         # Verify that there is no entry in koa.koatpx
+        query = f'select utdate as num from koatpx where instr="{self.instr}" and utdate="{self.utDate}"'
         try:
-            url = ''.join((self.instrObj.koaUrl, 'cmd=isInKoatpx&instr=', self.instr, '&utdate=', self.utDate))
-            data = get_api_data(url)
-            if data[0]['num'] != '0':
+            with self.db.cursor() as cursor:
+                num = cursor.execute(query)
+            if num != '0':
                 raise Exception('dep: entry already exists in database. EXITING!')
                 return False
         except:
