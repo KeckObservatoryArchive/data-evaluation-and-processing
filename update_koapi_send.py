@@ -1,7 +1,5 @@
-import pymysql.cursors
-import configparser
-import sys
 import datetime as dt
+import db_conn
 
 
 def update_koapi_send(utdate, semid, instr=None):
@@ -12,17 +10,17 @@ def update_koapi_send(utdate, semid, instr=None):
     Returns True/False
     """
 
-    print (f"updateKoapiSend: {utdate}, {semid}, {instr}")
+    print(f"updateKoapiSend: {utdate}, {semid}, {instr}")
 
     # db connect
-    dbc = db_connect()
-    if not dbc: return False            
+    db = db_conn.db_conn('config.live.ini', configKey='DATABASE')
 
     #Get latest entry (by utdate_beg) matching semid and instr
     query = f"select * from koapi_send where semid='{semid}' "
     if instr: query += f" and instr='{instr}' " 
     query += " order by utdate_beg desc limit 1"
-    rows = do_query(dbc, query)
+    rows = db.query('koa', query)
+    print(query, rows)
 
     #If no entry, then create one
     if (len(rows) == 0):
@@ -48,7 +46,7 @@ def update_koapi_send(utdate, semid, instr=None):
             query += f", send_dvd=1 "
             query += f", dvd_notified=0 "
             if instr: query += f", instr='{instr}' "
-            result = do_query(dbc, query)
+            result = db.query('koa', query)
 
     # if existing entry see if we need to update (next day DEP only) or add a new one
     else:
@@ -67,7 +65,7 @@ def update_koapi_send(utdate, semid, instr=None):
                 query = f"update koapi_send set utdate_end='{utdate}', send_data=1, send_dvd=1 "
                 query += f" where semid='{semid}' and utdate_beg='{row['utdate_beg']}' "
                 if instr: query += f" and instr='{instr}' " 
-                result = do_query(dbc, query)
+                result = db.query('koa', query)
                 break
             else:
                 if (diff_day < 0):
@@ -84,33 +82,8 @@ def update_koapi_send(utdate, semid, instr=None):
                     query += f", send_dvd=1 "
                     query += f", dvd_notified=0 "
                     if instr: query += f", instr='{instr}' "
-                    result = do_query(dbc, query)
+                    result = db.query('koa', query)
                     break
 
     return True
-
-
-def db_connect():
-    try:
-        cfg = configparser.ConfigParser()
-        cfg.read('config.live.ini')
-        cfg = cfg['KOADB']
-        conv=pymysql.converters.conversions.copy()
-        conv[10]=str       # convert dates to strings        
-        dbc = pymysql.connect(cfg['HOST'], cfg['USER'], cfg['PWD'], cfg['DB'], 
-                              cursorclass=pymysql.cursors.DictCursor, conv=conv)
-    except:
-        dbc = None
-    return dbc
-
-
-def do_query(dbc, query):
-    print(query)
-    try:
-        with dbc.cursor() as cursor:
-            num = cursor.execute(query)
-            rows = cursor.fetchall()
-    except:
-        rows = None
-    return rows
 

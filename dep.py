@@ -11,7 +11,6 @@
 import os
 import sys
 import importlib
-import configparser
 from dep_obtain import dep_obtain
 from dep_locate import dep_locate
 from dep_add import dep_add
@@ -24,7 +23,9 @@ from common import *
 import re
 import datetime as dt
 from dateutil import parser
-import pymysql.cursors
+import db_conn
+import yaml
+
 
 class Dep:
     """
@@ -45,11 +46,8 @@ class Dep:
         self.tpx = tpx
         if self.tpx != 1: self.tpx = 0
 
-        #parse config file
-        self.config = configparser.ConfigParser()
-        self.config.read('config.live.ini')
-
-        #config args?
+        #parse config file and add in command line args
+        with open('config.live.ini') as f: self.config = yaml.safe_load(f)
         for c in configArgs:
             section = c['section']
             key     = c['key']
@@ -63,24 +61,15 @@ class Dep:
         self.instrObj = instrClass(self.instr, self.utDate, self.config)
         
         # Open database connection if in config
-        if self.config['KOADB']:
-            try:
-                host = self.config['KOADB']['HOST']
-                user = self.config['KOADB']['USER']
-                pwd  = self.config['KOADB']['PWD']
-                db   = self.config['KOADB']['DB']
-                self.instrObj.db = pymysql.connect(host, user, pwd, db, cursorclass=pymysql.cursors.DictCursor)
-            except:
-                self.instrObj.db = 0
+        self.db = db_conn.db_conn('config.live.ini', configKey='DATABASE', persist=True)
 
        
     def __del__(self):
         """
         Close the database connection, if it is open
         """
-
-        if self.instrObj.db:
-            self.instrObj.db.close()
+        if self.db:
+            self.db.close()
 
  
     def go(self, processStart=None, processStop=None):
@@ -108,8 +97,8 @@ class Dep:
 
         #check if full run.  Prompt if not full run and doing tpx updates
         fullRun = True if (processStart == 'obtain' and processStop == 'koaxfr') else False
-        isReprocess = int(self.instrObj.config['MISC']['REPROCESS']) if 'REPROCESS' in self.instrObj.config['MISC'] else 0
-        if (fullRun == False and self.tpx and not isReprocess): 
+        reprocess = int(self.config.get('MISC', {}).get('REPROCESS', 0))
+        if (fullRun == False and self.tpx and not reprocess): 
             self.prompt_confirm_tpx()
 
 
@@ -151,12 +140,15 @@ class Dep:
 
 
         #special metadata compare report for reprocessing?
-        if 'META_COMPARE_DIR' in self.config['MISC']: self.do_meta_compare()
+        meta_compare_dir = self.config.get('MISC', {}).get('META_COMPARE_DIR')
+        if meta_compare_dir: self.do_meta_compare(meta_compare_dir)
 
 
         #email completion report
-        if fullRun or int(self.config['MISC']['EMAIL_REPORT']) == 1: 
-            self.do_process_report_email()
+        admin_email = self.config.get('REPORT', {}).get('ADMIN_EMAIL')
+        email_report = int(self.config.get('MISC', {}).get('EMAIL_REPORT', 0))
+        if admin_email and (fullRun or email_report == 1): 
+            self.do_process_report_email(admin_email)
 
 
         #complete
@@ -172,19 +164,17 @@ class Dep:
         """
 
         self.instrObj.log.info('dep: verifying if can proceed')
-        # Verify that there is no entry in koa.koatpx
         query = f'select utdate as num from koatpx where instr="{self.instr}" and utdate="{self.utDate}"'
-        try:
-            with self.instrObj.db.cursor() as cursor:
-                num = cursor.execute(query)
-            if num != '0':
-                raise Exception('dep: entry already exists in database. EXITING!')
-                return False
-        except:
+        data = self.db.query('koa', query)
+#todo: test this
+        if data is False:
             raise Exception('dep: could not query koa database. EXITING!')
             return False
-
-        return True
+        elif data and len(data) > 0:
+            raise Exception('dep: entry already exists in database. EXITING!')
+            return False
+        else:
+            return True
 
 
     def check_runtime_vs_window(self):
@@ -268,13 +258,13 @@ class Dep:
                 break
 
 
-    def do_meta_compare(self):
+    def do_meta_compare(self, meta_compare_dir):
 
         dirs = self.instrObj.dirs
         utDateDir = self.instrObj.utDateDir
 
         files = []
-        files.append(self.config['MISC']['META_COMPARE_DIR'] + '/lev0/' + utDateDir + '.metadata.table')
+        files.append(meta_compare_dir + '/lev0/' + utDateDir + '.metadata.table')
         files.append(dirs['lev0'] + '/' + utDateDir + '.metadata.table')
 
         import metadata
@@ -289,7 +279,7 @@ class Dep:
                     self.instrObj.log.warning(warn)
 
 
-    def do_process_report_email(self):
+    def do_process_report_email(self, admin_email):
 
         #read log file for errors and warnings
         logStr = ''
@@ -341,16 +331,10 @@ class Dep:
                     msg += line.strip() + "\n"
         else: msg += "  0 Total FITS files\n"
 
-
-        #read config vars
-        config = configparser.ConfigParser()
-        config.read('config.live.ini')
-        adminEmail = config['REPORT']['ADMIN_EMAIL']
-
         
         #if admin email then email
-        if (adminEmail != ''):
-            send_email(adminEmail, adminEmail, subject, msg)
+        if admin_email:
+            send_email(admin_email, admin_email, subject, msg)
 
 
 
