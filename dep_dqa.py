@@ -21,6 +21,7 @@ import re
 import hashlib
 import configparser
 from astropy.io import fits
+import update_koapi_send
 
 
 def dep_dqa(instrObj, tpx=0):
@@ -305,12 +306,9 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
 
 def check_koapi_send(semids, utDate, instr, apiUrl, log):
     '''
-    Sends all unique semids processed in DQA to KOA api to flag semids
-    for needing an email sent to PI that there data has been archived
+    For each unique semids processed in DQA, call function that determines
+    whether to flag semids for needing an email sent to PI that there data is archived
     '''
-
-    user = os.getlogin()
-    myHash = hashlib.md5(user.encode('utf-8')).hexdigest()
 
     #loops thru semids, skipping duplicates
     processed = []
@@ -325,20 +323,11 @@ def check_koapi_send(semids, utDate, instr, apiUrl, log):
         if progid == None or semester == None:
             continue;
 
-        #koa api url
-        url = apiUrl
-        url += 'cmd=updateKoapiSend'
-        url += '&utdate=' + utDate
-        url += '&semid='  + semid
-        url += '&instr='  + instr
-        url += '&hash='   + myHash
-
-        #call and check results
-        log.info('check_koapi_send: calling koa api url: {}'.format(url))
-        result = get_api_data(url)
-        if result == None or result == 'false':
+        #process it
+        log.info(f'check_koapi_send: {utDate}, {semid}, {instr}')
+        result = update_koapi_send.update_koapi_send(utDate, semid, instr)
+        if not result:
             log.error('check_koapi_send failed')
-
         processed.append(semid)
 
 

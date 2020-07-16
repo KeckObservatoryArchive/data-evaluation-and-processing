@@ -4,10 +4,9 @@ import hashlib
 from urllib.request import urlopen
 import json
 from send_email import send_email
-import configparser
 import glob
 import re
-
+import yaml
 
 def get_root_dirs(rootDir, instr, utDate):
     """
@@ -100,8 +99,7 @@ def get_api_data(url, getOne=False, isJson=True):
 def do_fatal_error(msg, instr=None, utDate=None, failStage=None, log=None):
 
     #read config vars
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
+    with open('config.live.ini') as f: config = yaml.safe_load(f)
     adminEmail = config['REPORT']['ADMIN_EMAIL']
     
     #form subject
@@ -134,9 +132,7 @@ def update_koatpx(instr, utDate, column, value, log=''):
     @type value: string
     """
 
-    import configparser
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
+    with open('config.live.ini') as f: config = yaml.safe_load(f)
 
     user = os.getlogin()
     import hashlib
@@ -287,26 +283,14 @@ def get_koa_api():
     '''
     Returns the KOA API url from the config file
     '''
-
-    #read config vars
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
-    try:
-        return config['API']['KOAAPI']
-    except:
-        return None
+    with open('config.live.ini') as f: config = yaml.safe_load(f)
+    return config.get('API', {}).get('KOAAPI')
 
 
 def get_proposal_api():
     '''
     Returns the proposal API url from the config file
     '''
-
-    #read config vars
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
-    try:
-        return config['API']['PROPAPI']
-    except:
-        return None
+    with open('config.live.ini') as f: config = yaml.safe_load(f)
+    return config.get('API', {}).get('PROPAPI')
 
