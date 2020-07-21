@@ -982,7 +982,7 @@ class Lris(instrument.Instrument):
         '''
         Parse DETSEC string for x1, x2, y1, y2
         '''
-        match = re.search( r'(\d+):(\d+),(\d+):(\d+)', detsec)
+        match = re.search( r'(-?\d+):(-?\d+),(-?\d+):(-?\d+)', detsec)
         if not match:
             return None
         else:
