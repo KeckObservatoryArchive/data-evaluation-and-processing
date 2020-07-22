@@ -18,7 +18,7 @@ pyDEP is a port from a much older version written mostly in IDL and shell script
 - Copy config.ini to config.live.ini 
 - Edit config.live.ini
     - Set RUNTIME->DEV = 1
-    - Define KOAAPI and TELAPI urls
+    - Define TELAPI url
     - Define ROOTDIR to point to your own test output dir
     - Set ADMIN_EMAIL to your email
     - Comment out all vars in KOAXFR section

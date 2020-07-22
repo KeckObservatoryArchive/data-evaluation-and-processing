@@ -126,7 +126,6 @@ class Instrument:
         
 
         #store config
-        self.koaUrl = self.config['API']['KOAAPI']
         self.telUrl = self.config['API']['TELAPI']
         self.metadataTablesDir = self.config['MISC']['METADATA_TABLES_DIR']
 
