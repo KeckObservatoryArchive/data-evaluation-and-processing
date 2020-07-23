@@ -189,13 +189,13 @@ def get_prog_inst(semid, default=None, log=None, isToO=False):
     """
 
     api = get_proposal_api()
-    url = api + 'ktn='+semid+'&cmd=getAllocInst'
-    val = get_api_data(url, isJson=False)
-
-    if not val or val.startswith('Usage') or val == 'error':
+    url = api + 'ktn='+semid+'&cmd=getAllocInst&json=True'
+    data = get_api_data(url)
+    if not data or not data.get('success'):
         if log: log.error('Unable to query API: ' + url)
         return default
     else:
+        val = data.get('data', {}).get('AllocInst', default)
         return val
 
 def get_prog_pi(semid, default=None, log=None):
