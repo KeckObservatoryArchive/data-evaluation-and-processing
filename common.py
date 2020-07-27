@@ -4,10 +4,10 @@ import hashlib
 from urllib.request import urlopen
 import json
 from send_email import send_email
-import configparser
 import glob
 import re
-
+import yaml
+import db_conn
 
 def get_root_dirs(rootDir, instr, utDate):
     """
@@ -100,8 +100,7 @@ def get_api_data(url, getOne=False, isJson=True):
 def do_fatal_error(msg, instr=None, utDate=None, failStage=None, log=None):
 
     #read config vars
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
+    with open('config.live.ini') as f: config = yaml.safe_load(f)
     adminEmail = config['REPORT']['ADMIN_EMAIL']
     
     #form subject
@@ -133,29 +132,30 @@ def update_koatpx(instr, utDate, column, value, log=''):
     @param value: value to update column to
     @type value: string
     """
+    db = db_conn.db_conn('config.live.ini', configKey='DATABASE')
 
-    import configparser
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
-
-    user = os.getlogin()
-    import hashlib
-    myHash = hashlib.md5(user.encode('utf-8')).hexdigest()
-
-    # Create database access URL
-
-    sendUrl = config['API']['koaapi']
-    sendUrl += 'cmd=updateTPX&instr=' + instr.upper()
-    sendUrl += '&utdate=' + utDate.replace('/', '-') + '&'
-    sendUrl += 'column=' + column + '&value=' + value.replace(' ', '+')
-    sendUrl += '&hash=' + myHash
-    if log: log.info('update_koatpx {} - {}'.format(user, sendUrl))
-
-    # Call URL and check result 
-    data = get_api_data(sendUrl)
-    if not data:
-        if log: log.error('update_koatpx failed! URL: ' + sendUrl)
+    # If entry not in database, create it
+    query = f'select count(*) as num from koatpx where instr="{instr}" and utdate="{utDate}"'
+    check = db.query('koa', query, getOne=True)
+    if check is False:
+        if log: log.error(f'update_koatpx failed for: {instr}, {utDate}, {column}, {value}')
         return False
+    if int(check['num']) == 0:
+        query = f'insert into koatpx set instr="{instr}", utdate="{utDate}"'
+        if log: log.info(query)
+        check = db.query('koa', query)
+        if check is False or int(check) == 0:
+            if log: log.error(f'update_koatpx failed for: {instr}, {utDate}, {column}, {value}')
+            return False
+
+    # Now update it
+    query = f'update koatpx set {column}="{value}" where instr="{instr}" and utdate="{utDate}"'
+    if log: log.info(query)
+    check = db.query('koa', query)
+    if check is False or int(check) == 0:
+        if log: log.error(f'update_koatpx failed for: {instr}, {utDate}, {column}, {value}')
+        return False
+
     return True
 
 
@@ -188,43 +188,33 @@ def get_prog_inst(semid, default=None, log=None, isToO=False):
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
 
-    #todo: get this url from config
-    #TODO: NOTE: This is the only way to get ToO institution info (> 2017).  Do we need to backfill koa_program?
-    if isToO: 
-        api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
-    else:
-        api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
-
-    url = api + '?ktn='+semid+'&cmd=getAllocInst'
-    val = get_api_data(url, isJson=False)
-
-    if not val or val.startswith('Usage') or val == 'error':
+    api = get_proposal_api()
+    url = api + 'ktn='+semid+'&cmd=getAllocInst&json=True'
+    data = get_api_data(url)
+    if not data or not data.get('success'):
         if log: log.error('Unable to query API: ' + url)
         return default
     else:
+        val = data.get('data', {}).get('AllocInst', default)
         return val
 
 def get_prog_pi(semid, default=None, log=None):
     """
-    Query the proposalsAPI and get the PI last name
+    Query for program's PI last name
 
     @type semid: string
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
-
-    #todo: get this url from config
-    api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
-    url = api + '?ktn='+semid+'&cmd=getPI'
-    val = get_api_data(url, isJson=False)
-
-    if not val or val.startswith('Usage') or val == 'error':
-        if log: log.error('Unable to query API: ' + url)
+    db = db_conn.db_conn('config.live.ini', configKey='DATABASE')
+    query = ( 'select pi.pi_lastname, pi.pi_firstname '
+              ' from koa_program as p, koa_pi as pi '
+             f' where p.semid="{semid}" and p.piID=pi.piID')
+    data = db.query('koa', query, getOne=True)
+    if not data or 'pi_lastname' not in data:
+        if log: log.error(f'Unable to get PI name for semid {semid}')
         return default
     else:
-        #remove whitespace and get last name only
-        val = val.replace(' ','')
-        if (',' in val): 
-            val = val.split(',')[0]
+        val = data['pi_lastname'].replace(' ','')
         return val
 
 
@@ -235,18 +225,15 @@ def get_prog_title(semid, default=None, log=None):
     @type semid: string
     @param semid: the program ID - consists of semester and progname (ie 2017B_U428)
     """
+    db = db_conn.db_conn('config.live.ini', configKey='DATABASE')
+    query = f'select progtitl from koa_program where semid="{semid}"'
+    data = db.query('koa', query, getOne=True)
 
-    #todo: get this url from config
-    api = 'https://www.keck.hawaii.edu/software/db_api/proposalsAPI.php'
-    url = api + '?cmd=getTitle&ktn=' + semid
-    val = get_api_data(url, isJson=False)
-    if not val or val.startswith('Usage') or val == 'error':
-        if log: log.warning('get_prog_title: Could not find program title for semid "{}"'.format(semid))
+    if not data or 'progtitl' not in data:
+        if log: log.error(f'Unable to get title for semid {semid}')
         return default
-    else : 
-        #deal with non-printable characters that can end up in progtitl
-        progtitl = val.encode('ascii', errors='ignore').decode('UTF-8')
-        return progtitl
+    else:
+        return data['progtitl']
 
 
 def is_progid_valid(progid):
@@ -289,4 +276,11 @@ def get_progid_assign(assigns, utc):
             return progid
     return parts[-1]
 
+
+def get_proposal_api():
+    '''
+    Returns the proposal API url from the config file
+    '''
+    with open('config.live.ini') as f: config = yaml.safe_load(f)
+    return config.get('API', {}).get('PROPAPI')
 

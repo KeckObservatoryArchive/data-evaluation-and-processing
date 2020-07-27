@@ -8,7 +8,7 @@ PROGNAME	char	32	Y
 PROGID	char	32	N
 PROGINST	char	32	N
 PROGPI	char	32	N
-PROGTITL	char	210	N
+PROGTITL	char	210	Y
 AIRMASS	double	16	Y
 AMPID1	integer	16	Y
 AMPID2	integer	16	Y

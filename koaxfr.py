@@ -2,6 +2,8 @@ from send_email import *
 from common import update_koatpx
 from datetime import datetime as dt
 import os
+import yaml
+
 
 def koaxfr(instrObj, tpx=0):
     """
@@ -28,10 +30,7 @@ def koaxfr(instrObj, tpx=0):
         return False
 
     # Read config file
-
-    import configparser
-    config = configparser.ConfigParser()
-    config.read('config.live.ini')
+    with open('config.live.ini') as f: config = yaml.safe_load(f)
     emailFrom = config['KOAXFR']['EMAILFROM']
     emailTo = config['KOAXFR']['EMAILTO']
 

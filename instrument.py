@@ -21,6 +21,7 @@ import numpy as np
 import re
 from dep_obtain import get_obtain_data
 import math
+import db_conn
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -98,12 +99,22 @@ class Instrument:
         verify_date(self.utDate)
         assert os.path.isdir(self.rootDir), 'rootDir does not exist'
 
+        #create db conn obj
+        self.db = db_conn.db_conn('config.live.ini', configKey='DATABASE', persist=True)
+
+
+    def __del__(self):
+        """
+        Close the database connection, if it is open
+        """
+        if self.db:
+            self.db.close()
+
 
     #abstract methods that must be implemented by inheriting classes
     def get_dir_list(self) : raise NotImplementedError("Abstract method not implemented!")
     def get_prefix(self)   : raise NotImplementedError("Abstract method not implemented!")
     def set_koaimtyp(self) : raise NotImplementedError("Abstract method not implemented!")
-
 
 
     def dep_init(self, fullRun=True):
@@ -115,7 +126,6 @@ class Instrument:
         
 
         #store config
-        self.koaUrl = self.config['API']['KOAAPI']
         self.telUrl = self.config['API']['TELAPI']
         self.metadataTablesDir = self.config['MISC']['METADATA_TABLES_DIR']
 
@@ -655,9 +665,10 @@ class Instrument:
         """
 
         #special override via command line option
-        if self.config['MISC']['ASSIGN_PROGNAME']:
+        assign_progname = self.config.get('MISC', {}).get('ASSIGN_PROGNAME')
+        if assign_progname:
             utc = self.get_keyword('UTC')
-            progname = get_progid_assign(self.config['MISC']['ASSIGN_PROGNAME'], utc)
+            progname = get_progid_assign(assign_progname, utc)
             if '_' in progname and is_progid_valid(progname):
                 semester, progid = progname.split('_')
                 self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from PROGNAME')
@@ -720,13 +731,14 @@ class Instrument:
             propint = 18
         else:
             #create url and get data
-            url = self.koaUrl + 'cmd=getPP&semid=' +  semid + '&utdate=' + self.utDate
-            data = get_api_data(url, getOne=True)
+#todo: test this
+            query = f'select propmin from koa_ppp where semid="{semid}" and utdate="{self.utDate}"'
+            data = self.db.query('koa', query, getOne=True)
             if not data:
                 self.log.info('set_propint: PROPINT not found for ' + semid + ' and ' + self.utDate + ', defaulting to 18 months')
                 propint = 18
             else:
-                propint = int(data['propint'])
+                propint = int(data['propmin'])
 
         #NOTE: PROPINT goes in metadata but not in header so we store in temp dict for later
         self.extraMeta['PROPINT'] = propint
