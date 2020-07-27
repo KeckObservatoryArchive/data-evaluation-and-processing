@@ -152,7 +152,7 @@ def update_koatpx(instr, utDate, column, value, log=''):
     query = f'update koatpx set {column}="{value}" where instr="{instr}" and utdate="{utDate}"'
     if log: log.info(query)
     check = db.query('koa', query)
-    if check is False or int(check) == 0:
+    if check is False:
         if log: log.error(f'update_koatpx failed for: {instr}, {utDate}, {column}, {value}')
         return False
 
