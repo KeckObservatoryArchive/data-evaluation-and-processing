@@ -140,6 +140,7 @@ class Hires(instrument.Instrument):
         lampname = self.get_keyword('LAMPNAME', False)
         ttime = self.get_keyword('TTIME', False)
         lmirrin = self.get_keyword('LMIRRIN', False)
+        darkclos = self.get_keyword('DARKCLOS', False)
         
         if self.get_keyword('AUTOSHUT', False) == 0:
             lampOn = ''
