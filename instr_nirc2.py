@@ -162,7 +162,7 @@ class Nirc2(instrument.Instrument):
                     #compare dates for special logic after 2011-10-10
                     dateobs = self.get_keyword('DATE-OBS')
                     date = dateobs.split('-')
-                    dateval = dt.date(date[0],date[1],date[2])
+                    dateval = dt.date(int(date[0]),int(date[1]),int(date[2]))
                     dlmpvalid = dt.date(2011,10,10)
                     if dateval > dlmpvalid:
                         if lamppwr == 1:
