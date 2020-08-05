@@ -683,29 +683,32 @@ class Instrument:
             self.log.info(f"set_semester: Set SEMESTER to '{semester}' from PROGNAME '{progname}'")
             return True
 
-        #normal assign using DATE-OBS
+        #normal assign using DATE-OBS and UTC
         else:
             dateObs = self.get_keyword('DATE-OBS')
-            if dateObs == None:
-                self.log.error('set_semester: Could not parse DATE-OBS')
+            utc     = self.get_keyword('UTC')
+            if not dateObs or not utc:
+                self.log.error('set_semester: Could not parse DATE-OBS and UTC')
                 return False
 
-            year, month, day = dateObs.split('-')
-            iyear  = int(year)
-            imonth = int(month)
-            iday   = int(day)
+            #Slightly unintuitive, but get utc datetime obj and subtract 10 hours to convert to HST
+            #and another 10 for 10 am cutoff as considered next days observing.
+            d = dt.strptime(dateObs+' '+utc, "%Y-%m-%d %H:%M:%S.%f")
+            d = d - timedelta(hours=20)
 
-            # Determine SEMESTER from DATE-OBS
-            semester = ''
-            sem = 'A'
-            if   imonth >  8 or imonth < 2 : sem = 'B'
-            elif imonth == 8 and iday > 1  : sem = 'B'
-            elif imonth == 2 and iday == 1 : sem = 'B'
-            if imonth == 1 or (imonth == 2 and iday == 1):
-                year = str(iyear-1)
+            #define cutoffs and see where it lands
+            #NOTE: d.year is wrong when date is Jan 1 and < 20:00:00, 
+            #but it doesn't matter since we assume 'B' which is correct for Jan1 
+            semA = dt.strptime(f'{d.year}-02-01 00:00:00.00', "%Y-%m-%d %H:%M:%S.%f")
+            semB = dt.strptime(f'{d.year}-08-01 00:00:00.00', "%Y-%m-%d %H:%M:%S.%f")
+            sem = 'B'
+            if d >= semA and d < semB: sem = 'A'
 
-            semester = year + sem
-            semester = semester.strip();
+            #adjust year if january
+            year = d.year
+            if d.month == 1: year -= 1
+
+            semester = f'{year}{sem}'
             self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from DATE-OBS')
 
             return True
