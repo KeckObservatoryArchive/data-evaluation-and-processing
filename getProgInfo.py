@@ -183,7 +183,7 @@ class ProgSplit:
                     # Check to see if it is an engineering night (Key = instrument, value = outdir/obs)
                     for key, value in self.engineering.items():
                         if key in row[value].lower() or row['progid'] == 'ENG' or row['progid'].startswith('E'):
-                            if not is_progid_valid(row['progid']): 
+                            if not is_progid_valid(row['progid']) or row['progid'] == 'ENG': 
                                 row['proginst'] = 'KECK'
                                 row['progpi']   = self.instrument.lower() + 'eng'
                                 row['progtitl'] = self.instrument.upper() + ' Engineering'
