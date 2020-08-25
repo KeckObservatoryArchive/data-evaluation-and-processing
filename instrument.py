@@ -649,7 +649,7 @@ class Instrument:
 
 
         #NOTE: PROGTITL goes in metadata but not in header so we store in temp dict for later
-        self.extraMeta['PROGTITL'] = data['progtitl']
+        self.extraMeta['PROGTITL'] = title
         
         return True
 
