@@ -636,10 +636,13 @@ class Instrument:
             time = self.get_keyword('DATE-OBS') + ' ' + self.get_keyword('UTC')
             self.log.info(f"set_prog_info: PROGID is NONE for {os.path.basename(self.fitsFilepath)} (@{time})")
 
+        #enocde unicode chars in progtitl
+        title = data['progtitl']
+        title = title.encode('ascii', errors='xmlcharrefreplace').decode('utf8')
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
-        progtl1 = data['progtitl'][0:50]
-        progtl2 = data['progtitl'][50:100]
-        progtl3 = data['progtitl'][100:150]
+        progtl1 = title[0:50]
+        progtl2 = title[50:100]
+        progtl3 = title[100:150]
         self.set_keyword('PROGTL1',  progtl1, 'Program title 1')
         self.set_keyword('PROGTL2',  progtl2, 'Program title 2')
         self.set_keyword('PROGTL3',  progtl3, 'Program title 3')
