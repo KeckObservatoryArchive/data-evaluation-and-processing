@@ -924,13 +924,13 @@ class Instrument:
         elif (koaid.startswith('NS')): outfile += '/spec'
         outfile += '/' + koaid
 
+        # already exists?
+        if os.path.isfile(outfile):
+            self.log.error('write_lev0_fits_file: file already exists.  Duplicate KOAID?')
+            return False
+
         #write out new fits file with altered header
         try:
-            #already exists?
-            #todo: only allow skip if not fullRun
-            # if os.path.isfile(outfile):
-            #     self.log.warning('write_lev0_fits_file: file already exists. SKIPPING')
-            #     return True
             self.fitsHdu.writeto(outfile)
             self.log.info('write_lev0_fits_file: output file is ' + outfile)
         except:
@@ -940,6 +940,7 @@ class Instrument:
             except Exception as e:
                 self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
                 self.log.info(str(e))
+                #If it someone still wrote something out, remove it
                 if os.path.isfile(outfile):
                     os.remove(outfile)
                 return False
