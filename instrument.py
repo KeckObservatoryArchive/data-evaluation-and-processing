@@ -636,17 +636,20 @@ class Instrument:
             time = self.get_keyword('DATE-OBS') + ' ' + self.get_keyword('UTC')
             self.log.info(f"set_prog_info: PROGID is NONE for {os.path.basename(self.fitsFilepath)} (@{time})")
 
+        #enocde unicode chars in progtitl
+        title = data['progtitl']
+        title = title.encode('ascii', errors='xmlcharrefreplace').decode('utf8')
         #divide PROGTITL into length 50 (+20 for comments) chunks PROGTL1/2/3
-        progtl1 = data['progtitl'][0:50]
-        progtl2 = data['progtitl'][50:100]
-        progtl3 = data['progtitl'][100:150]
+        progtl1 = title[0:50]
+        progtl2 = title[50:100]
+        progtl3 = title[100:150]
         self.set_keyword('PROGTL1',  progtl1, 'Program title 1')
         self.set_keyword('PROGTL2',  progtl2, 'Program title 2')
         self.set_keyword('PROGTL3',  progtl3, 'Program title 3')
 
 
         #NOTE: PROGTITL goes in metadata but not in header so we store in temp dict for later
-        self.extraMeta['PROGTITL'] = data['progtitl']
+        self.extraMeta['PROGTITL'] = title
         
         return True
 
@@ -683,29 +686,32 @@ class Instrument:
             self.log.info(f"set_semester: Set SEMESTER to '{semester}' from PROGNAME '{progname}'")
             return True
 
-        #normal assign using DATE-OBS
+        #normal assign using DATE-OBS and UTC
         else:
             dateObs = self.get_keyword('DATE-OBS')
-            if dateObs == None:
-                self.log.error('set_semester: Could not parse DATE-OBS')
+            utc     = self.get_keyword('UTC')
+            if not dateObs or not utc:
+                self.log.error('set_semester: Could not parse DATE-OBS and UTC')
                 return False
 
-            year, month, day = dateObs.split('-')
-            iyear  = int(year)
-            imonth = int(month)
-            iday   = int(day)
+            #Slightly unintuitive, but get utc datetime obj and subtract 10 hours to convert to HST
+            #and another 10 for 10 am cutoff as considered next days observing.
+            d = dt.strptime(dateObs+' '+utc, "%Y-%m-%d %H:%M:%S.%f")
+            d = d - timedelta(hours=20)
 
-            # Determine SEMESTER from DATE-OBS
-            semester = ''
-            sem = 'A'
-            if   imonth >  8 or imonth < 2 : sem = 'B'
-            elif imonth == 8 and iday > 1  : sem = 'B'
-            elif imonth == 2 and iday == 1 : sem = 'B'
-            if imonth == 1 or (imonth == 2 and iday == 1):
-                year = str(iyear-1)
+            #define cutoffs and see where it lands
+            #NOTE: d.year is wrong when date is Jan 1 and < 20:00:00, 
+            #but it doesn't matter since we assume 'B' which is correct for Jan1 
+            semA = dt.strptime(f'{d.year}-02-01 00:00:00.00', "%Y-%m-%d %H:%M:%S.%f")
+            semB = dt.strptime(f'{d.year}-08-01 00:00:00.00', "%Y-%m-%d %H:%M:%S.%f")
+            sem = 'B'
+            if d >= semA and d < semB: sem = 'A'
 
-            semester = year + sem
-            semester = semester.strip();
+            #adjust year if january
+            year = d.year
+            if d.month == 1: year -= 1
+
+            semester = f'{year}{sem}'
             self.set_keyword('SEMESTER', semester, 'Calculated SEMESTER from DATE-OBS')
 
             return True
@@ -918,13 +924,13 @@ class Instrument:
         elif (koaid.startswith('NS')): outfile += '/spec'
         outfile += '/' + koaid
 
+        # already exists?
+        if os.path.isfile(outfile):
+            self.log.error('write_lev0_fits_file: file already exists.  Duplicate KOAID?')
+            return False
+
         #write out new fits file with altered header
         try:
-            #already exists?
-            #todo: only allow skip if not fullRun
-            # if os.path.isfile(outfile):
-            #     self.log.warning('write_lev0_fits_file: file already exists. SKIPPING')
-            #     return True
             self.fitsHdu.writeto(outfile)
             self.log.info('write_lev0_fits_file: output file is ' + outfile)
         except:
@@ -934,6 +940,7 @@ class Instrument:
             except Exception as e:
                 self.log.error('write_lev0_fits_file: Could not write out lev0 FITS file to ' + outfile)
                 self.log.info(str(e))
+                #If it someone still wrote something out, remove it
                 if os.path.isfile(outfile):
                     os.remove(outfile)
                 return False
