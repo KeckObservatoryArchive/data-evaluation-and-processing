@@ -106,6 +106,7 @@ class Deimos(instrument.Instrument):
         if ok: ok = self.set_spatscal()
         if ok: ok = self.set_dispscal()
         if ok: ok = self.set_specres()
+        if ok: ok = self.set_filesize()
 
         return ok
 
