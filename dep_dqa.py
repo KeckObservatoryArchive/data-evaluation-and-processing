@@ -106,6 +106,7 @@ def dep_dqa(instrObj, tpx=0):
         if ok: ok = instrObj.is_fits_valid()
         if ok: ok = instrObj.run_dqa_checks(progData)
         if ok: ok = check_koaid(instrObj, outFiles, log)
+        if ok: ok = instrObj.check_filetime_vs_window(filename)
         if ok: ok = instrObj.write_lev0_fits_file()
         if ok: instrObj.make_jpg()
 

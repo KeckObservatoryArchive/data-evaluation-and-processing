@@ -1186,3 +1186,11 @@ class Instrument:
             
         return True
 
+    def check_filetime_vs_window(self, filename):
+        '''
+        Used to avoid adding duplicate FCS files re-used from previous days.
+        Override in instr_<instrument> class to use.
+
+        :return: (bool) True if file is within 24 hrs.
+        '''
+        return True

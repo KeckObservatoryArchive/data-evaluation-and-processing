@@ -696,6 +696,31 @@ class Deimos(instrument.Instrument):
             fcskoaid = self.fcsFiles[fcs]
         self.set_keyword('FCSKOAID', fcskoaid, 'KOA: associated fcs file')
 
-
         return True
+
+    def check_filetime_vs_window(self, filename):
+        '''
+        Verify that FCS file is taken within the 24 hour defined time window.
+        This avoids transferring FCS files with duplicate KOAID to the DB.
+        '''
+        if 'DE' in self.fitsHeader.get('KOAID'):
+            return True
+
+        tm_format = "%Y-%m-%d %H:%M:%S"
+        endTimeStr = self.utDate + ' ' + self.endTime
+        endTime = dt.datetime.strptime(endTimeStr, tm_format)
+        yesterTime = endTime - dt.timedelta(days=1)
+
+        fileTime = os.path.getmtime(filename)
+        fileTime = dt.datetime.utcfromtimestamp(fileTime).strftime(tm_format)
+        fileTime = dt.datetime.strptime(fileTime, tm_format)
+
+        if yesterTime < fileTime < endTime:
+            return True
+        
+        log_msg = f'FCS file: {filename} is outside 24 hr period and will be '
+        log_msg += f'excluded from the archiving process.'
+        self.log.info(log_msg)
+        
+        return False
 
