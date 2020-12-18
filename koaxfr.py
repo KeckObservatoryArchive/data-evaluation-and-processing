@@ -1,8 +1,9 @@
 from send_email import *
-from common import update_koatpx
+from common import update_koatpx, get_api_data
 from datetime import datetime as dt
 import os
 import yaml
+import json
 
 
 def koaxfr(instrObj, tpx=0):
@@ -33,6 +34,8 @@ def koaxfr(instrObj, tpx=0):
     with open('config.live.ini') as f: config = yaml.safe_load(f)
     emailFrom = config['KOAXFR']['EMAILFROM']
     emailTo = config['KOAXFR']['EMAILTO']
+    api     = config['API']['INGESTAPI']
+    url     = f"{api}instrument={instr}&ingestType=lev0&date={utDate.replace('-', '')}"
 
     # If no FITS files then email IPAC verifying (empty) transfer complete
 
@@ -45,11 +48,24 @@ def koaxfr(instrObj, tpx=0):
 
     if count == 0:
         log.info('koaxfr.py no FITS files to transfer')
-        subject = ''.join((utDate.replace('-', ''), ' ', instr))
-        message = ''.join(('No metadata for ', utDate.replace('-', '')))
-        log.info('koaxfr.py sending no data email to {}'.format(emailTo))
-        send_email(emailTo, emailFrom, subject, message)
-
+#        subject = ''.join((utDate.replace('-', ''), ' ', instr))
+#        message = ''.join(('No metadata for ', utDate.replace('-', '')))
+#        log.info('koaxfr.py sending no data email to {}'.format(emailTo))
+#        send_email(emailTo, emailFrom, subject, message)
+        # Send ingestionAPI request - need extra json.loads() for IPAC call
+        url = f"{url}&files=0"
+        log.info('koaxfr.py sending API call to {}'.format(url))
+        data = get_api_data(url)
+        try: # incase None returned
+            data = json.loads(data)
+        except:
+            pass
+        # Success?
+        if not data or data.get('stat').lower() != 'ok':
+            subject = 'IPAC API FAILURE'
+            message = f"IPAC API failure\n\n{url}"
+            send_email(emailFrom, emailFrom, subject, message)
+        # Update koatpx
         if tpx:
             update_koatpx(instr, utDate, 'files_arch', '0', log)
             update_koatpx(instr, utDate, 'sci_files', '0', log)
@@ -80,13 +96,28 @@ def koaxfr(instrObj, tpx=0):
     output, error = xfrCmd.communicate()
     if not error:
         # Send email verifying transfer complete and update koatpx
-        log.info('koaxfr.py sending email to {}'.format(emailTo))
-        subject = ''.join(('lev0 ', utDate.replace('-', ''), ' ', instr))
-        message = 'lev0 data successfully transferred to koaxfr'
-        send_email(emailTo, emailFrom, subject, message)
+#        log.info('koaxfr.py sending email to {}'.format(emailTo))
+#        subject = ''.join(('lev0 ', utDate.replace('-', ''), ' ', instr))
+#        message = 'lev0 data successfully transferred to koaxfr'
+#        send_email(emailTo, emailFrom, subject, message)
+        # Send ingestionAPI request - need extra json.loads() for IPAC call
+        url = f"{url}&files={count}"
+        log.info('koaxfr.py sending API call to {}'.format(url))
+        data = get_api_data(url)
+        try: # incase None returned
+            data = json.loads(data)
+        except:
+            pass
+        data = json.loads(data)
+        if data.get('stat').lower() != 'ok':
+            subject = 'IPAC API FAILURE'
+            message = f"IPAC API failure\n\n{url}"
+            send_email(emailFrom, emailFrom, subject, message)
+        # Update koatpx
         if tpx:
             utcTimestamp = dt.utcnow().strftime("%Y%m%d %H:%M")
-            update_koatpx(instr, utDate, 'dvdsent_stat', 'DONE', log)
+            val = 'ERROR' if not data or data.get('stat').lower() != 'ok' else 'DONE'
+            update_koatpx(instr, utDate, 'dvdsent_stat', val, log)
             update_koatpx(instr, utDate, 'dvdsent_time', utcTimestamp, log)
         return True
     else:
