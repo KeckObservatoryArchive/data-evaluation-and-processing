@@ -53,7 +53,7 @@ def koaxfr(instrObj, tpx=0):
 #        log.info('koaxfr.py sending no data email to {}'.format(emailTo))
 #        send_email(emailTo, emailFrom, subject, message)
         # Send ingestionAPI request - need extra json.loads() for IPAC call
-        url = f"{url}&files=0"
+        url = f"{url}&numFiles=0"
         log.info('koaxfr.py sending API call to {}'.format(url))
         data = get_api_data(url)
         try: # incase None returned
@@ -101,7 +101,7 @@ def koaxfr(instrObj, tpx=0):
 #        message = 'lev0 data successfully transferred to koaxfr'
 #        send_email(emailTo, emailFrom, subject, message)
         # Send ingestionAPI request - need extra json.loads() for IPAC call
-        url = f"{url}&files={count}"
+        url = f"{url}&numFiles={count}"
         log.info('koaxfr.py sending API call to {}'.format(url))
         data = get_api_data(url)
         try: # incase None returned
