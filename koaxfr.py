@@ -108,8 +108,7 @@ def koaxfr(instrObj, tpx=0):
             data = json.loads(data)
         except:
             pass
-        data = json.loads(data)
-        if data.get('stat').lower() != 'ok':
+        if not data or data.get('stat').lower() != 'ok':
             subject = 'IPAC API FAILURE'
             message = f"IPAC API failure\n\n{url}"
             send_email(emailFrom, emailFrom, subject, message)
