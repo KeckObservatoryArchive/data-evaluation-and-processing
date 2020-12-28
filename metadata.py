@@ -128,8 +128,15 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
             allowNull = row['allowNull']
 
             #get value from header, set to null if not found
-            if   (keyword in header) : val = header[keyword]
-            elif (keyword in extra)  : val = extra[keyword]
+
+            if keyword in header: 
+                try:
+                    val = header[keyword]
+                except Exception as e:
+                    log.warning('metadata check: Could not read header keyword (' + fitsFile + '): ' + keyword)
+                    val = 'null'
+            elif keyword in extra:
+                val = extra[keyword]
             else: 
                 val = 'null'
                 if dev: log_msg(log, dev, 'metadata check: Keyword not found in header (' + fitsFile + '): ' + keyword)
@@ -137,7 +144,10 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, log, de
             #special check for val = fits.Undefined
             if isinstance(val, fits.Undefined):
                 val = 'null'
-                if dev: log_msg(log, dev, 'metadata check: Keyword value is fits.Undefined: ' + keyword)
+
+            #special check for 'NaN' or '-Nan'
+            if val in ('NaN', '-NaN'):
+                val = 'null'
 
             #check keyword val and format
             val = check_keyword_val(keyword, val, row, warns, log)
