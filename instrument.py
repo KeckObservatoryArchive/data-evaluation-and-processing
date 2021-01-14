@@ -945,6 +945,8 @@ class Instrument:
                     os.remove(outfile)
                 return False
 
+        self.set_filesize(outfile)
+
         return True
 
 
@@ -1174,14 +1176,14 @@ class Instrument:
 
         return True
 
-    def set_filesize(self):
+    def set_filesize(self, filename):
         '''
         Add file size to the metadata table
         '''
         self.extraMeta['FILESIZE_MB'] = 0.0 
         
-        if os.path.isfile(self.fitsFilepath):
-            filesize = round(os.path.getsize(self.fitsFilepath) / 1000000, 2)
+        if os.path.isfile(filename):
+            filesize = round(os.path.getsize(filename) / 1000000, 2)
             self.extraMeta['FILESIZE_MB'] = filesize
             
         return True
