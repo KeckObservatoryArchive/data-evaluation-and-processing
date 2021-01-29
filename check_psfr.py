@@ -78,10 +78,9 @@ def main():
     row = rows[0]
 
     # Check if no PSFR files
-#todo
-    # if not row['files']:
-    #     print(f"No PSFR files for {instr} {utdate}")
-    #     return
+    if not row['files']:
+        print(f"No PSFR files for {instr} {utdate}")
+        return
 
     # See if it is still processing
     if not row['end_time']:
@@ -111,7 +110,7 @@ def main():
 def run_cmd(cmd):
     '''Run command and get output and return code.'''
     try:
-        ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        ps = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out = ps.communicate()[0]
         out = out.decode("utf-8").strip()
     except Exception as e:
