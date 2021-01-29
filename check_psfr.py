@@ -32,6 +32,10 @@ import traceback
 import yaml
 
 
+#todo: use logger module?
+#todo: fix files > 0
+#todo: wait for exit status and log/report output
+
 def main():
 
     #parse args
@@ -41,9 +45,9 @@ def main():
     parser.add_argument('--dev', default=False, action='store_true', help='Report only.  No action.')
     args = parser.parse_args()
 
-    instr = args.instr.upper()
+    instr  = args.instr.upper()
     utdate = args.utdate
-    dev = args.dev
+    dev    = args.dev
     print(f"Running {sys.argv}")
 
     #open config
@@ -69,6 +73,11 @@ def main():
         print(f"No PSFR record for {instr} {utdate}")
         return
     row = rows[0]
+
+    # Check if no PSFR files
+    if not row['files']:
+        print(f"No PSFR files for {instr} {utdate}")
+        return
 
     # See if it is still processing
     if not row['end_time']:
