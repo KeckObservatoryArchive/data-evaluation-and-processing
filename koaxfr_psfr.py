@@ -4,7 +4,7 @@ Transfer script lives on psfrdataserver1 and this script calls it via ssh+authke
 Transfer script path is defined in pyDEP config as [INSTR]['PSFR_XFR']
 This is meant to be run on a cron once each morning for each PSFR instrument:
 
-  30  8 * * * /usr/local/anaconda3-5.0.0.1/bin/python /kroot/archive/dep/default/check_psfr NIRC2  `date -u +\%Y-\%m-\%d`
+  30  8 * * * /usr/local/anaconda3-5.0.0.1/bin/python /kroot/archive/dep/default/koaxfr_psfr NIRC2  `date -u +\%Y-\%m-\%d`
 
 Overview of PSFR archive process:
 - PSFR processing is activated by overriding the Instrument.run_psfr() function for an instrument in pyDEP.
@@ -50,8 +50,8 @@ def main():
 
     #create logfile
     outdir = '/tmp' if dev else '/home/koaadmin/log'
-    create_logger('check_psfr', outdir)
-    log = logging.getLogger('check_psfr')
+    create_logger('koaxfr_psfr', outdir)
+    log = logging.getLogger('koaxfr_psfr')
     log.info(f"Running {sys.argv}")
 
     #cd to script dir so relative paths work
@@ -113,7 +113,7 @@ def main():
 
 def run_cmd(cmd):
     '''Run command and get output and return code.'''
-    log = logging.getLogger('check_psfr')
+    log = logging.getLogger('koaxfr_psfr')
     try:
         ps = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out = ps.communicate()[0]
@@ -126,7 +126,7 @@ def run_cmd(cmd):
 
 def email_admin(msg):
 
-    log = logging.getLogger('check_psfr')
+    log = logging.getLogger('koaxfr_psfr')
     log.info(msg)
 
     with open('config.live.ini') as f: 
@@ -138,7 +138,7 @@ def email_admin(msg):
     from email.mime.text import MIMEText
 
     em = MIMEText(msg)
-    em['Subject'] = 'ERROR: check_psfr'
+    em['Subject'] = 'ERROR: koaxfr_psfr'
     em['To'] = email
     em['From'] = 'koaadmin@keck.hawaii.edu'
     s = smtplib.SMTP('localhost')
