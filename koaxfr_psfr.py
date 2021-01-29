@@ -99,7 +99,7 @@ def main():
     #execute command
     cmd = psfr_xfr.split();
     cmd += [instr, utdate, row['location']]
-    log.info('Command: ', ' '.join(cmd))
+    log.info('Command: ' + ' '.join(cmd))
     if dev:
         log.info("DEV MODE: NOT EXECUTING COMMAND")
     else:
@@ -108,6 +108,7 @@ def main():
         if stat != 0:
             email_admin(f"Command returned status {stat}.\nOutput:\n{out}")
             return
+    log.info("Script output:\n" + out)
     log.info("DONE")
 
 
