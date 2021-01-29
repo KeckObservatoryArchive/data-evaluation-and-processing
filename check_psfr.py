@@ -30,10 +30,10 @@ import json
 import argparse
 import traceback
 import yaml
+import subprocess
 
 
 #todo: use logger module?
-#todo: fix files > 0
 #todo: wait for exit status and log/report output
 
 def main():
@@ -49,6 +49,9 @@ def main():
     utdate = args.utdate
     dev    = args.dev
     print(f"Running {sys.argv}")
+
+    #cd to script dir so relative paths work
+    os.chdir(sys.path[0])
 
     #open config
     with open('config.live.ini') as f: 
@@ -75,9 +78,10 @@ def main():
     row = rows[0]
 
     # Check if no PSFR files
-    if not row['files']:
-        print(f"No PSFR files for {instr} {utdate}")
-        return
+#todo
+    # if not row['files']:
+    #     print(f"No PSFR files for {instr} {utdate}")
+    #     return
 
     # See if it is still processing
     if not row['end_time']:
@@ -97,12 +101,23 @@ def main():
         print("DEV MODE: NOT EXECUTING COMMAND")
     else:
         print("Executing command")
-        try:
-            p = subprocess.Popen(cmd)
-        except Exception as e:
-            email_admin(f"Error: Could not execute command\n" + traceback.format_exc())
+        out, stat = run_cmd(cmd)
+        if stat != 0:
+            email_admin(f"Command returned status {stat}.\nOutput:\n{out}")
             return
     print("DONE")
+
+
+def run_cmd(cmd):
+    '''Run command and get output and return code.'''
+    try:
+        ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out = ps.communicate()[0]
+        out = out.decode("utf-8").strip()
+    except Exception as e:
+        print(traceback.format_exc())
+        return None, -1
+    return out, ps.returncode
 
 
 def email_admin(msg):
