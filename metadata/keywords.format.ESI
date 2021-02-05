@@ -1,7 +1,7 @@
 keyword	dataType	colSize	allowNull
 KOAID	char	32	N
 OFNAME	char	32	N
-FILESIZE_MB	double	16	Y
+FILESIZE_MB	double	16	N
 PROGID	char	32	N
 PROGINST	char	32	N
 PROGPI	char	32	N
@@ -124,7 +124,7 @@ FLIMAGIN	char	16	Y
 FLSPECTR	char	16	Y
 FOCALSTN	char	32	Y
 FRAME	char	16	Y
-FRAMENO	integer	8	Y
+FRAMENO	integer	8	N
 HA	char	16	Y
 HATCHPOS	char	16	Y
 IMFLTCAL	char	16	Y
@@ -137,7 +137,7 @@ IMFLTTOR	double	16	Y
 IMTYPE	char	16	Y
 INSTANGL	double	16	Y
 INSTFLIP	char	8	Y
-INSTRUME	char	16	Y
+INSTRUME	char	16	N
 IONCURMA	double	16	Y
 IONPUMP	char	72	Y
 KEEPPREP	integer	8	Y
