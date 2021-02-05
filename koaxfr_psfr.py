@@ -108,6 +108,15 @@ def main():
         if stat != 0:
             email_admin(f"Command returned status {stat}.\nOutput:\n{out}")
             return
+
+    #check for ok status
+    #TODO: This is kindof a hack
+    #TODO: IPAC has an issue with extra escape chars in reponse
+    out2 = out.replace("\\", "")
+    if '"stat": "OK"' not in out2:
+            email_admin(f"IPAC response was not OK.\nOutput:\n{out2}")
+            return
+
     log.info("Script output:\n" + out)
     log.info("DONE")
 
