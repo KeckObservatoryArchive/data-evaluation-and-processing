@@ -1,0 +1,15 @@
+# koa_tap_table_to_ipac_table.py
+
+This script creates IPAC tables and .md5 checksum files from TAP tables taken from [this repository](https://github.com/KeckObservatoryArchive/KeywordTables).
+
+Each instrument is covered in a for loop. The
+
+parameters need to be manually set.
+`
+fitsFilePath = '/path/to/gzipped/fits/files'
+keywordTablePath = '/path/to/keyword/table/repo'
+outDir = '/path/where/to/place/output/files'
+`
+
+
+
