@@ -83,7 +83,7 @@ def create_md5_checksum_file(metaOutFile):
     # make_dir_md5_table(metaOutPath, ".metadata.table", md5OutFile)
     with open(md5OutFile, 'w') as fp:
         md5 = hashlib.md5(open(metaOutFile, 'rb').read()).hexdigest()
-        bName = os.path.basename(md5OutFile)
+        bName = os.path.basename(metaOutFile)
         fp.write(md5 + '  ' + bName + '\n')
         fp.flush()
 
@@ -206,7 +206,6 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
     if (val == 'null' or val == '') and (fmt['allowNull'] == 'Y'):
         return val
     if (val == 'null' or val == '') and (fmt['allowNull'] == 'N'):
-        pdb.set_trace()
         raise Exception('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))            
 
 
