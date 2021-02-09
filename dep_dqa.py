@@ -164,7 +164,7 @@ def dep_dqa(instrObj, tpx=0):
     tablesDir = instrObj.metadataTablesDir
     ymd = utDate.replace('-', '')
     metaOutFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
-    keywordsDefFile = tablesDir + '/keywords.format.' + instr
+    keywordsDefFile = tablesDir + f'/KOA_{instr.upper()}_Keyword_Table.txt'
     metadata.make_metadata( keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log, 
                             dev=isDev,
                             instrKeywordSkips=instrObj.keywordSkips)    

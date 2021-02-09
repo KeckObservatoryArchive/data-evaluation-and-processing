@@ -26,7 +26,7 @@ import gzip
 import hashlib
 import logging
 
-def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=False, instrKeywordSkips=[], log=None):
+def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), log=None, dev=False, instrKeywordSkips=[]):
     """
     Creates the archiving metadata file as part of the DQA process.
 
@@ -57,20 +57,21 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=F
     #walk lev0Dir to find all final fits files
     inst = keywordsDefFile.split('_')[1]
     logging.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
-    fitsFiles = glob.glob(os.path.join(lev0Dir, inst, 'raw', '**', '*.fits.gz'))
+    fitsFiles = glob.glob(os.path.join(lev0Dir, '*.fits'))
     assert len(fitsFiles) > 0, f'no fits file(s) found for instrument {inst}'
     for fitsFile in fitsFiles:
-        with gzip.open(fitsFile) as f:
-            extra = {}
-            if len(extraData) > 0: extra = extraData
-            logging.info("Creating metadata record for: " + fitsFile)
-            add_fits_metadata_line(f, metaOutFile, keyDefs, extra, warns, dev, instrKeywordSkips)
+        extra = {}
+        baseName = os.path.basename(fitsFile)
+        if baseName in extraData: extra = extraData[baseName]
+        logging.info("Creating metadata record for: " + fitsFile)
+        add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, instrKeywordSkips)
 
     #warn only if counts
     if (warns['type'] > 0):
         logging.info('metadata.py: Found {} data type mismatches (search "metadata check" in log).'.format(warns['type']))
     if (warns['truncate'] > 0):
         logging.warning('metadata.py: Found {} data truncations (search "metadata check" in log).'.format(warns['truncate']))
+    create_md5_checksum_file(metaOutFile)
 
 def create_md5_checksum_file(metaOutFile):
     #create md5 sum
@@ -122,7 +123,6 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, in
 
     #get header object using astropy
     header = fits.getheader(fitsFile)
-
     #check keywords
     check_keyword_existance(header, keyDefs, dev, instrKeywordSkips)
 
