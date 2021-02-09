@@ -47,7 +47,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), log=N
     keyDefs = pd.read_csv(keywordsDefFile, sep='\t')
     keyDefs = keyDefs.rename(columns={'FITSKeyword': 'keyword', 'MetadataDatatype': 'MetadataDataType', 'NullsAllowed':'allowNull', 'MetadataWidth': 'colSize'})
     keyDefs = keyDefs.dropna(axis=0, subset=['keyword'])
-    keyDefs = keyDefs[keyDefs['Source']!='NExScI']
+    keyDefs = keyDefs[keyDefs['Source'].astype(str)!='NExScI']
     keyDefs['colSize'] = keyDefs['colSize'].astype(int)
     create_metadata_file(metaOutFile, keyDefs)
 
@@ -58,7 +58,8 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), log=N
     inst = keywordsDefFile.split('_')[1]
     logging.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
     fitsFiles = glob.glob(os.path.join(lev0Dir, '*.fits'))
-    assert len(fitsFiles) > 0, f'no fits file(s) found for instrument {inst}'
+    if len(fitsFiles) > 0:
+        print(f'no fits file(s) found for instrument {inst}')
     for fitsFile in fitsFiles:
         extra = {}
         baseName = os.path.basename(fitsFile)

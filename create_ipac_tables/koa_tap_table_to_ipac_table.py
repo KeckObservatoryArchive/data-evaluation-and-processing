@@ -5,6 +5,7 @@ sys.path.append('..')
 import metadata
 import os
 from glob import glob
+import pdb
 
 INST_MAPPING = { 
                  'DEIMOS': {'DE', 'DF'},
@@ -32,9 +33,10 @@ EXTRA_DATA = {
 }
 
 if __name__=='__main__':
-    outDir = 'out'
+    outDir = '/tmp'
     keywordTablePath = os.path.join(os.pardir, os.pardir, 'KeywordTables')
-    fitsFilePath = os.path.join(os.getcwd(), os.pardir, os.pardir, 'fits')
+    #fitsFilePath = os.path.join(os.getcwd(), os.pardir, os.pardir, 'fits')
+    fitsFilePath = os.path.join('koadata*', 'test', '**', '20210208', 'lev0')
     if not os.path.exists(outDir): 
         os.mkdir(outDir)
 
