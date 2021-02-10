@@ -26,6 +26,7 @@ import gzip
 import hashlib
 import logging
 
+
 def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), log=None, dev=False, instrKeywordSkips=[]):
     """
     Creates the archiving metadata file as part of the DQA process.
@@ -39,7 +40,8 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), log=N
     @param extraData: dictionary of any extra key val pairs not in header
     @type extraData: dictionary
     """
-
+    if not log:
+        log = logging.getLogger(f"dep <{os.getlogin()}>")
 
     #open keywords format file and read data
     #NOTE: changed this file to tab-delimited
@@ -58,7 +60,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), log=N
     inst = keywordsDefFile.split('_')[1]
     logging.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
     fitsFiles = glob.glob(os.path.join(lev0Dir, '*.fits'))
-    if len(fitsFiles) > 0:
+    if len(fitsFiles) == 0:
         print(f'no fits file(s) found for instrument {inst}')
     for fitsFile in fitsFiles:
         extra = {}
