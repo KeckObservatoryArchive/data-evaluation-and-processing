@@ -2,13 +2,18 @@ import pytest
 import logging
 import sys
 import pdb
-sys.path.append('..')
-import metadata
 import os
+sys.path.append(os.path.pardir)
+import metadata
 from glob import glob
 import pdb
 from shutil import rmtree
-
+"""
+test_metadata.py runs test on metadata and checksum files generated from fits files found in koadata_test/test/inst directories. 
+Tables, checksum, and log files are created before tests are run, and then deleted.
+Test suite for metadata.py should run independently of other pytests and is run with the shell command:
+python test_metadata.py
+"""
 INST_MAPPING = { 
                  'DEIMOS': {'DE', 'DF'},
                  'ESI': {'EI'},
@@ -38,7 +43,7 @@ fitsFilePath = os.path.join('koadata_test', 'test', '**', '20210208', 'lev0')
 outDir = './tmp'
 startMsg = f'creating tables and files in {outDir}'
 logFile = os.path.join(outDir, os.path.basename(__file__).replace('.py', '.log'))
-
+dev = True
 def create_extra_data():
     extraData = {}
     for file in glob(os.path.join(fitsFilePath, '*.fits')): 
@@ -54,35 +59,41 @@ def create_tables_and_checksum_files():
         metaOutFile = os.path.join(os.getcwd(), outDir, f'dep_{inst}.metadata.table') # must end in metadata.table
         instFitsFilePath = fitsFilePath.replace('**', inst)
         extraData = create_extra_data()
-        metadata.make_metadata(keywordsDefFile, metaOutFile, instFitsFilePath, extraData, log)
+        metadata.make_metadata(keywordsDefFile, metaOutFile, instFitsFilePath, extraData, log, dev=dev)
 
+@pytest.mark.metadata
 def test_input_tables_exist():
     assert os.path.exists(keywordTablePath), 'check KeywordsTable dir is set correctly'
     for inst in INST_MAPPING.keys():
         keywordsDefFile = glob(os.path.join(keywordTablePath, f'KOA_{inst}_Keyword_Table.txt'))[0]
         assert os.path.exists(keywordsDefFile), f'check that {inst} table exists'
 
+@pytest.mark.metadata
 def test_fits_files_exist():
     for inst in INST_MAPPING:
         lev0Dir = os.path.join('./koadata_test', 'test', inst, '20210208', 'lev0')
         fitsFiles = glob(os.path.join(lev0Dir, '*.fits'))
         assert len(fitsFiles) > 0, f'inst {inst} does not have any fits files.'
 
+@pytest.mark.metadata
 def test_ipac_tables_created():
     for inst in INST_MAPPING.keys():
         outFileName = glob(os.path.join(outDir, f'*{inst}.metadata.table'))
         assert len(outFileName) == 1, f'there should be one completed ipac table for inst {inst}'
 
+@pytest.mark.metadata
 def test_checksums_created():
     for inst in INST_MAPPING.keys():
         outFileName = glob(os.path.join(outDir, f'*{inst}.metadata.md5sum'))
         assert len(outFileName) == 1, f'there should be one completed ipac table checksum file for inst {inst}'
 
+@pytest.mark.metadata
 def test_nrows_equal_nfiles():
     for inst in INST_MAPPING.keys():
         outFileName = glob(os.path.join(outDir, f'*{inst}.metadata.md5sum'))
         assert len(outFileName) == 1, f'there should be one completed ipac table checksum file for inst {inst}'
 
+@pytest.mark.metadata
 def test_logging():
     assert os.path.exists(logFile), 'log file does not exist'
     with open(logFile) as f: 
@@ -96,7 +107,7 @@ if __name__=='__main__':
     create_tables_and_checksum_files()
 
     # run pytests
-    pytest.main()
-
+    os.system('pytest -m metadata')
     # cleanup
-    rmtree(outDir)
+    if not dev:
+        rmtree(outDir)

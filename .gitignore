@@ -9,3 +9,5 @@ __pycache__/
 *.md5sum
 *.metadata.table
 test/koadata_test
+*.swp
+*/tmp/
