@@ -40,7 +40,12 @@ EXTRA_DATA = {
 }
 keywordTablePath = os.path.join(os.pardir, os.pardir, 'KeywordTables')
 fitsFilePath = os.path.join('koadata_test', 'test', '**', '20210208', 'lev0')
-outDir = './tmp'
+
+if os.uname()[1] == 'koaserver5':
+    outDir = '/tmp/dep_test' ## if running on koaserver5
+else:
+    outDir = './tmp'
+
 startMsg = f'creating tables and files in {outDir}'
 logFile = os.path.join(outDir, os.path.basename(__file__).replace('.py', '.log'))
 dev = True
