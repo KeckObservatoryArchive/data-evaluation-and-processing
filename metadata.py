@@ -234,7 +234,6 @@ def check_and_set_value_type(val, warns, metaDataType, keyword):
 
     elif (metaDataType == 'double'):
         if not isinstance(val, float):
-            pdb.set_trace()
             logging.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, metaDataType, keyword, val))
             warns['type'] += 1
 
