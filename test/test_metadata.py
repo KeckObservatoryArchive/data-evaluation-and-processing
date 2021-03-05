@@ -51,7 +51,9 @@ else:
     outDir = './tmp'
     pytestPath = 'pytest'
 startMsg = f'creating tables and files in {outDir}'
+
 logFile = os.path.join(outDir, os.path.basename(__file__).replace('.py', '.log'))
+
 dev = True
 def create_extra_data():
     extraData = {}
