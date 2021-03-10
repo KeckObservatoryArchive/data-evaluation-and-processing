@@ -158,7 +158,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, in
                 val = extra[keyword]
             else: 
                 val = 'null'
-                log.warning('metadata check: Keyword not found in header (' + fitsFile + '): ' + keyword)
+                if dev: log.warning('metadata check: Keyword not found in header (' + fitsFile + '): ' + keyword)
 
             #special check for val = fits.Undefined
             if isinstance(val, fits.Undefined):
@@ -197,7 +197,7 @@ def check_keyword_existance(header, keyDefs, dev=False, instrKeywordSkips=[], ex
     for keywordHdr in header:
         if not keywordHdr: continue  #blank keywords can exist
         if keywordHdr not in keyDefList and not is_keyword_skip(keywordHdr, skips):
-            log.warning('metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
+            if dev: log.warning('metadata.py: header keyword "{}" not found in metadata definition file.'.format(keywordHdr))
 
     #find all keywords in metadata def file that are not in header
     skips = ['PROGTITL', 'PROPINT']
@@ -205,7 +205,7 @@ def check_keyword_existance(header, keyDefs, dev=False, instrKeywordSkips=[], ex
     for index, row in keyDefs.iterrows():
         keyword = row['keyword']
         if keyword not in header and keyword not in skips and row['allowNull'] == "N" and keyword not in extra:
-            log.warning('metadata.py: non-null metadata keyword "{}" not found in header.'.format(keyword))
+            if dev: log.warning('metadata.py: non-null metadata keyword "{}" not found in header.'.format(keyword))
 
 def check_null(val, allowNull):
     if (val == 'null' or val == '') and (allowNull == 'N'):
@@ -352,10 +352,6 @@ def is_keyword_skip(keyword, skips):
         if re.search(pattern, keyword):
             return True
     return False
-
-def log_msg (dev, msg):
-    if dev: log.warning(msg)
-    else  : log.info(msg)
 
 def truncate_float(f, n):
     s = '{}'.format(f)
