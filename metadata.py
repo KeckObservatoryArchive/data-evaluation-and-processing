@@ -317,7 +317,7 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
     checks keyword for correct type and proper value.
     '''
     #specific error, udf values that we should convert to "null"
-    errvals = ['#### error ###']
+    errvals = ['#### Error ###']
     if (val in errvals):
         val = 'null'
     check_null(val, fmt['allowNull'])
