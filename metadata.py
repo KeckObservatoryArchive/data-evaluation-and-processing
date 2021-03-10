@@ -236,14 +236,14 @@ def check_and_set_value_type(val, warns, metaDataType, keyword):
 
     elif (metaDataType == 'date'):
         try:
-            datetime.datetime.strptime(val, '%y-%m-%d')
+            datetime.datetime.strptime(val, '%Y-%m-%d')
         except Exception as err:
             log.warning('metadata check: expected date format yyyy-mm-dd ({}={}).'.format(keyword, val))
             warns['type'] += 1
 
     elif (metaDataType == 'datetime'):
         try:
-            datetime.datetime.strptime(val, '%y-%m-%d %h:%i:%s')
+            datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
         except Exception as err:
             log.warning('metadata check: expected date format yyyy-mm-dd hh:ii:ss ({}={}).'.format(keyword, val))
             warns['type'] += 1
