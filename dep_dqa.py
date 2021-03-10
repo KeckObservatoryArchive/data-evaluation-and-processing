@@ -165,9 +165,8 @@ def dep_dqa(instrObj, tpx=0):
     ymd = utDate.replace('-', '')
     metaOutFile =  dirs['lev0'] + '/' + ymd + '.metadata.table'
     keywordsDefFile = tablesDir + f'/KOA_{instr.upper()}_Keyword_Table.txt'
-    metadata.make_metadata( keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, log, 
-                            dev=isDev,
-                            instrKeywordSkips=instrObj.keywordSkips)    
+    metadata.make_metadata( keywordsDefFile, metaOutFile, dirs['lev0'], extraMeta, 
+                            dev=isDev, instrKeywordSkips=instrObj.keywordSkips)    
 
     if instr.upper() != 'KCWI':
         #Create the extension files
