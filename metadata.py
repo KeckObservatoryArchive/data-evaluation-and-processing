@@ -137,7 +137,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, in
     #get header object using astropy
     header = fits.getheader(fitsFile)
     #check keywords
-    check_keyword_existance(header, keyDefs, dev, instrKeywordSkips, log)
+    check_keyword_existance(header, keyDefs, dev, instrKeywordSkips, extra, log)
     #write all keywords vals for image to a line
     with open(metaOutFile, 'a') as out:
 
@@ -186,7 +186,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, in
     return warns
 
 
-def check_keyword_existance(header, keyDefs, dev=False, instrKeywordSkips=[], log=None):
+def check_keyword_existance(header, keyDefs, dev=False, instrKeywordSkips=[], extra={}, log=None):
 
     #get simple list of keywords
     keyDefList = []
@@ -205,7 +205,7 @@ def check_keyword_existance(header, keyDefs, dev=False, instrKeywordSkips=[], lo
     assert keyDefs.iloc[0].keyword == "KOAID", "First column must be KOAID"
     for index, row in keyDefs.iterrows():
         keyword = row['keyword']
-        if keyword not in header and keyword not in skips and row['allowNull'] == "N":
+        if keyword not in header and keyword not in skips and row['allowNull'] == "N" and keyword not in extra:
             if log: log.warning('metadata.py: non-null metadata keyword "{}" not found in header.'.format(keyword))
 
 def check_null(val, allowNull):
