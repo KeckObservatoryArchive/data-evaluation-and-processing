@@ -341,9 +341,10 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
             warns['maxValue'] += 1
     else:
         val = convert_type(val, fmt['metaDataType'])
-        warns = check_min_range(val, warns, fmt['minValue'], fmt['metaDataType'], keyword)
-        warns = check_max_range(val, warns, fmt['maxValue'], fmt['metaDataType'], keyword)
-        warns = check_discrete_values(val, warns, fmt['DiscreteValues'], keyword)
+        if fmt['CheckValues'].upper() == 'Y':
+            warns = check_min_range(val, warns, fmt['minValue'], fmt['metaDataType'], keyword)
+            warns = check_max_range(val, warns, fmt['maxValue'], fmt['metaDataType'], keyword)
+            warns = check_discrete_values(val, warns, fmt['DiscreteValues'], keyword)
     return val, warns
 
 def is_keyword_skip(keyword, skips):
