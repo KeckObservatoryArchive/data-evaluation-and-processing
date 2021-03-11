@@ -288,27 +288,27 @@ def convert_type(val, vtype):
     else:
         return val
 @skip_if_input_has_none
-def check_min_range(val, warns, minVal, vtype):
+def check_min_range(val, warns, minVal, vtype, keyword):
     try:
         if not val >= convert_type(minVal, vtype):
-            log.warning('metadata check: val {0} > minVal {1}'.format(val, minVal))
+            log.warning(f'metadata check: {keyword} val {val} > minVal {minVal}')
             warns['minValue'] += 1
     except Exception as err:
         print(err)
     return warns
 
 @skip_if_input_has_none
-def check_max_range(val, warns, maxVal, vtype):
+def check_max_range(val, warns, maxVal, vtype, keyword):
     if not val <= convert_type(maxVal, vtype):
-        log.warning('metadata check: val {0} > maxVal {1}'.format(val, maxVal))
+        log.warning(f'metadata check: {keyword} val {val} > maxVal {maxVal}')
         warns['maxValue'] += 1
     return warns
 
 @skip_if_input_has_none
-def check_discrete_values(val, warns, valStr):
+def check_discrete_values(val, warns, valStr, keyword):
     valSet = [x.replace(' ', '') for x in valStr.split(',')]
     if not val in valSet:
-        log.warning('metadata check: val {0} not in {1}'.format(val, valSet))
+        log.warning(f'metadata check: {keyword} val {val} not in {valSet}')
         warns['discreteValues'] += 1
     return warns
 
@@ -329,22 +329,22 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
     # check if val is degrees
     checkHours = not str(fmt['minValue'])=='nan' and fmt['metaDataType'] in ('char') 
     if checkHours:
-        msg = 'val: {0} units {1} minValue {2} maxValue {3} may need conversion'.format(val, fmt['Units'], fmt['minValue'], fmt['maxValue'])
+        msg = f"{keyword} val: {val} units {fmt['Units']} minValue {fmt['minValue']} maxValue {fmt['maxValue']} may need conversion"
         log.info(msg)
         ang = Angle(val, au.deg)
         minAng = Angle(fmt['minValue'], au.deg)
         maxAng = Angle(fmt['maxValue'], au.deg)
         if ang <= minAng:
-            log.warning('metadata check: val {0} > maxVal {1}'.format(ang, minAng))
+            log.warning(f'metadata check: {keyword} val {ang} < minVal {minAng}')
             warns['maxValue'] += 1
         if ang >= maxAng:
-            log.warning('metadata check: val {0} > maxVal {1}'.format(ang, maxAng))
+            log.warning(f'metadata check: {keyword} val {ang} > maxVal {maxAng}')
             warns['maxValue'] += 1
     else:
         val = convert_type(val, fmt['metaDataType'])
-        warns = check_min_range(val, warns, fmt['minValue'], fmt['metaDataType'])
-        warns = check_max_range(val, warns, fmt['maxValue'], fmt['metaDataType'])
-        warns = check_discrete_values(val, warns, fmt['DiscreteValues'])
+        warns = check_min_range(val, warns, fmt['minValue'], fmt['metaDataType'], keyword)
+        warns = check_max_range(val, warns, fmt['maxValue'], fmt['metaDataType'], keyword)
+        warns = check_discrete_values(val, warns, fmt['DiscreteValues'], keyword)
     return val, warns
 
 def is_keyword_skip(keyword, skips):
