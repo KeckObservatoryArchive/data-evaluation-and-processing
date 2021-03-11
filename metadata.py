@@ -211,7 +211,7 @@ def check_null(val, allowNull):
     if (val == 'null' or val == '') and (allowNull == 'N'):
         raise Exception('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))            
 
-def check_and_set_value_type(val, warns, metaDataType, keyword):
+def check_and_set_value_type(val, warns, metaDataType, keyword, dev=False):
     vtype = type(val).__name__
     if (metaDataType == 'char'):
         if isinstance(val, bool):
@@ -221,17 +221,17 @@ def check_and_set_value_type(val, warns, metaDataType, keyword):
             val = ''
             log.warning('metadata check: found integer 0, expected {}. KNOWN ISSUE. SETTING TO BLANK!'.format(metaDataType))
         elif not isinstance(val, str):
-            log.warning('metadata check: var type {}, expected {} ({}={}).'.format(vtype, metaDataType, keyword, val))
+            if dev: log.warning('metadata check: var type {}, expected {} ({}={}).'.format(vtype, metaDataType, keyword, val))
             warns['type'] += 1
 
     elif (metaDataType == 'integer'):
         if not isinstance(val, int):
-            log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, metaDataType, keyword, val))
+            if dev: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, metaDataType, keyword, val))
             warns['type'] += 1
 
     elif (metaDataType == 'double'):
         if not isinstance(val, float):
-            log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, metaDataType, keyword, val))
+            if dev: log.warning('metadata check: var type of {}, expected {} ({}={}).'.format(vtype, metaDataType, keyword, val))
             warns['type'] += 1
 
     elif (metaDataType == 'date'):
@@ -249,7 +249,7 @@ def check_and_set_value_type(val, warns, metaDataType, keyword):
             warns['type'] += 1
     return val, warns
 
-def check_and_set_char_length(val, warns,  colSize, metaDataType, keyword):
+def check_and_set_char_length(val, warns,  colSize, metaDataType, keyword, dev=False):
     length = len(str(val))
     if (length > colSize):
         if (metaDataType == 'double'): 
@@ -323,8 +323,8 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
     check_null(val, fmt['allowNull'])
     if (val == 'null' or val == '') and (fmt['allowNull'] == 'Y'):
         return val, warns
-    val, warns = check_and_set_value_type(val, warns, fmt['metaDataType'], fmt['keyword'])
-    val, warns = check_and_set_char_length(val, warns, fmt['colSize'], fmt['metaDataType'], fmt['keyword'])
+    val, warns = check_and_set_value_type(val, warns, fmt['metaDataType'], fmt['keyword'], dev)
+    val, warns = check_and_set_char_length(val, warns, fmt['colSize'], fmt['metaDataType'], fmt['keyword'], dev)
 
     # check if val is degrees
     checkHours = not str(fmt['minValue'])=='nan' and fmt['metaDataType'] in ('char') 
