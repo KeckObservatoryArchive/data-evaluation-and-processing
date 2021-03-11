@@ -55,19 +55,18 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=F
     #track warning counts
     warns = {'type': 0, 'truncate': 0, 'minValue': 0, 'maxValue': 0, 'discreteValues': 0}
 
-    inst = keywordsDefFile.split('_')[1]
+    #walk lev0Dir to find all final fits files
     log.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
+    for root, directories, files in os.walk(lev0Dir):
+        for filename in sorted(files):
+            if filename.endswith('.fits'):
+                fitsFile = os.path.join(root, filename)
 
-    #get all fits files
-    fitsFiles = glob.glob(os.path.join(lev0Dir, '*.fits'))
-    if len(fitsFiles) == 0:
-        print(f'no fits file(s) found for instrument {inst}')
-    for fitsFile in fitsFiles:
-        extra = {}
-        baseName = os.path.basename(fitsFile)
-        if baseName in extraData: extra = extraData[baseName]
-        log.info("Creating metadata record for: " + fitsFile)
-        warns = add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, instrKeywordSkips)
+                extra = {}
+                if filename in extraData: extra = extraData[filename]
+
+                log.info("Creating metadata record for: " + fitsFile)
+                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, instrKeywordSkips)
 
     #warn only if counts
     for warn, numWarns in warns.items():
@@ -82,7 +81,7 @@ def format_keyDefs(keyDefs):
     '''renames and type declarations for metadata table'''
     keyDefs = keyDefs.rename(columns={'FITSKeyword': 'keyword', 'MetadataDatatype': 'metaDataType', 'NullsAllowed':'allowNull', 'MetadataWidth': 'colSize', 'MinValue': 'minValue', 'MaxValue': 'maxValue'})
     keyDefs = keyDefs.dropna(axis=0, subset=['keyword'])
-    keyDefs = keyDefs[keyDefs['Source'].astype(str)!='NExScI']
+    keyDefs = keyDefs[keyDefs['Source'].astype(str) != 'NExScI']
     keyDefs['colSize'] = keyDefs['colSize'].astype(int)
     #keyDefs['minValue'] = keyDefs['minValue'].astype(float)
     #keyDefs['maxValue'] = keyDefs['maxValue'].astype(float)
@@ -308,7 +307,7 @@ def check_max_range(val, warns, maxVal, vtype, keyword):
 def check_discrete_values(val, warns, valStr, keyword):
     valSet = [x.replace(' ', '') for x in valStr.split(',')]
     if not val in valSet:
-        log.warning(f'metadata check: {keyword} val {val} not in {valSet}')
+        log.warning(f'metadata check: {keyword} val "{val}" not in {valSet}')
         warns['discreteValues'] += 1
     return warns
 
