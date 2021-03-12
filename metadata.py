@@ -305,8 +305,8 @@ def check_max_range(val, warns, maxVal, vtype, keyword):
 
 @skip_if_input_has_none
 def check_discrete_values(val, warns, valStr, keyword):
-    valSet = [x.strip() for x in valStr.split(',')]
-    if not val in valSet:
+    valSet = [x.strip().lower() for x in valStr.split(',')]
+    if not val.lower() in valSet:
         log.warning(f'metadata check: {keyword} val "{val}" not in {valSet}')
         warns['discreteValues'] += 1
     return warns
