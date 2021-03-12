@@ -20,6 +20,7 @@ import pdb
 import glob
 import gzip
 import hashlib
+import json
 import logging
 
 log = logging.getLogger(f"dep <{os.getlogin()}>")
@@ -305,7 +306,13 @@ def check_max_range(val, warns, maxVal, vtype, keyword):
 
 @skip_if_input_has_none
 def check_discrete_values(val, warns, valStr, keyword):
-    valSet = [x.strip().lower() for x in valStr.split(',')]
+    '''Discrete value string can be JSON or comma-separated.'''
+    try:
+        valSet = json.loads(valStr)
+    except Exception as e:
+        valSet = valStr.split(',')
+
+    valSet = [x.strip().lower() for x in valSet]
     if not val.lower() in valSet:
         log.warning(f'metadata check: {keyword} val "{val}" not in {valSet}')
         warns['discreteValues'] += 1
