@@ -291,7 +291,7 @@ def convert_type(val, vtype):
 def check_min_range(val, warns, minVal, vtype, keyword):
     try:
         if not val >= convert_type(minVal, vtype):
-            log.warning(f'metadata check: {keyword} val {val} > minVal {minVal}')
+            log.warning(f'metadata check: {keyword} val {val} < minVal {minVal}')
             warns['minValue'] += 1
     except Exception as err:
         print(err)
