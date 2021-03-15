@@ -22,10 +22,12 @@ import gzip
 import hashlib
 import json
 import logging
+from pathlib import Path
 
 log = logging.getLogger("dep")
 
-def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=False, instrKeywordSkips=[], create_md5=True):
+def make_metadata(keywordsDefFile, metaOutFile, searchdir, filepath=None, 
+                  extraMeta=dict(), dev=False, keyskips=[], create_md5=False):
     """
     Creates the archiving metadata file as part of the DQA process.
 
@@ -33,10 +35,10 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=F
     @type keywordsDefFile: string
     @param metaOutFile: metadata output file path
     @type metaOutFile: string
-    @param lev0Dir: directory for finding FITS files and writing output files
-    @type lev0Dir: string
-    @param extraData: dictionary of any extra key val pairs not in header
-    @type extraData: dictionary
+    @param searchdir: directory for finding FITS files and writing output files
+    @type searchdir: string
+    @param extraMeta: dictionary of any extra key val pairs not in header
+    @type extraMeta: dictionary
     """
 
     #open keywords format file and read data
@@ -57,18 +59,23 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=F
     #track warning counts
     warns = {'type': 0, 'truncate': 0, 'minValue': 0, 'maxValue': 0, 'discreteValues': 0}
 
-    #walk lev0Dir to find all final fits files
-    log.info('metadata.py searching fits files in dir: {}'.format(lev0Dir))
-    for root, directories, files in os.walk(lev0Dir):
-        for filename in sorted(files):
-            if filename.endswith('.fits'):
-                fitsFile = os.path.join(root, filename)
-
-                extra = {}
-                if filename in extraData: extra = extraData[filename]
-
-                log.info("Creating metadata record for: " + fitsFile)
-                add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, instrKeywordSkips)
+    #get all fits files
+    log.info('metadata.py searching fits files in dir: {}'.format(searchdir))
+    fitsFiles = []
+    if searchdir:
+        for path in Path(searchdir).rglob('*.fits'):
+            fitsFiles.append(str(path))
+    if filepath:
+        fitsFiles.append(filepath)
+    if len(fitsFiles) == 0:
+        log.info(f'No fits file(s) found')
+    for fitsFile in sorted(fitsFiles):
+        extra = {}
+        baseName = os.path.basename(fitsFile)
+        if baseName in extraMeta:
+            extra = extraMeta[baseName]
+        log.info("Creating metadata record for: " + fitsFile)
+        warns = add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, keyskips)
 
     #warn only if counts
     for warn, numWarns in warns.items():
@@ -133,7 +140,7 @@ def create_metadata_file(filename, keyDefs):
         out.flush()
 
 
-def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, instrKeywordSkips):
+def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, keyskips):
     """
     Adds a line to metadata file for one FITS file.
     """
@@ -141,7 +148,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, in
     #get header object using astropy
     header = fits.getheader(fitsFile)
     #check keywords
-    check_keyword_existance(header, keyDefs, dev, instrKeywordSkips, extra)
+    check_keyword_existance(header, keyDefs, dev, keyskips, extra)
     #write all keywords vals for image to a line
     with open(metaOutFile, 'a') as out:
 
@@ -190,7 +197,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, in
     return warns
 
 
-def check_keyword_existance(header, keyDefs, dev=False, instrKeywordSkips=[], extra={}):
+def check_keyword_existance(header, keyDefs, dev=False, keyskips=[], extra={}):
 
     #get simple list of keywords
     keyDefList = []
@@ -198,7 +205,7 @@ def check_keyword_existance(header, keyDefs, dev=False, instrKeywordSkips=[], ex
         keyDefList.append(row['keyword'])        
 
     #find all keywords in header that are not in metadata file
-    skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3'] + instrKeywordSkips
+    skips = ['SIMPLE', 'COMMENT', 'PROGTL1', 'PROGTL2', 'PROGTL3'] + keyskips
     for keywordHdr in header:
         if not keywordHdr: continue  #blank keywords can exist
         if keywordHdr not in keyDefList and not is_keyword_skip(keywordHdr, skips):
