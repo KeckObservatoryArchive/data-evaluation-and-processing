@@ -25,7 +25,7 @@ import logging
 
 log = logging.getLogger(f"dep <{os.getlogin()}>")
 
-def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=False, instrKeywordSkips=[]):
+def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=False, instrKeywordSkips=[], create_md5=True):
     """
     Creates the archiving metadata file as part of the DQA process.
 
@@ -51,6 +51,7 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=F
         if not dev:
             raise Exception(msg)
 
+    #create initial file with header
     create_metadata_file(metaOutFile, keyDefs)
 
     #track warning counts
@@ -75,7 +76,11 @@ def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=F
             continue
         msg = 'metadata.py: found {0} warnings of type {1}'.format(numWarns, warn)
         log.warning(msg)
-    create_md5_checksum_file(metaOutFile)
+
+    #md5sum option
+    if create_md5: 
+        create_md5_checksum_file(metaOutFile)
+
     return True
 
 def format_keyDefs(keyDefs):
