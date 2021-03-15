@@ -24,9 +24,9 @@ import json
 import logging
 from pathlib import Path
 
-log = logging.getLogger("dep")
+log = logging.getLogger("koa_dep")
 
-def make_metadata(keywordsDefFile, metaOutFile, searchdir, filepath=None, 
+def make_metadata(keywordsDefFile, metaOutFile, searchdir=None, filepath=None, 
                   extraMeta=dict(), dev=False, keyskips=[], create_md5=False):
     """
     Creates the archiving metadata file as part of the DQA process.

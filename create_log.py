@@ -23,7 +23,7 @@ def create_log(rootDir, instr, utDate, doStdout=None):
 
     # Setup logging
 
-    log_writer = lg.getLogger("dep")
+    log_writer = lg.getLogger("koa_dep")
     log_writer.setLevel(lg.INFO)
 
     # Create a file handler
