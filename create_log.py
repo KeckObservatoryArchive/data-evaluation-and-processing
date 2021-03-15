@@ -23,9 +23,7 @@ def create_log(rootDir, instr, utDate, doStdout=None):
 
     # Setup logging
 
-    user = os.getlogin()
-    writerName = ''.join(('dep <', user, '>'))
-    log_writer = lg.getLogger(writerName)
+    log_writer = lg.getLogger("dep")
     log_writer.setLevel(lg.INFO)
 
     # Create a file handler

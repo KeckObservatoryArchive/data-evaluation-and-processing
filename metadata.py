@@ -23,7 +23,7 @@ import hashlib
 import json
 import logging
 
-log = logging.getLogger(f"dep <{os.getlogin()}>")
+log = logging.getLogger("dep")
 
 def make_metadata(keywordsDefFile, metaOutFile, lev0Dir, extraData=dict(), dev=False, instrKeywordSkips=[], create_md5=True):
     """
