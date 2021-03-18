@@ -14,7 +14,7 @@ DISPSCAL	double	16	Y
 DQA_DATE	char	32	Y
 DQA_VERS	char	32	Y
 FILTER	char	32	Y
-GUIDFWHM	double	16	Y
+GUIDFWHM	double	24	Y
 GUIDTIME	char	32	Y
 IMAGEMD	double	16	Y
 IMAGEMN	double	16	Y

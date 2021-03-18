@@ -132,7 +132,7 @@ FRAMES	integer	8	Y
 GROUPS	integer	8	Y
 GROUPS0	integer	8	Y
 GRPDONE	integer	8	Y
-GUIDFWHM	double	16	Y
+GUIDFWHM	double	24	Y
 GUIDTIME	char	32	Y
 GUIDWAVE	double	16	Y
 HA	double	16	Y
