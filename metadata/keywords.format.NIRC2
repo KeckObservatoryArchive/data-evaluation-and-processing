@@ -110,7 +110,7 @@ GRSDIST	double	20	Y
 GRSNAME	char	20	Y
 GRSRAW	integer	20	Y
 GRSSTAT	char	20	Y
-GUIDFWHM	double	16	Y
+GUIDFWHM	double	24	Y
 GUIDTIME	char	16	Y
 GUIDWAVE	double	20	Y
 HA	double	20	Y

@@ -31,7 +31,7 @@ DQA_DATE	char	32	Y
 DQA_VERS	char	32	Y
 FCSKOAID	char	32	Y
 FILTER	char	16	Y
-GUIDFWHM	double	16	Y
+GUIDFWHM	double	24	Y
 GUIDTIME	char	32	Y
 MJD	double	16	Y
 NEXTEN	integer	16	N

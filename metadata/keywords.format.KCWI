@@ -131,15 +131,15 @@ CCDGAIN4	double	16	Y
 CCDMODE	integer	16	Y
 CCDSPEED	integer	16	Y
 CCDSUM	char	32	Y
-CD1_1	double	16	Y
-CD1_2	double	16	Y
-CD2_1	double	16	Y
-CD2_2	double	16	Y
+CD1_1	double	24	Y
+CD1_2	double	24	Y
+CD2_1	double	24	Y
+CD2_2	double	24	Y
 CHECKSUM	char	32	Y
-CRPIX1	double	16	Y
-CRPIX2	double	16	Y
-CRVAL1	double	16	Y
-CRVAL2	double	16	Y
+CRPIX1	double	24	Y
+CRPIX2	double	24	Y
+CRVAL1	double	24	Y
+CRVAL2	double	24	Y
 CSEC1	char	24	Y
 CSEC2	char	24	Y
 CSEC3	char	24	Y
@@ -183,12 +183,12 @@ GAIN2	double	16	Y
 GAIN3	double	16	Y
 GAIN4	double	16	Y
 GAINMUL	integer	16	Y
-GUIDFWHM	double	16	Y
+GUIDFWHM	double	2424
 GUIDING	char	16	Y
 GUIDTIME	char	32	Y
 HA	char	16	Y
 HATNUM	integer	16	Y
-HATPOS	char	32	Y
+HATPOS	char	3224
 HEART_01	char	68	Y
 HEART_02	char	68	Y
 HEART_03	char	68	Y

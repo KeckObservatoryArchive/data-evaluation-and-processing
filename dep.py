@@ -25,6 +25,7 @@ import datetime as dt
 from dateutil import parser
 import db_conn
 import yaml
+from pathlib import Path
 
 
 class Dep:
@@ -280,6 +281,13 @@ class Dep:
 
 
     def do_process_report_email(self, admin_email):
+
+        #zero files, then no email
+        numfits = 0
+        for path in Path(self.instrObj.dirs['lev0']).rglob('*.fits.gz'):
+            numfits += 1
+        if numfits == 0:
+            return
 
         #read log file for errors and warnings
         logStr = ''
