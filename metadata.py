@@ -312,7 +312,7 @@ def check_value_type(val, warns, mtype, keyword):
         elif mtype == 'datetime': val = datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
         elif mtype == 'angle':    val = Angle(val, au.deg)
     except:
-        log.warning(f"metadata_check: {keyword} val '{val}' is not type {mtype}")
+        log.error(f"metadata_check: {keyword} val '{val}' is not type {mtype}")
         warns['type'] += 1
     return warns
 
