@@ -183,12 +183,12 @@ GAIN2	double	16	Y
 GAIN3	double	16	Y
 GAIN4	double	16	Y
 GAINMUL	integer	16	Y
-GUIDFWHM	double	2424
+GUIDFWHM	double	24	Y
 GUIDING	char	16	Y
 GUIDTIME	char	32	Y
 HA	char	16	Y
 HATNUM	integer	16	Y
-HATPOS	char	3224
+HATPOS	char	32	Y
 HEART_01	char	68	Y
 HEART_02	char	68	Y
 HEART_03	char	68	Y
