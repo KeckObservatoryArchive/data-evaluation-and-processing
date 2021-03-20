@@ -8,7 +8,7 @@ sys.path.append(os.path.pardir)
 import metadata
 from glob import glob
 import pdb
-from shutil import rmtree
+from shutil import rmtree, copy
 """
 test_metadata.py runs test on metadata and checksum files generated from fits files found in koadata_test/test/inst directories. 
 Tables, checksum, and log files are created before tests are run, and then deleted.
@@ -42,7 +42,7 @@ EXTRA_DATA = {
 keywordTablePath = os.path.join(os.pardir, os.pardir, 'KeywordTables')
 koadataPath = os.path.join(os.pardir, os.pardir, 'koadata_test')
 fitsFilePath = os.path.join(koadataPath, 'test', '**', '20210208', 'lev0')
-
+OVERWRITE_STD = False
 serverName = os.uname()[1]
 if 'koaserver' in serverName:
     outDir = '/tmp/dep_test'
@@ -53,6 +53,7 @@ else:
 startMsg = f'creating tables and files in {outDir}'
 
 logFile = os.path.join(outDir, os.path.basename(__file__).replace('.py', '.log'))
+log = logging.getLogger(logFile)
 
 dev = True
 def create_extra_data():
@@ -63,14 +64,28 @@ def create_extra_data():
     return extraData
 
 def create_tables_and_checksum_files():
-    log = logging.getLogger(logFile)
     log.info(startMsg)
     for inst in INST_MAPPING.keys():
         keywordsDefFile = glob(os.path.join(keywordTablePath, f'KOA_{inst}_Keyword_Table.txt'))[0]
         metaOutFile = os.path.join(os.getcwd(), outDir, f'dep_{inst}.metadata.table') # must end in metadata.table
         instFitsFilePath = fitsFilePath.replace('**', inst)
         extraData = create_extra_data()
-        metadata.make_metadata(keywordsDefFile, metaOutFile, instFitsFilePath, extraData, log, dev=dev)
+        metadata.make_metadata(keywordsDefFile, metaOutFile, instFitsFilePath, extraMeta=extraData, dev=dev)
+
+def copy_tables_and_checksum_files():
+    '''
+    replaces files stored in koadataPath with recently completed files
+    '''
+    stdPath = os.path.join(koadataPath, 'dep_output_std')
+    outPath = os.path.join(os.getcwd(), outDir)
+    files = glob(os.path.join(outPath, '*'))
+    inp = input("set output as standard (y)? This may erase your files...")
+    if not inp.lower().startswith('y'):
+        return
+    for f in files:
+        stdFile = os.path.join(stdPath, os.path.basename(f))
+        copy(f, stdFile)
+
 
 @pytest.mark.metadata
 def test_input_tables_exist():
@@ -134,11 +149,14 @@ def test_compare_md5sum_files():
         if not filecmp.cmp(f1, f2, False):
             filesMismatch.append(f1)
     assert len(filesMismatch) == 0, 'mismatching files with standard: {}'.format(filesMismatch)
+
 if __name__=='__main__':
     if not os.path.exists(outDir): 
         os.mkdir(outDir)
     logging.basicConfig(filename=logFile, level=logging.DEBUG)
     create_tables_and_checksum_files()
+    if OVERWRITE_STD:
+        copy_tables_and_checksum_files()
     # run pytests
     testCmd = pytestPath + ' -m metadata'
     os.system(testCmd)
