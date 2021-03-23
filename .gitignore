@@ -5,3 +5,9 @@ __pycache__/
 *.pyc
 .project
 .pydevproject
+.ipynb_checkpoints/
+*.md5sum
+*.metadata.table
+test/koadata_test
+*.swp
+*/tmp/
