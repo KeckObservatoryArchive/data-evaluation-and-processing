@@ -49,7 +49,7 @@ def make_metadata(keywordsDefFile, metaOutFile, searchdir=None, filepath=None,
     except Exception as err:
         keyDefs = format_keyDefs(keyDefs)
         msg = 'keywordsDefFile {0} not formatted err: {1} skipping'.format(keyDefs, err)
-        log.warning(msg)
+        log.error(msg)
         if not dev:
             raise Exception(msg)
 
@@ -164,13 +164,13 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, ke
                 try:
                     val = header[keyword]
                 except Exception as e:
-                    log.warning('metadata check: Could not read header keyword (' + fitsFile + '): ' + keyword)
+                    log.error('metadata check: Could not read header keyword (' + fitsFile + '): ' + keyword)
                     val = 'null'
             elif keyword in extra:
                 val = extra[keyword]
             else: 
                 val = 'null'
-                if dev: log.warning('metadata check: Keyword not found in header (' + fitsFile + '): ' + keyword)
+                if dev: log.error('metadata check: Keyword not found in header (' + fitsFile + '): ' + keyword)
 
             #special check for val = fits.Undefined
             if isinstance(val, fits.Undefined):
@@ -185,7 +185,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, ke
                 val, warns = check_keyword_val(keyword, val, row, warns)
             except Exception as err:
                 msg = 'Exception for metaOutFile {0} keyword: {1} val: {2}. Error: {3}'.format(os.path.basename(metaOutFile), keyword, val, err)
-                log.warning(msg)
+                log.error(msg)
                 if not dev:
                     raise Exception(msg)
 
@@ -276,7 +276,7 @@ def convert_type(val, vtype):
 def check_min_range(val, warns, minVal, vtype, keyword):
     try:
         if val < convert_type(minVal, vtype):
-            log.warning(f'metadata check: {keyword} val {val} < minVal {minVal}')
+            log.error(f'metadata check: {keyword} val {val} < minVal {minVal}')
             warns['minValue'] += 1
     except Exception as err:
         print(err)
@@ -285,7 +285,7 @@ def check_min_range(val, warns, minVal, vtype, keyword):
 @skip_if_input_has_none
 def check_max_range(val, warns, maxVal, vtype, keyword):
     if val > convert_type(maxVal, vtype):
-        log.warning(f'metadata check: {keyword} val {val} > maxVal {maxVal}')
+        log.error(f'metadata check: {keyword} val {val} > maxVal {maxVal}')
         warns['maxValue'] += 1
     return warns
 
@@ -299,7 +299,7 @@ def check_discrete_values(val, warns, valStr, keyword):
 
     valSet = [x.strip().lower() for x in valSet]
     if not val.lower() in valSet:
-        log.warning(f'metadata check: {keyword} val "{val}" not in {valSet}')
+        log.error(f'metadata check: {keyword} val "{val}" not in {valSet}')
         warns['discreteValues'] += 1
     return warns
 
@@ -345,10 +345,10 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
             minAng = Angle(fmt['minValue'], au.deg)
             maxAng = Angle(fmt['maxValue'], au.deg)
             if ang < minAng:
-                log.warning(f'metadata check: {keyword} val {ang} < minVal {minAng}')
+                log.error(f'metadata check: {keyword} val {ang} < minVal {minAng}')
                 warns['maxValue'] += 1
             if ang > maxAng:
-                log.warning(f'metadata check: {keyword} val {ang} > maxVal {maxAng}')
+                log.error(f'metadata check: {keyword} val {ang} > maxVal {maxAng}')
                 warns['maxValue'] += 1
         else:
             warns = check_min_range(val, warns, fmt['minValue'], fmt['metaDataType'], keyword)
