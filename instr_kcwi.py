@@ -27,6 +27,7 @@ class Kcwi(instrument.Instrument):
         self.sdataList = self.get_dir_list()
         self.keywordMap['UTC'] = 'UT'
 
+    @staticmethod
     def get_dir_list(self):
         '''
         Function to generate the paths to all the KCWI accounts, including engineering
@@ -34,6 +35,7 @@ class Kcwi(instrument.Instrument):
         '''
         dirs = []
         path = '/s/sdata1400/kcwi'
+        dirs.append(path + 'eng')
         for i in range(1,10):
             joinSeq = (path, str(i))
             path2 = ''.join(joinSeq)
