@@ -304,6 +304,7 @@ def check_discrete_values(val, warns, valStr, keyword):
     return warns
 
 def check_value_type(val, warns, mtype, keyword):
+    '''Check that we can cast to expected type.'''
     try:
         if   mtype == 'integer':  val = int(val)
         elif mtype == 'double':   val = float(val)
@@ -331,16 +332,17 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
         return val, warns
 
     #basic checks of type and length
+    mtype = fmt['InputFormat'] if fmt['InputFormat'] else fmt['metaDataType']
     val = fix_value(val, fmt['metaDataType'], keyword)
     if fmt['ValidateFormat'].upper() == 'Y':
-        warns = check_value_type(val, warns, fmt['metaDataType'], keyword)
+        warns = check_value_type(val, warns, mtype, keyword)
     val, warns = check_and_set_char_length(val, warns, fmt['colSize'], fmt['metaDataType'], fmt['keyword'], dev)
     val = convert_type(val, fmt['metaDataType'])
 
     #check range and discrete values?
     if fmt['CheckValues'].upper() == 'Y':
         # check if val is angle in degrees
-        if not pd.isnull(fmt['minValue']) and fmt['metaDataType'] == 'angle':
+        if not pd.isnull(fmt['minValue']) and mtype == 'angle':
             ang = Angle(val, au.deg)
             minAng = Angle(fmt['minValue'], au.deg)
             maxAng = Angle(fmt['maxValue'], au.deg)
