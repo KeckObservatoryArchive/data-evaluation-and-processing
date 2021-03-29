@@ -28,7 +28,7 @@ class Kcwi(instrument.Instrument):
         self.keywordMap['UTC'] = 'UT'
 
     @staticmethod
-    def get_dir_list(self):
+    def get_dir_list():
         '''
         Function to generate the paths to all the KCWI accounts, including engineering
         Returns the list of paths
