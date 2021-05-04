@@ -142,6 +142,10 @@ class Nirspec(instrument.Instrument):
 
         #update val
         elaptime = round(itime * coadds, 5)
+        if elaptime > 9999:
+            self.log.warning(f'set_elaptime: ELAPTIME value of {elaptime} is too large. Setting to null.')
+            return True
+
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
 
         return True
