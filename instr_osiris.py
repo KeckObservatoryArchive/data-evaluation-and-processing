@@ -402,13 +402,20 @@ class Osiris(instrument.Instrument):
         sscale = self.get_keyword('SSCALE')
         instr = self.get_keyword('INSTR')
         
+        #Fix SSCALE if non numeric
+        try:
+            float(sscale)
+        except ValueError:
+            self.log.error(f"SSCALE has non numeric value of '{sscale}'")
+            sscale = ''
+            self.set_keyword('SSCALE', sscale, 'KOA: Spec Scale')
+     
         if "imag" in instr:
             scale = 0.02
         else:
             scale = sscale
-        
         self.set_keyword('SCALE', scale, 'KOA: Scale')
-        
+
         return True
 
     def check_noninteger_values(self):
