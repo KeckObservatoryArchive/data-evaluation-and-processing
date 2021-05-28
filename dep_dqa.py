@@ -244,6 +244,7 @@ def make_fits_extension_metadata_files(inDir='./', outDir=None, endsWith='.fits'
                 try:
                     hdu = hdus[i]
                     if 'TableHDU' not in str(type(hdu)): continue
+                    if hdu.name == 'Exposure Events': continue
 
                     #keep track of hdu names processed
                     if hdu.name not in hduNames: hduNames.append(hdu.name)

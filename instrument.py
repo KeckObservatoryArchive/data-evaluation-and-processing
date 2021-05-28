@@ -1065,12 +1065,18 @@ class Instrument:
         if (frameno == None): 
 
             datafile = self.get_keyword('DATAFILE')
+            if (datafile == None):
+                datafile = self.fitsHeader.get('OFNAME')
             if (datafile == None): 
                 self.log.error('set_frameno: cannot find value for FRAMENO')
                 return False
 
             frameno = datafile.replace('.fits', '')
             num = frameno.rfind('_') + 1
+            # this is needed for new lris red 20210422 on (sometimes)
+            # rfoc_00007.fits and rfoc00008.fits
+            if num == 0:
+                num = re.search(r'\d', frameno).start()
             frameno = frameno[num:]
             frameno = int(frameno)
 

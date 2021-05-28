@@ -86,12 +86,12 @@ def koaxfr(instrObj, tpx=0):
     toDir = config['KOAXFR']['DIR']
     toLocation = ''.join((account, '@', server, ':', toDir, '/', instr))
     log.info('koaxfr.py transferring directory {} to {}'.format(fromDir, toLocation))
-    log.info('koaxfr.py rsync -avz {} {}'.format(fromDir, toLocation))
+    log.info('koaxfr.py rsync -avz --no-t {} {}'.format(fromDir, toLocation))
 
     # Transfer the data
 
     import subprocess as sp
-    xfrCmd = sp.Popen(["rsync -avz " + fromDir + ' ' + toLocation],
+    xfrCmd = sp.Popen(["rsync -avz --no-t " + fromDir + ' ' + toLocation],
                       stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
     output, error = xfrCmd.communicate()
     if not error:

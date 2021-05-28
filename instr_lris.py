@@ -26,6 +26,7 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 import hist_equal2d
+from skimage import exposure
 
 
 class Lris(instrument.Instrument):
@@ -60,6 +61,7 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_ut()
+        if ok: ok = self.set_elaptime()
         if ok: ok = self.set_ofname()
         if ok: ok = self.set_frameno()
         if ok: ok = self.set_semester()
@@ -67,13 +69,13 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_propint(progData)
         if ok: ok = self.set_datlevel(0)
         if ok: ok = self.get_nexten()
-        if ok: ok = self.set_image_stats_keywords()
+#        if ok: ok = self.set_image_stats_keywords()
         if ok: ok = self.set_weather_keywords()
         if ok: ok = self.set_oa()
         if ok: ok = self.set_npixsat(satVal=65535)
         if ok: ok = self.set_obsmode()
         if ok: ok = self.set_wavelengths()
-        if ok: ok = self.set_sig2nois()
+#        if ok: ok = self.set_sig2nois()
         if ok: ok = self.set_ccdtype()
         if ok: ok = self.set_slit_dims()
         if ok: ok = self.set_wcs()
@@ -89,8 +91,6 @@ class Lris(instrument.Instrument):
         Function to generate the paths to all the LRIS accounts, including engineering
         Returns the list of paths
         '''
-        #todo: note: idl dep searches /s/sdata/2* , though it is known that the dirs are 241/242/243
-        #todo: note: There are subdirs /lris11/ thru /lris20/, though it is known that these are not used
         dirs = []
         path = '/s/sdata24'
         for i in range(1,4):
@@ -132,6 +132,8 @@ class Lris(instrument.Instrument):
         '''
         Sets OFNAME keyword from OUTFILE and FRAMENO
         '''
+        ofname = self.get_keyword('OFNAME', False)
+        if ofname: return True
         outfile = self.get_keyword('OUTFILE', False)
         frameno = self.get_keyword('FRAMENO', False)
         if outfile == None or frameno == None:
@@ -194,16 +196,22 @@ class Lris(instrument.Instrument):
                 return 'flatlamp'
             else:
                 #no lamp on
+                # this is no longer working for red side
+                # autoshut and calname do not exist
+                # AXESTAT check works for most cases
                 if self.get_keyword('AUTOSHUT'):
                     calname = self.get_keyword('CALNAME')
                     if calname in ['ir','hnpb','uv']:
                         return 'polcal'
                     else:
                         return 'object'
+                elif self.get_keyword('AXESTAT') == 'tracking':
+                    return 'object'
                 else:
                     return 'undefined'
         elif trapdoor == 'closed':
             #is lamp on?
+            # lamps does not exist in lris red now, others do
             lamps = self.get_keyword('LAMPS')
             if lamps not in ['','0',None]:
                 if '1' in lamps:
@@ -251,6 +259,9 @@ class Lris(instrument.Instrument):
         '''
         Determine observation mode
         '''
+        # OBSMODE now exists in red headers
+        # but looks like it's always Imaging!
+        # this logic still works
         grism = self.get_keyword('GRISNAME')
         grating = self.get_keyword('GRANAME')
         angle = self.get_keyword('GRANGLE')
@@ -406,6 +417,7 @@ class Lris(instrument.Instrument):
         '''
         Set CCD gain and read noise
         '''
+        return True
         # NOTE: It looks like the IDL version for LRIS BLUE was incorrectly writing "00" index 
         # versions of these keywords to the header that didn't match the metadata file which only
         #has 1-4.  And it was writing null for the "04" version.  We are mimicing this behavior below.
@@ -509,6 +521,9 @@ class Lris(instrument.Instrument):
 
     def set_wcs(self):
 
+        # skip for RED after upgrade (20210422)
+        if self.get_keyword('INSTRUME') == 'LRIS': return True
+
         #only do this for IMAGING
         obsmode = self.get_keyword('OBSMODE')
         if obsmode != 'IMAGING': 
@@ -519,6 +534,10 @@ class Lris(instrument.Instrument):
         poname  = self.get_keyword('PONAME')
         ra      = self.get_keyword('RA')
         dec     = self.get_keyword('DEC')
+        if ra == None or dec == None:
+            self.log.warning('set_wcs: Could not set WCS')
+            return True
+
         pixcorrect = lambda x: (x/pixelscale) + 1024
 
         #dictionary of xim and yim only
@@ -655,10 +674,12 @@ class Lris(instrument.Instrument):
             slit = slitwidt
         slitpix = slit/spatscal
         deltalam = dispersion * slitpix
-        if dispersion != 0:
-            specres = round(wavelen/deltalam,-1)
-        if fwhm != 0:
-            specres = round((wavelen/fwhm)/slit,-2)
+        if wavelen == None: specres = 'null'
+        else:
+            if dispersion != 0:
+                specres = round(wavelen/deltalam,-1)
+            if fwhm != 0:
+                specres = round((wavelen/fwhm)/slit,-2)
 
         self.set_keyword('SLITLEN',slitlen,'KOA: Slit length')
         self.set_keyword('SLITWIDT',slitwidt,'KOA: Slit width')
@@ -680,7 +701,10 @@ class Lris(instrument.Instrument):
         else:
             nPixSat = 0
             for ext in range(1, self.nexten+1):
-                image = self.fitsHdu[ext].data
+                hdu = self.fitsHdu[ext]
+                # Now skipping this for LRIS-RED (20210422)
+                if 'ImageHDU' not in str(type(hdu)): continue
+                image = hdu.data
                 pixSat = image[np.where(image >= satVal)]
                 nPixSat += len(image[np.where(image >= satVal)])
 
@@ -713,8 +737,10 @@ class Lris(instrument.Instrument):
         for ext in range(1,self.nexten+1):
 
             #get image header and image
-            header = self.fitsHdu[ext].header
-            image = np.array(self.fitsHdu[ext].data)
+            hdu = self.fitsHdu[ext]
+            if 'ImageHDU' not in str(type(hdu)): continue
+            header = hdu.header
+            image = hdu.data #np.array(self.fitsHdu[ext].data)
 
             #find widths of pre/postscan regions, whole image dimensions
             precol = self.get_keyword('PRECOL')
@@ -722,6 +748,11 @@ class Lris(instrument.Instrument):
             binning = self.get_keyword('BINNING')
             naxis1 = self.get_keyword('NAXIS1',ext=ext)
             naxis2 = self.get_keyword('NAXIS2',ext=ext)
+            if precol  == None: return True
+            if postpix == None: return True
+            if binning == None: return True
+            if naxis1  == None: return True
+            if naxis2  == None: return True
 
             # Size of sampling box: nx = 15 & ny = 15
             xbin = 1
@@ -810,6 +841,31 @@ class Lris(instrument.Instrument):
 
         #needed hdr vals
         hdr0 = hdus[0].header
+
+        # is this a red file (after 2021-04-16)?
+        if hdr0['INSTRUME'] == 'LRIS':
+            data = hdus[0].data
+
+            #use histogram equalization to increase contrast
+            image_eq = exposure.equalize_hist(data)
+
+            #form filepaths
+            basename = os.path.basename(fits_filepath).replace('.fits', '')
+            jpg_filepath = f'{outdir}/{basename}.jpg'
+            #create jpg
+            dpi = 100
+            width_inches  = hdr0['NAXIS1'] / dpi
+            height_inches = hdr0['NAXIS2'] / dpi
+            fig = plt.figure(figsize=(width_inches, height_inches), frameon=False, dpi=dpi)
+            ax = fig.add_axes([0, 0, 1, 1]) #this forces no border padding
+            plt.axis('off')
+            plt.imshow(image_eq, cmap='gray', origin='lower')#, norm=norm)
+            plt.savefig(jpg_filepath, quality=92)
+            plt.close()
+            return
+
+        # continue for blue side
+
         binning  = hdr0['BINNING'].split(',')
         precol   = int(hdr0['PRECOL'])   // int(binning[0])
         postpix  = int(hdr0['POSTPIX'])  // int(binning[0])
@@ -991,4 +1047,34 @@ class Lris(instrument.Instrument):
             y1 = int(match.groups(1)[2])
             y2 = int(match.groups(1)[3])
             return [x1, x2, y1, y2]
+
+
+    def set_elaptime(self):
+        '''
+        Fixes missing ELAPTIME keyword
+        '''
+
+        #skip it it exists
+        if self.get_keyword('ELAPTIME', False) != None: return True
+
+        elaptime = 'null'
+
+        #get necessary keywords
+        xposure  = self.get_keyword('XPOSURE')
+        if xposure != None:
+            self.log.info('set_elaptime: determining ELAPTIME from XPOSURE')
+            elaptime = round(xposure)
+        else:
+            ttime  = self.get_keyword('TTIME')
+            if ttime != None:
+                self.log.info('set_elaptime: determining ELAPTIME from TTIME')
+                elaptime = round(ttime)
+
+        if elaptime == 'null':
+            self.log.warning('set_elaptime: Could not set ELAPTIME')
+
+        #update val
+        self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
+
+        return True
 
