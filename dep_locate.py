@@ -296,6 +296,11 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
 
    #TODO: move this to instrument classes
 
+   try:
+      instrume = keywords['INSTRUME']
+   except:
+      instrume = instr
+
    if instr in ['MOSFIRE', 'NIRES', 'NIRSPEC', 'OSIRIS']:
        try:
            outfile = keywords['DATAFILE']
@@ -306,7 +311,7 @@ def construct_filename(instr, fitsFile, ancDir, keywords, log):
            copy_bad_file(
                    instr, fitsFile, ancDir, 'Bad Outfile', log)
            return '', False
-   elif instr in ['KCWI']:
+   elif instr in ['KCWI'] or instrume in ['LRIS', 'LRISADC']:
        try:
            outfile = keywords['OFNAME']
            return outfile, True
