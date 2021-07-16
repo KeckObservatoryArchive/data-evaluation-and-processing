@@ -74,6 +74,8 @@ class Kcwi(instrument.Instrument):
         if ok: ok = self.set_filename()
         if ok: ok = self.set_elaptime()
         if ok: ok = self.set_dateObs()
+        if ok: ok = self.set_utc()
+        if ok: ok = self.set_ut()
         if ok: ok = self.set_koaid()
         if ok: ok = self.set_koaimtyp()
         if ok: ok = self.set_frameno()
@@ -204,16 +206,16 @@ class Kcwi(instrument.Instrument):
         slitlen  = 'null'
         spatscal = 'null'
 
-        slicer = self.get_keyword('IFUNAM').lower()
-        camera = self.get_keyword('CAMERA')
+        slicer = self.get_keyword('IFUNAM', default='').lower()
+        camera = self.get_keyword('CAMERA', default='')
         #lowercase camera if not None
         try:
             camera = camera.lower()
         except:
             pass
-        binning = self.get_keyword('BINNING')
-        gratname = self.get_keyword('BGRATNAM').lower()
-        nodmask = self.get_keyword('BNASNAM').lower()
+        binning = self.get_keyword('BINNING', default='')
+        gratname = self.get_keyword('BGRATNAM', default='').lower()
+        nodmask = self.get_keyword('BNASNAM', default='').lower()
         
         # Configuration for KB
         configurations = {'bl' : {'waves':(3500, 4550, 5600), 'large':900, 'medium':1800, 'small':3600},

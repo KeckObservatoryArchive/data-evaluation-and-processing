@@ -82,11 +82,11 @@ def create_prog(instrObj):
 
             #get date-obs
             instrObj.set_dateObs()
-            dateObs = instrObj.get_keyword('DATE-OBS')
+            dateObs = instrObj.get_keyword('DATE-OBS', False)
 
             #get utc
             instrObj.set_utc()
-            utc = instrObj.get_keyword('UTC')
+            utc = instrObj.get_keyword('UTC', False)
 
             #get observer
             observer = instrObj.get_keyword('OBSERVER')
