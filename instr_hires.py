@@ -377,9 +377,9 @@ class Hires(instrument.Instrument):
                 elif i == wavered:
                     wavered = wave
 
-            wavecntr = int(round(wavecntr,-1))
-            waveblue = int(round(waveblue,-1))
-            wavered = int(round(wavered,-1))
+            if wavecntr != 'null': wavecntr = int(round(wavecntr,-1))
+            if waveblue != 'null': waveblue = int(round(waveblue,-1))
+            if wavered  != 'null': wavered  = int(round(wavered,-1))
         else:
             wavecntr = 'null'
             waveblue = 'null'
