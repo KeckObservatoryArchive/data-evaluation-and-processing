@@ -45,6 +45,7 @@ class Hires(instrument.Instrument):
         if ok: ok = self.set_datlevel(0)
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
+        if ok: ok = self.set_utc()
         if ok: ok = self.set_ut() # may need to delete duplicate UTC?
         if ok: ok = self.set_utend()
 #        if ok: ok = self.set_numamps()
