@@ -219,7 +219,7 @@ def check_keyword_existance(header, keyDefs, dev=False, keyskips=[], extra={}):
         if keyword not in header and keyword not in skips and row['allowNull'] == "N" and keyword not in extra:
             if dev: log.warning('metadata.py: non-null metadata keyword "{}" not found in header.'.format(keyword))
 
-def check_null(val, allowNull):
+def check_null(val, allowNull, keyword):
     if (val == 'null' or val == '') and (allowNull == 'N'):
         raise Exception('metadata check: incorrect "null" value found for non-null keyword {}'.format(keyword))            
 
@@ -327,7 +327,7 @@ def check_keyword_val(keyword, val, fmt, warns, dev=False):
         val = 'null'
 
     #deal with null, blank vals
-    check_null(val, fmt['allowNull'])
+    check_null(val, fmt['allowNull'], keyword)
     if (val == 'null' or val == '') and (fmt['allowNull'] == 'Y'):
         return val, warns
 
