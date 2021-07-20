@@ -369,8 +369,9 @@ class Hires(instrument.Instrument):
                     wave = wave - wave2
                 else:
                     wave = wave + (10-wave2)
-                if wave < 2000 or wave > 20000:
+                if wave < 1000 or wave > 20000:
                     wave = 'null'
+                    self.log.error(f'Wavelength out of range.')
                 if i == wavecntr:
                     wavecntr = wave
                 elif i == waveblue:
