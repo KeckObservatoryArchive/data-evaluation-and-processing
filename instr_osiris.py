@@ -405,7 +405,7 @@ class Osiris(instrument.Instrument):
         #Fix SSCALE if non numeric
         try:
             float(sscale)
-        except ValueError:
+        except:
             self.log.error(f"SSCALE has non numeric value of '{sscale}'")
             sscale = ''
             self.set_keyword('SSCALE', sscale, 'KOA: Spec Scale')
