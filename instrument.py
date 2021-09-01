@@ -338,7 +338,7 @@ class Instrument:
             return '', False
 
         # Extract the UTC time and date observed from the header
-        utc = self.get_keyword('UTC')
+        utc = self.get_keyword('UTC', False)
         if utc == None: return '', False
 
         dateobs = self.get_keyword('DATE-OBS')
@@ -533,7 +533,7 @@ class Instrument:
             utc = dt.fromtimestamp(lastMod) + timedelta(hours=10)
             utc = utc.strftime('%H:%M:%S.00')
             update = True
-            self.log.warning('set_utc: set UTC value from FITS file time')
+            self.log.warning(f'set_utc: set UTC value from FITS file time ({utc})')
         #update/add if need be
         if update:
             self.set_keyword('UTC', utc, 'KOA: UTC keyword corrected')
@@ -547,7 +547,7 @@ class Instrument:
         if self.get_keyword('UT', False) != None: return True
 
         #get utc from header
-        utc = self.get_keyword('UTC')
+        utc = self.get_keyword('UTC', False)
         if utc == None: 
             self.log.warning('set_ut: Could not get UTC value.  UDF!')
             return False
@@ -670,7 +670,7 @@ class Instrument:
         #special override via command line option
         assign_progname = self.config.get('MISC', {}).get('ASSIGN_PROGNAME')
         if assign_progname:
-            utc = self.get_keyword('UTC')
+            utc = self.get_keyword('UTC', False)
             progname = get_progid_assign(assign_progname, utc)
             if '_' in progname and is_progid_valid(progname):
                 semester, progid = progname.split('_')
@@ -688,8 +688,8 @@ class Instrument:
 
         #normal assign using DATE-OBS and UTC
         else:
-            dateObs = self.get_keyword('DATE-OBS')
-            utc     = self.get_keyword('UTC')
+            dateObs = self.get_keyword('DATE-OBS', False)
+            utc     = self.get_keyword('UTC', False)
             if not dateObs or not utc:
                 self.log.error('set_semester: Could not parse DATE-OBS and UTC')
                 return False
@@ -868,7 +868,7 @@ class Instrument:
 
         #get input vars
         dateobs = self.get_keyword('DATE-OBS')
-        utc     = self.get_keyword('UTC')
+        utc     = self.get_keyword('UTC', False)
         telnr   = self.get_telnr()
 
         #get data but continue even if there were errors for certain keywords

@@ -45,6 +45,7 @@ class Hires(instrument.Instrument):
         if ok: ok = self.set_datlevel(0)
         if ok: ok = self.set_instr()
         if ok: ok = self.set_dateObs()
+        if ok: ok = self.set_utc()
         if ok: ok = self.set_ut() # may need to delete duplicate UTC?
         if ok: ok = self.set_utend()
 #        if ok: ok = self.set_numamps()
@@ -368,8 +369,9 @@ class Hires(instrument.Instrument):
                     wave = wave - wave2
                 else:
                     wave = wave + (10-wave2)
-                if wave < 2000 or wave > 20000:
+                if wave < 1000 or wave > 20000:
                     wave = 'null'
+                    self.log.error(f'Wavelength out of range.')
                 if i == wavecntr:
                     wavecntr = wave
                 elif i == waveblue:
@@ -377,9 +379,9 @@ class Hires(instrument.Instrument):
                 elif i == wavered:
                     wavered = wave
 
-            wavecntr = int(round(wavecntr,-1))
-            waveblue = int(round(waveblue,-1))
-            wavered = int(round(wavered,-1))
+            if wavecntr != 'null': wavecntr = int(round(wavecntr,-1))
+            if waveblue != 'null': waveblue = int(round(waveblue,-1))
+            if wavered  != 'null': wavered  = int(round(wavered,-1))
         else:
             wavecntr = 'null'
             waveblue = 'null'
