@@ -82,6 +82,13 @@ class Lris(instrument.Instrument):
         if ok: ok = self.set_skypa()        
         if ok: ok = self.set_dqa_vers()
         if ok: ok = self.set_dqa_date()
+        if ok: ok = self.fix_datebeg()
+        if ok: ok = self.set_mjd_obs()
+#        self.set_keyword('ADCLIM', 'null', f"VAL: {self.get_keyword('ADCLIM')}")
+#        self.set_keyword('ADCMOD', 'null', f"VAL: {self.get_keyword('ADCMOD')}")
+#        self.set_keyword('ADCPRENA', 'null', f"VAL: {self.get_keyword('ADCPRENA')}")
+#        self.set_keyword('ADCSTA', 'null', f"VAL: {self.get_keyword('ADCSTA')}")
+#        self.set_keyword('DISP0STA', 'null', f"VAL: {self.get_keyword('DISP0STA')}")
         return ok
 
 
@@ -262,6 +269,9 @@ class Lris(instrument.Instrument):
         # OBSMODE now exists in red headers
         # but looks like it's always Imaging!
         # this logic still works
+#        obsmode = self.get_keyword('OBSMODE', False)
+#        if obsmode != None: return True
+
         grism = self.get_keyword('GRISNAME')
         grating = self.get_keyword('GRANAME')
         angle = self.get_keyword('GRANGLE')
@@ -290,7 +300,7 @@ class Lris(instrument.Instrument):
 
         instr = self.get_keyword('INSTRUME')
         slitname = self.get_keyword('SLITNAME')
-        obsmode = self.get_keyword('OBSMODE')
+        obsmode = self.get_keyword('OBSMODE').upper()
         grating = self.get_keyword('GRANAME')
         grism = self.get_keyword('GRISNAME')
         slitmask = str(self.get_keyword('SLITMASK', default=''))
@@ -387,7 +397,7 @@ class Lris(instrument.Instrument):
         if obsmode == 'IMAGING':
             if flt in wavearr: waveblue, wavered = wavearr.get(flt)
             else             : return True
-        elif obsmode == 'SPEC':
+        elif 'SPEC' in obsmode:
             if   grating in wavearr: waveblue, wavered = wavearr.get(grating)
             elif grism in wavearr  : waveblue, wavered = wavearr.get(grism)
             else                   : return True
@@ -525,7 +535,7 @@ class Lris(instrument.Instrument):
         if self.get_keyword('INSTRUME') == 'LRIS': return True
 
         #only do this for IMAGING
-        obsmode = self.get_keyword('OBSMODE')
+        obsmode = self.get_keyword('OBSMODE').upper()
         if obsmode != 'IMAGING': 
             return True        
 
@@ -1075,6 +1085,39 @@ class Lris(instrument.Instrument):
 
         #update val
         self.set_keyword('ELAPTIME', elaptime, 'KOA: Total integration time')
+
+        return True
+
+
+    def fix_datebeg(self):
+        '''
+        Fix metadata to use DATE-BEG|END value in place of DATE_BEG|END value.
+        Populates extraMeta -- metadata table -- and not the header.
+        '''
+        for key in ['DATE-BEG', 'DATE-END']:
+            value = self.get_keyword(key, False)
+            # No need to do anything if keyword doesn't exist
+            if value == None: continue
+            key2 = key.replace('-', '_')
+            try:
+                # Skip if the "-" keyword does not have a good value
+                test = dt.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f')
+                self.extraMeta[key2] = value
+            except:
+                pass
+
+        return True
+
+
+    def set_mjd_obs(self):
+        '''
+        Add MJD-OBS for LRIS-R (2021 upgrade has MJD only).
+        '''
+        mjd = self.get_keyword('MJD-OBS', False)
+        if mjd == None:
+            mjd = self.get_keyword('MJD', False)
+            if mjd != None:
+                self.extraMeta['MJD-OBS'] = mjd
 
         return True
 
