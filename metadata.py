@@ -177,7 +177,7 @@ def add_fits_metadata_line(fitsFile, metaOutFile, keyDefs, extra, warns, dev, ke
                 val = 'null'
 
             #special check for 'NaN' or '-Nan'
-            if val in ('NaN', '-NaN'):
+            if val in ('NaN', '-NaN', '-Inf', 'Inf'):
                 val = 'null'
 
             #check keyword val and format
