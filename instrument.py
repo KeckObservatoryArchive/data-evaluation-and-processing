@@ -1202,3 +1202,16 @@ class Instrument:
         :return: (bool) True if file is within 24 hrs.
         '''
         return True
+
+    @staticmethod
+    def check_type_str(chk_list, dfault):
+        for i, val in enumerate(chk_list):
+            if type(val) != str:
+                continue
+            try:
+                chk_list[i] = float(val)
+            except ValueError:
+                chk_list[i] = dfault
+
+        return chk_list
+
