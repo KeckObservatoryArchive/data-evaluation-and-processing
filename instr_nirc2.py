@@ -295,19 +295,22 @@ class Nirc2(instrument.Instrument):
         elif mode == 'stat' and parantel and el:
             pa1 = paCalc(pa, parantel, el)
 
+        # narrow = 0.7-0.252, correction from Yelda etal 2010
+        pazero = None
+        pazero_dict = {'narrow': 0.448, 'medium': 0.7, 'wide': 0.7}
+        if camname in pazero_dict:
+            pazero = pazero_dict[camname]
+
         # Logic added 4/16/2012 
         # special PA calculation determine by rotmode below  
         # instead of one formula   pa = double ( rotpposn + parantel - el )
-        if pa1 and pixscale:
-
-            # narrow = 0.7-0.252, correction from Yelda etal 2010
-            pazero = {'narrow':0.448, 'medium':0.7, 'wide':0.7}
+        if pa1 and pixscale and pazero:
 
             crval1 = rakey
             crval2 = deckey
 
             sign = 1
-            pa = pa1 - pazero[camname]
+            pa = pa1 - pazero
             pa *= np.pi / 180.0
             pa *= -1.0
 
