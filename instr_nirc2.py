@@ -276,31 +276,32 @@ class Nirc2(instrument.Instrument):
         el       = self.get_keyword('EL')
 
         if isinstance(parantel, str) and (parantel == '' or 'error' in parantel.lower()): parantel = parang 
-        mode =  rotmode[0:4]
-       
+        mode = rotmode[0:4]
+
+        # Pixel scale and PA offset by camera name
+        pixscale = {'narrow': 0.009952, 'medium': 0.019829, 'wide': 0.039686}
+
         # Logic added 4/16/2012 
         # special PA calculation determine by rotmode below  
         # instead of one formula   pa = double ( rotpposn + parantel - el )
+        if (pa and parantel and el and mode in ['posi', 'vert', 'stat'] and
+                camname in ['narrow', 'medium', 'wide']):
+            paCalc = lambda x,y,z: float(x) + float(y) - float(z)
 
-        paCalc = lambda x,y,z: float(x) + float(y) - float(z)
-        if mode in ['posi', 'vert', 'stat'] and camname in ['narrow', 'medium', 'wide']:
-            if mode == 'posi':   
+            if not pa or not parantel or not el:
+                pa1 = 0
+            elif mode == 'posi':
                 pa1 = paCalc(pa, 0, 0)
             elif mode == 'vert': 
                 pa1 = paCalc(pa, parantel, 0)
             elif mode == 'stat': 
                 pa1 = paCalc(pa, parantel, el)
 
-            raindeg = 1
-
-            # Pixel scale and PA offset by camera name
-
-            pixscale = {'narrow':0.009952, 'medium':0.019829, 'wide':0.039686}
-            pazero = {'narrow':0.448, 'medium':0.7, 'wide':0.7} # narrow = 0.7-0.252, correction from Yelda etal 2010
+            # narrow = 0.7-0.252, correction from Yelda etal 2010
+            pazero = {'narrow':0.448, 'medium':0.7, 'wide':0.7}
 
             crval1 = rakey
             crval2 = deckey
-
 
             sign = 1
             pa = pa1 - pazero[camname]
@@ -312,31 +313,39 @@ class Nirc2(instrument.Instrument):
             cd1_2 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
             cd2_1 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
 
-            pixscale = '%f' % round(pixscale[camname], 6)
-
             cd1_1 = '%0.12lf' % round(cd1_1, 12)
             cd1_2 = '%0.12lf' % round(cd1_2, 12)
             cd2_1 = '%0.12lf' % round(cd2_1, 12)
             cd2_2 = '%0.12lf' % round(cd2_2, 12)
+        else:
+            cd1_1 = None
+            cd1_2 = None
+            cd2_1 = None
+            cd2_2 = None
 
-            crpix1 = round(float((naxis1 + 1) / 2.0), 2)
-            crpix2 = round(float((naxis2 + 1) / 2.0), 2)
-     
-            # check the equinox
-            # fk4 = 1950
-            # fk5 = 2000
-            if equinox == 2000: 
-                radecsys = 'FK5'
-            else:               
-                radecsys = 'FK4'
-            # Fixed values
-            wcsdim = 2
-            ltm1_1 = ltm2_2 = 1.0
-            ctype1 = 'RA---TAN'
-            ctype2 = 'DEC--TAN'
-            wat0_001 = 'system=image'
-            wat1_001 = 'wtype=tan axtype=ra'
-            wat2_001 = 'wtype=tan axtype=dec'
+        if camname in pixscale:
+            pixscale = '%f' % round(pixscale[camname], 6)
+        else:
+            pixscale = None
+
+        crpix1 = round(float((naxis1 + 1) / 2.0), 2)
+        crpix2 = round(float((naxis2 + 1) / 2.0), 2)
+
+        # check the equinox
+        # fk4 = 1950
+        # fk5 = 2000
+        if equinox == 2000:
+            radecsys = 'FK5'
+        else:
+            radecsys = 'FK4'
+        # Fixed values
+        wcsdim = 2
+        ltm1_1 = ltm2_2 = 1.0
+        ctype1 = 'RA---TAN'
+        ctype2 = 'DEC--TAN'
+        wat0_001 = 'system=image'
+        wat1_001 = 'wtype=tan axtype=ra'
+        wat2_001 = 'wtype=tan axtype=dec'
 
         # Add header keywords
 
@@ -360,6 +369,7 @@ class Nirc2(instrument.Instrument):
         self.set_keyword('CD2_1', cd2_1, 'KOA: Coordinate transformation matrix') 
         self.set_keyword('CD2_2', cd2_2, 'KOA: Coordinate transformation matrix') 
         self.set_keyword('RADECSYS', radecsys, 'KOA: The system of the coordinates')
+
         return True
 
     def set_elaptime(self):

@@ -202,8 +202,6 @@ class Instrument:
 
         return True
 
-
-
     def get_keyword(self, keyword, useMap=True, default=None, ext=None):
         '''
         Gets keyword value from the FITS header as defined in keywordMap class variable.  
@@ -235,17 +233,25 @@ class Instrument:
 
         #loop
         if ext == None:
-            for mappedKey in mappedKeys:
-                val = self.fitsHeader.get(mappedKey)
-                if val != None and not isinstance(val, fits.Undefined): return val
+            fitshead = self.fitsHeader
         else:
-            for mappedKey in mappedKeys:
-                val = self.fitsHdu[ext].header.get(mappedKey)
-                if val != None and not isinstance(val, fits.Undefined): return val
+            fitshead = self.fitsHdu[ext]
+        for mappedKey in mappedKeys:
+            try:
+                val = fitshead.get(mappedKey)
+                if self._chk_valid(val):
+                    return val
+            except fits.verify.VerifyError:
+                pass
 
-        #return None if we didn't find it
         return default
 
+    def _chk_valid(self, val):
+        if (not val or isinstance(val, fits.Undefined) or
+                str(val).strip().lower() in ('nan', '-nan')):
+            return False
+
+        return True
 
 
     def set_keyword(self, keyword, value, comment='', useMap=False, ext=None):
