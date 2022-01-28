@@ -280,22 +280,25 @@ class Nirc2(instrument.Instrument):
 
         # Pixel scale and PA offset by camera name
         pixscale = {'narrow': 0.009952, 'medium': 0.019829, 'wide': 0.039686}
+        if camname in pixscale:
+            pixscale = pixscale[camname]
+        else:
+            pixscale = None
+
+        pa1 = None
+        paCalc = lambda x, y, z: float(x) + float(y) - float(z)
+
+        if mode == 'posi' and pa:
+            pa1 = paCalc(pa, 0, 0)
+        elif mode == 'vert' and parantel:
+            pa1 = paCalc(pa, parantel, 0)
+        elif mode == 'stat' and parantel and el:
+            pa1 = paCalc(pa, parantel, el)
 
         # Logic added 4/16/2012 
         # special PA calculation determine by rotmode below  
         # instead of one formula   pa = double ( rotpposn + parantel - el )
-        if (pa and parantel and el and mode in ['posi', 'vert', 'stat'] and
-                camname in ['narrow', 'medium', 'wide']):
-            paCalc = lambda x,y,z: float(x) + float(y) - float(z)
-
-            if not pa or not parantel or not el:
-                pa1 = 0
-            elif mode == 'posi':
-                pa1 = paCalc(pa, 0, 0)
-            elif mode == 'vert': 
-                pa1 = paCalc(pa, parantel, 0)
-            elif mode == 'stat': 
-                pa1 = paCalc(pa, parantel, el)
+        if pa1 and pixscale:
 
             # narrow = 0.7-0.252, correction from Yelda etal 2010
             pazero = {'narrow':0.448, 'medium':0.7, 'wide':0.7}
@@ -308,10 +311,10 @@ class Nirc2(instrument.Instrument):
             pa *= np.pi / 180.0
             pa *= -1.0
 
-            cd1_1 = -sign * pixscale[camname] * np.cos(pa) / 3600.0
-            cd2_2 =  sign * pixscale[camname] * np.cos(pa) / 3600.0
-            cd1_2 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
-            cd2_1 = -sign * pixscale[camname] * np.sin(pa) / 3600.0
+            cd1_1 = -sign * pixscale * np.cos(pa) / 3600.0
+            cd2_2 = sign * pixscale * np.cos(pa) / 3600.0
+            cd1_2 = -sign * pixscale * np.sin(pa) / 3600.0
+            cd2_1 = -sign * pixscale * np.sin(pa) / 3600.0
 
             cd1_1 = '%0.12lf' % round(cd1_1, 12)
             cd1_2 = '%0.12lf' % round(cd1_2, 12)
@@ -323,10 +326,8 @@ class Nirc2(instrument.Instrument):
             cd2_1 = None
             cd2_2 = None
 
-        if camname in pixscale:
-            pixscale = '%f' % round(pixscale[camname], 6)
-        else:
-            pixscale = None
+        if pixscale:
+            pixscale = '%f' % round(pixscale, 6)
 
         crpix1 = round(float((naxis1 + 1) / 2.0), 2)
         crpix2 = round(float((naxis2 + 1) / 2.0), 2)
