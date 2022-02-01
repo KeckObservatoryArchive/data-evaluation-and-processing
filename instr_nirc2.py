@@ -279,11 +279,10 @@ class Nirc2(instrument.Instrument):
         mode = rotmode[0:4]
 
         # Pixel scale and PA offset by camera name
-        pixscale = {'narrow': 0.009952, 'medium': 0.019829, 'wide': 0.039686}
-        if camname in pixscale:
-            pixscale = pixscale[camname]
-        else:
-            pixscale = None
+        pixscale = None
+        pixscale_dict = {'narrow': 0.009952, 'medium': 0.019829, 'wide': 0.039686}
+        if camname in pixscale_dict:
+            pixscale = pixscale_dict[camname]
 
         pa1 = None
         paCalc = lambda x, y, z: float(x) + float(y) - float(z)
@@ -324,10 +323,10 @@ class Nirc2(instrument.Instrument):
             cd2_1 = '%0.12lf' % round(cd2_1, 12)
             cd2_2 = '%0.12lf' % round(cd2_2, 12)
         else:
-            cd1_1 = None
-            cd1_2 = None
-            cd2_1 = None
-            cd2_2 = None
+            cd1_1 = ''
+            cd1_2 = ''
+            cd2_1 = ''
+            cd2_2 = ''
 
         if pixscale:
             pixscale = '%f' % round(pixscale, 6)

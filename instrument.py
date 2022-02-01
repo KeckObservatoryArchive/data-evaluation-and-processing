@@ -236,17 +236,22 @@ class Instrument:
             fitshead = self.fitsHeader
         else:
             fitshead = self.fitsHdu[ext]
+
         for mappedKey in mappedKeys:
             try:
                 val = fitshead.get(mappedKey)
                 if self._chk_valid(val):
                     return val
             except fits.verify.VerifyError:
-                pass
+                continue
 
         return default
 
-    def _chk_valid(self, val):
+    @staticmethod
+    def _chk_valid(val):
+        if val == 0:
+            return True
+
         if (not val or isinstance(val, fits.Undefined) or
                 str(val).strip().lower() in ('nan', '-nan')):
             return False
