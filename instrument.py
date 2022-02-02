@@ -211,7 +211,7 @@ class Instrument:
         @type instr: string or list
         '''
         # check for loaded fitsHeader
-        if ext == None:
+        if ext is None:
             if not self.fitsHeader:
                  raise Exception('get_keyword: ERROR: no FITS header loaded')
                  return default
@@ -232,10 +232,10 @@ class Instrument:
             mappedKeys = [mappedKeys]
 
         #loop
-        if ext == None:
+        if ext is None:
             fitshead = self.fitsHeader
         else:
-            fitshead = self.fitsHdu[ext]
+            fitshead = self.fitsHdu[ext].header
 
         for mappedKey in mappedKeys:
             try:
