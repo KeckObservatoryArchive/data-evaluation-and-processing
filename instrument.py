@@ -281,9 +281,10 @@ class Instrument:
         if isinstance(keyword, list):
             keyword = keyword[0]
 
-        #handle infinite value
-        if value == math.inf:
-            self.log.error(f'set_keyword: ERROR: keyword {keyword} value is infinite.  Setting to null.')
+        #handle infinite and NaN values
+        if value == math.inf or str(value).lower() in ('nan', '-nan'):
+            self.log.error(f'set_keyword: ERROR: keyword {keyword} value '
+                           f'is {value}.  Setting to null.')
             return None
 
         #ok now we can update
