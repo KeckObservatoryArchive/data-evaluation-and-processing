@@ -130,9 +130,9 @@ class Nirc2(instrument.Instrument):
         imagetyp = 'undefined'
         #shutter open
         if shrname == 'open':
-            if obsfname == 'telescope':
+            if obsfname == 'telescope' or obsfname == 'pws':
                 imagetyp = 'object'
-            if (obsfname == 'telescope') and (domestat != 'tracking') and (axestat != 'tracking'):
+            if (obsfname == 'telescope' or obsfname == 'pws') and (domestat != 'tracking') and (axestat != 'tracking'):
                 if grsname != 'clear':
                     imagetyp = 'telTBD'
                     return imagetyp
