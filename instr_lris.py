@@ -100,7 +100,7 @@ class Lris(instrument.Instrument):
         '''
         dirs = []
         path = '/s/sdata24'
-        for i in range(1,4):
+        for i in range(1,6):
             path2 = path + str(i) + '/lris'
             for i in range(1,10):
                 path3 = path2 + str(i)

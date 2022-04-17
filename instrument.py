@@ -202,8 +202,6 @@ class Instrument:
 
         return True
 
-
-
     def get_keyword(self, keyword, useMap=True, default=None, ext=None):
         '''
         Gets keyword value from the FITS header as defined in keywordMap class variable.  
@@ -213,7 +211,7 @@ class Instrument:
         @type instr: string or list
         '''
         # check for loaded fitsHeader
-        if ext == None:
+        if ext is None:
             if not self.fitsHeader:
                  raise Exception('get_keyword: ERROR: no FITS header loaded')
                  return default
@@ -234,18 +232,31 @@ class Instrument:
             mappedKeys = [mappedKeys]
 
         #loop
-        if ext == None:
-            for mappedKey in mappedKeys:
-                val = self.fitsHeader.get(mappedKey)
-                if val != None and not isinstance(val, fits.Undefined): return val
+        if ext is None:
+            fitshead = self.fitsHeader
         else:
-            for mappedKey in mappedKeys:
-                val = self.fitsHdu[ext].header.get(mappedKey)
-                if val != None and not isinstance(val, fits.Undefined): return val
+            fitshead = self.fitsHdu[ext].header
 
-        #return None if we didn't find it
+        for mappedKey in mappedKeys:
+            try:
+                val = fitshead.get(mappedKey)
+                if self._chk_valid(val):
+                    return val
+            except fits.verify.VerifyError:
+                continue
+
         return default
 
+    @staticmethod
+    def _chk_valid(val):
+        if val == 0:
+            return True
+
+        if (not val or isinstance(val, fits.Undefined) or
+                str(val).strip().lower() in ('nan', '-nan')):
+            return False
+
+        return True
 
 
     def set_keyword(self, keyword, value, comment='', useMap=False, ext=None):
@@ -270,9 +281,10 @@ class Instrument:
         if isinstance(keyword, list):
             keyword = keyword[0]
 
-        #handle infinite value
-        if value == math.inf:
-            self.log.error(f'set_keyword: ERROR: keyword {keyword} value is infinite.  Setting to null.')
+        #handle infinite and NaN values
+        if value == math.inf or str(value).lower() in ('nan', '-nan'):
+            self.log.error(f'set_keyword: ERROR: keyword {keyword} value '
+                           f'is {value}.  Setting to null.')
             return None
 
         #ok now we can update
@@ -1202,3 +1214,16 @@ class Instrument:
         :return: (bool) True if file is within 24 hrs.
         '''
         return True
+
+    @staticmethod
+    def check_type_str(chk_list, dfault):
+        for i, val in enumerate(chk_list):
+            if type(val) != str:
+                continue
+            try:
+                chk_list[i] = float(val)
+            except ValueError:
+                chk_list[i] = dfault
+
+        return chk_list
+
