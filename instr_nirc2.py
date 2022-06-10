@@ -143,7 +143,10 @@ class Nirc2(instrument.Instrument):
                     if flimagin == 'on' or flspectr == 'on':
                         imagetyp = 'flatlamp'
                     else:
-                        imagetyp = 'flatlampoff'
+                        if self.get_keyword('OBJECT') == 'ao_confirmation_pw':
+                            imagetyp = 'undefined'                            
+                        else:                            
+                            imagetyp = 'flatlampoff'
                 #else check EL, AXESTAT, and DOMESTAT instead
                 else:
                     el = float(self.get_keyword('EL'))
